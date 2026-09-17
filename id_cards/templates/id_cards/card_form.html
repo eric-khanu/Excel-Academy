@@ -1,0 +1,985 @@
+{% extends "id_cards/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     FORM LAYOUT — two columns: form + live preview
+     ============================================================ */
+  .form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 40px;
+    align-items: start;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 8px 0 40px;
+  }
+
+  @media (max-width: 1000px) {
+    .form-layout {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+  }
+
+  /* ---------- Form card ---------- */
+  .form-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px;
+    box-shadow: 0 8px 32px rgba(60, 30, 20, 0.08);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+  }
+
+  .form-card h1 {
+    font-family: 'Cinzel', serif;
+    color: var(--primary);
+    font-size: 1.55rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+
+  .form-card .subtitle {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  /* ---------- Sections ---------- */
+  .form-section {
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px dashed rgba(139, 32, 32, 0.12);
+  }
+  .form-section:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .section-title i {
+    color: var(--secondary);
+    font-size: 0.95rem;
+  }
+  .section-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(200,122,44,0.35), transparent);
+    margin-left: 8px;
+  }
+
+  /* ---------- Grid inside sections ---------- */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 22px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-group.full {
+    grid-column: 1 / -1;
+  }
+
+  .form-group label {
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--primary);
+    margin-bottom: 6px;
+    letter-spacing: 0.2px;
+  }
+
+  .form-group label .required {
+    color: #dc2626;
+    margin-left: 2px;
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="email"],
+  .form-group input[type="tel"],
+  .form-group input[type="date"],
+  .form-group input[type="file"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fdfcf9;
+    color: var(--text);
+  }
+
+  .form-group select[multiple] {
+    padding: 8px;
+    min-height: 120px;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 3px rgba(200, 122, 44, 0.15);
+    background: #fff;
+  }
+
+  .form-group .helptext {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* ---------- Field errors ---------- */
+  .field-error {
+    color: #dc2626;
+    font-size: 0.78rem;
+    margin-top: 5px;
+    font-weight: 500;
+  }
+
+  .form-group.has-error input,
+  .form-group.has-error select,
+  .form-group.has-error textarea {
+    border-color: #f87171;
+    background: #fef2f2;
+  }
+
+  /* ---------- Photo preview ---------- */
+  .photo-field {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .photo-preview {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--secondary);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--primary);
+  }
+  .photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .photo-input {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  /* ---------- Actions bar ---------- */
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 24px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.12);
+  }
+
+  /* ---------- Right column: live preview ---------- */
+  .preview-panel {
+    position: sticky;
+    top: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .preview-panel .preview-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+  }
+  .preview-panel .preview-hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+    max-width: 280px;
+  }
+
+  /* ---------- Non-field errors ---------- */
+  .form-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    color: #991b1b;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 22px;
+    font-size: 0.88rem;
+  }
+  .form-errors strong {
+    display: block;
+    margin-bottom: 6px;
+  }
+  .form-errors ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-card { padding: 24px 20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="form-layout">
+
+  <!-- ============================================================
+       LEFT: Form
+       ============================================================ -->
+  <div class="form-card">
+    <h1>{{ title }}</h1>
+    <p class="subtitle">
+      {% if teacher %}
+        Update {{ teacher.full_name }}'s staff record and ID card details.
+      {% else %}
+        Fill in the details below. The Employee ID will be generated automatically on save.
+      {% endif %}
+    </p>
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <strong><i class="fas fa-triangle-exclamation"></i> Please fix the following:</strong>
+        <ul>
+          {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="teacherForm" novalidate>
+      {% csrf_token %}
+
+      <!-- ========== SECTION 1: Identity ========== -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-user"></i> Identity
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group full {% if form.full_name.errors %}has-error{% endif %}">
+            <label for="{{ form.full_name.id_for_label }}">
+              Full Name <span class="required">*</span>
+            </label>
+            {{ form.full_name }}
+            {% if form.full_name.errors %}
+              <div class="field-error">{{ form.full_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group full {% if form.designation.errors %}has-error{% endif %}">
+            <label for="{{ form.designation.id_for_label }}">
+              Designation <span class="required">*</span>
+            </label>
+            {{ form.designation }}
+            {% if form.designation.help_text %}
+              <span class="helptext">{{ form.designation.help_text }}</span>
+            {% endif %}
+            {% if form.designation.errors %}
+              <div class="field-error">{{ form.designation.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group full {% if form.photo.errors %}has-error{% endif %}">
+            <label for="{{ form.photo.id_for_label }}">Photo</label>
+            <div class="photo-field">
+              <div class="photo-preview" id="photoPreview">
+                {% if form.instance.photo %}
+                  <img src="{{ form.instance.photo.url }}" alt="Current photo">
+                {% else %}
+                  <i class="fas fa-user" style="font-size:1.6rem; opacity:0.35;"></i>
+                {% endif %}
+              </div>
+              <div class="photo-input">
+                {{ form.photo }}
+                <span class="helptext">
+                  Recommended: square image, 400×400px or larger. JPG or PNG.
+                </span>
+                {% if form.instance.photo %}
+                  <span class="helptext">
+                    Current: <a href="{{ form.instance.photo.url }}" target="_blank">view photo</a>
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            {% if form.photo.errors %}
+              <div class="field-error">{{ form.photo.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== SECTION 2: Employment ========== -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-briefcase"></i> Employment
+        </div>
+
+        <div class="form-grid">
+
+          <div class="form-group full {% if form.role.errors %}has-error{% endif %}">
+            <label for="{{ form.role.id_for_label }}">
+              Role <span class="required">*</span>
+            </label>
+            {{ form.role }}
+            {% if form.role.help_text %}
+              <span class="helptext">{{ form.role.help_text }}</span>
+            {% endif %}
+            {% if form.role.errors %}
+              <div class="field-error">{{ form.role.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group {% if form.department.errors %}has-error{% endif %}">
+            <label for="{{ form.department.id_for_label }}">Department</label>
+            {{ form.department }}
+            {% if form.department.errors %}
+              <div class="field-error">{{ form.department.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group {% if form.valid_thru.errors %}has-error{% endif %}">
+            <label for="{{ form.valid_thru.id_for_label }}">Valid Thru</label>
+            {{ form.valid_thru }}
+            <span class="helptext">Last day this card is valid.</span>
+            {% if form.valid_thru.errors %}
+              <div class="field-error">{{ form.valid_thru.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group full {% if form.levels.errors %}has-error{% endif %}">
+            <label for="{{ form.levels.id_for_label }}">Levels Handled</label>
+            {{ form.levels }}
+            {% if form.levels.help_text %}
+              <span class="helptext">{{ form.levels.help_text }}</span>
+            {% else %}
+              <span class="helptext">
+                Hold Ctrl (Windows) or Cmd (Mac) to select multiple levels.
+              </span>
+            {% endif %}
+            {% if form.levels.errors %}
+              <div class="field-error">{{ form.levels.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group {% if form.status.errors %}has-error{% endif %}">
+            <label for="{{ form.status.id_for_label }}">Status</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+              <div class="field-error">{{ form.status.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group {% if form.template.errors %}has-error{% endif %}">
+            <label for="{{ form.template.id_for_label }}">Card Template</label>
+            {{ form.template }}
+            {% if form.template.errors %}
+              <div class="field-error">{{ form.template.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ========== SECTION 3: Contact ========== -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-address-book"></i> Contact
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group {% if form.email.errors %}has-error{% endif %}">
+            <label for="{{ form.email.id_for_label }}">Email</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <div class="field-error">{{ form.email.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group {% if form.phone.errors %}has-error{% endif %}">
+            <label for="{{ form.phone.id_for_label }}">Phone</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}
+              <div class="field-error">{{ form.phone.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== SECTION 4: Back of Card ========== -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-credit-card"></i> Back of Card
+        </div>
+
+        <p class="helptext" style="margin-top:-12px; margin-bottom:16px;">
+          These details appear on the reverse side of the ID card.
+        </p>
+
+        <div class="form-grid">
+          <div class="form-group {% if form.blood_group.errors %}has-error{% endif %}">
+            <label for="{{ form.blood_group.id_for_label }}">Blood Group</label>
+            {{ form.blood_group }}
+            {% if form.blood_group.help_text %}
+              <span class="helptext">{{ form.blood_group.help_text }}</span>
+            {% endif %}
+            {% if form.blood_group.errors %}
+              <div class="field-error">{{ form.blood_group.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group {% if form.emergency_contact_phone.errors %}has-error{% endif %}">
+            <label for="{{ form.emergency_contact_phone.id_for_label }}">
+              Emergency Contact Phone
+            </label>
+            {{ form.emergency_contact_phone }}
+            {% if form.emergency_contact_phone.help_text %}
+              <span class="helptext">{{ form.emergency_contact_phone.help_text }}</span>
+            {% endif %}
+            {% if form.emergency_contact_phone.errors %}
+              <div class="field-error">{{ form.emergency_contact_phone.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== Actions ========== -->
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i>
+          {% if teacher %}Save Changes{% else %}Create Card{% endif %}
+        </button>
+        <a href="{% if teacher %}{% url 'card_detail' teacher.pk %}{% else %}{% url 'card_list' %}{% endif %}"
+           class="btn btn-outline">
+          Cancel
+        </a>
+        {% if teacher %}
+          <a href="{% url 'card_detail' teacher.pk %}" class="btn btn-outline">
+            <i class="fas fa-eye"></i> View Card
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- ============================================================
+       RIGHT: Live preview (matches the current partial layout)
+       ============================================================ -->
+  <div class="preview-panel no-print">
+    <div class="preview-label">Live Preview</div>
+
+    <div id="liveCard" class="id-card-wrapper">
+      <div class="id-card" style="
+        --primary: {{ school.primary_color|default:'#8B2020' }};
+        --secondary: {{ school.secondary_color|default:'#C87A2C' }};
+        --accent: {{ school.accent_color|default:'#FBF6EC' }};
+        --text: {{ school.text_color|default:'#2A1810' }};
+      ">
+
+        <!-- HEADER: logo (left) + school name (2 lines) -->
+        <div class="card-header">
+          <div class="header-top">
+            <div class="header-logo">
+              {% if school.logo %}
+                <img src="{{ school.logo.url }}" alt="{{ school.name }}"
+                     style="width:100%; height:100%; object-fit:contain;">
+              {% else %}
+                <i class="fas fa-graduation-cap"
+                   style="font-size: 1.1rem; color: var(--primary);"></i>
+              {% endif %}
+            </div>
+
+            <div class="header-text">
+              <div class="header-school-line1">EXCEL SENIOR SECONDARY</div>
+              <div class="header-school-line2">SCHOOL</div>
+            </div>
+          </div>
+
+          <div class="gold-divider"></div>
+        </div>
+
+        <!-- ROLE — just above the profile picture -->
+        <div class="role-above-photo" id="pvRole">
+          {% if teacher %}{{ teacher.get_role_display|upper }}{% else %}FACULTY{% endif %}
+        </div>
+
+        <!-- PHOTO -->
+        <div class="photo-section">
+          <div class="photo-ring">
+            <div class="photo-placeholder" id="pvPhoto">
+              {% if form.instance.photo %}
+                <img src="{{ form.instance.photo.url }}"
+                     alt="" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+              {% else %}
+                ?
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- INFO -->
+        <div class="info">
+          <div class="teacher-name" id="pvName">
+            {% if teacher %}{{ teacher.full_name|upper }}{% else %}—{% endif %}
+          </div>
+          <div class="designation" id="pvDesignation">
+            {% if teacher %}{{ teacher.designation|upper }}{% else %}—{% endif %}
+          </div>
+
+          <div class="details-panel">
+            <div class="details">
+              <div>
+                <span class="label">Employee ID :</span>
+                <span class="value" id="pvEmployeeId">
+                  {% if teacher %}{{ teacher.employee_id }}{% else %}auto{% endif %}
+                </span>
+              </div>
+              <div>
+                <span class="label">Department :</span>
+                <span class="value" id="pvDepartment">General</span>
+              </div>
+              <div id="pvLevelsRow" style="display:none;">
+                <span class="label">Levels :</span>
+                <span class="value" id="pvLevels">—</span>
+              </div>
+              <div id="pvValidRow" style="display:none;">
+                <span class="label">Valid Thru :</span>
+                <span class="value" id="pvValid">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+          <div class="staff-info">
+            {{ teacher.template.card_footer_text|default:"STAFF IDENTIFICATION" }}
+          </div>
+          <div class="see-reverse">
+            {{ teacher.template.card_footer_subtext|default:"(SEE REVERSE FOR DETAILS)" }}
+          </div>
+        </div>
+
+        <!-- HOLOGRAM -->
+        <div class="holo-sticker">
+          <div class="short-name">{{ school.short_name|default:"ID"|upper|slice:":5" }}</div>
+          <div class="authentic">AUTHENTIC</div>
+        </div>
+
+        <!-- GOLD BAR -->
+        <div class="gold-bar"></div>
+      </div>
+    </div>
+
+    <div class="preview-hint">
+      Updates in real time as you fill the form.
+      Employee ID is generated on save.
+    </div>
+  </div>
+
+</div>
+
+<!-- Card styles (self-contained for the live preview) -->
+<style>
+  .id-card-wrapper {
+    display: inline-block;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35));
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 20px 45px -15px rgba(60,30,20,0.35);
+  }
+  .id-card {
+    width: 2.125in;
+    height: 3.375in;
+    background: var(--accent);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 10px rgba(60,30,20,0.25);
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+  }
+  .card-header {
+    background: linear-gradient(160deg, var(--primary) 0%, #5A1414 100%);
+    padding: 8px 8px 6px 8px;
+    border-bottom: 2px solid var(--secondary);
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 5px;
+  }
+  .header-logo {
+    width: 0.45in;
+    height: 0.45in;
+    border-radius: 50%;
+    background: #FBF6EC;
+    border: 1.5px solid var(--secondary);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+  .header-text {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+  }
+  .header-school-line1 {
+    font-family: 'Cinzel', serif;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #F5C87A;
+    text-transform: uppercase;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .header-school-line2 {
+    font-family: 'Cinzel', serif;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    color: #F5C87A;
+    text-transform: uppercase;
+    line-height: 1.15;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gold-divider {
+    width: 100%;
+    height: 0.6px;
+    background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+    margin: 2px auto 0 auto;
+    opacity: 0.85;
+  }
+  .role-above-photo {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: var(--primary);
+    background: linear-gradient(180deg, rgba(200,122,44,0.14) 0%, rgba(200,122,44,0.04) 100%);
+    border-top: 0.5px solid rgba(200,122,44,0.35);
+    border-bottom: 0.5px solid rgba(200,122,44,0.35);
+    padding: 3px 8px;
+    text-transform: uppercase;
+  }
+  .photo-section {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+    position: relative;
+    z-index: 5;
+  }
+  .photo-ring {
+    width: 1.05in;
+    height: 1.05in;
+    border-radius: 50%;
+    background: var(--accent);
+    padding: 4px;
+    border: 2px solid var(--secondary);
+    box-shadow: 0 6px 16px -2px rgba(60,30,20,0.45);
+    overflow: hidden;
+  }
+  .photo-ring img { width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
+  .photo-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 1.8rem;
+    color: var(--primary);
+  }
+  .info {
+    text-align: center;
+    padding: 8px 8px 0 8px;
+    position: relative;
+    z-index: 3;
+  }
+  .teacher-name {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    color: var(--primary);
+    line-height: 1.15;
+  }
+  .designation {
+    font-family: 'Inter', sans-serif;
+    font-size: 4.8px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+    text-transform: uppercase;
+    display: inline-block;
+    background: rgba(200,122,44,0.15);
+    padding: 1.5px 8px;
+    border-radius: 20px;
+    border: 0.4px solid rgba(200,122,44,0.4);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .details-panel {
+    margin: 6px 8px 0 8px;
+    padding: 5px 6px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAF4E8 100%);
+    border: 0.6px solid rgba(140,60,30,0.18);
+    border-radius: 5px;
+  }
+  .details {
+    font-family: 'Inter', sans-serif;
+    font-size: 5px;
+    line-height: 1.65;
+    color: var(--text);
+    text-align: center;
+  }
+  .details div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .details .label { color: #8A6A50; font-weight: 500; }
+  .details .value { color: var(--primary); font-weight: 700; }
+  .footer {
+    margin-top: auto;
+    text-align: center;
+    padding: 3px 8px 4px 8px;
+  }
+  .footer .staff-info {
+    font-family: 'Cinzel', serif;
+    font-size: 5px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1.1px;
+  }
+  .footer .see-reverse {
+    font-family: 'Inter', sans-serif;
+    font-size: 3.8px;
+    color: #A88A70;
+    margin-top: 1px;
+  }
+  .holo-sticker {
+    position: absolute;
+    bottom: 7px; right: 7px;
+    width: 30px; height: 22px;
+    border-radius: 3px;
+    background: conic-gradient(from 210deg at 50% 50%,
+      #F5EDE0 0deg, #D8B890 60deg, #FFF8EC 120deg,
+      #B89878 180deg, #F0E0C8 240deg, #D0B090 300deg, #F5EDE0 360deg);
+    border: 0.7px solid rgba(255,255,255,0.95);
+    box-shadow: 0 2px 5px rgba(60,30,20,0.35);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--primary); text-align: center;
+    line-height: 1.05;
+  }
+  .holo-sticker .short-name { font-size: 4.4px; font-weight: 800; }
+  .holo-sticker .authentic { font-size: 3.2px; font-weight: 700; margin-top: 0.4px; }
+  .gold-bar {
+    height: 5px;
+    width: 100%;
+    margin-top: auto;
+    background: linear-gradient(90deg, #8B5A1E 0%, var(--secondary) 25%, #E8B860 50%, var(--secondary) 75%, #8B5A1E 100%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
+  }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  /* ============================================================
+     LIVE PREVIEW — updates the mini ID card as the user types
+     ============================================================ */
+  (function () {
+    const form = document.getElementById('teacherForm');
+    if (!form) return;
+
+    // Field references
+    const nameInput        = form.querySelector('input[name="full_name"]');
+    const designationInput = form.querySelector('input[name="designation"]');
+    const roleSelect       = form.querySelector('select[name="role"]');
+    const departmentSelect = form.querySelector('select[name="department"]');
+    const levelsSelect     = form.querySelector('select[name="levels"]');
+    const validThruInput   = form.querySelector('input[name="valid_thru"]');
+    const photoInput       = form.querySelector('input[type="file"][name="photo"]');
+
+    // Preview targets
+    const pvName        = document.getElementById('pvName');
+    const pvDesignation = document.getElementById('pvDesignation');
+    const pvRole        = document.getElementById('pvRole');
+    const pvDepartment  = document.getElementById('pvDepartment');
+    const pvLevels      = document.getElementById('pvLevels');
+    const pvLevelsRow   = document.getElementById('pvLevelsRow');
+    const pvValid       = document.getElementById('pvValid');
+    const pvValidRow    = document.getElementById('pvValidRow');
+    const pvPhoto       = document.getElementById('pvPhoto');
+
+    /* ---------------- Name ---------------- */
+    if (nameInput && pvName) {
+      nameInput.addEventListener('input', function () {
+        const v = (nameInput.value || '').trim();
+        pvName.textContent = v ? v.toUpperCase() : '—';
+        updateInitials(v);
+      });
+    }
+
+    /* ---------------- Designation ---------------- */
+    if (designationInput && pvDesignation) {
+      designationInput.addEventListener('input', function () {
+        const v = (designationInput.value || '').trim();
+        pvDesignation.textContent = v ? v.toUpperCase() : '—';
+      });
+    }
+
+    /* ---------------- Role (appears above the photo) ---------------- */
+    if (roleSelect && pvRole) {
+      roleSelect.addEventListener('change', function () {
+        const text = roleSelect.options[roleSelect.selectedIndex]?.text || 'FACULTY';
+        pvRole.textContent = text.toUpperCase();
+      });
+    }
+
+    /* ---------------- Department ---------------- */
+    if (departmentSelect && pvDepartment) {
+      departmentSelect.addEventListener('change', function () {
+        const text = departmentSelect.options[departmentSelect.selectedIndex]?.text || 'General';
+        pvDepartment.textContent = departmentSelect.value ? text : 'General';
+      });
+    }
+
+    /* ---------------- Levels ---------------- */
+    if (levelsSelect && pvLevels && pvLevelsRow) {
+      levelsSelect.addEventListener('change', function () {
+        const selected = Array.from(levelsSelect.selectedOptions).map(o => o.text);
+        if (selected.length) {
+          pvLevels.textContent = selected.join(', ');
+          pvLevelsRow.style.display = '';
+        } else {
+          pvLevelsRow.style.display = 'none';
+        }
+      });
+    }
+
+    /* ---------------- Valid Thru ---------------- */
+    if (validThruInput && pvValid && pvValidRow) {
+      validThruInput.addEventListener('change', function () {
+        const v = validThruInput.value;
+        if (!v) {
+          pvValidRow.style.display = 'none';
+          return;
+        }
+        const parts = v.split('-');
+        if (parts.length === 2) {
+          pvValid.textContent = parts[1] + '/' + parts[0];
+        } else if (parts.length === 3) {
+          pvValid.textContent = parts[1] + '/' + parts[0];
+        } else {
+          pvValid.textContent = v;
+        }
+        pvValidRow.style.display = '';
+      });
+    }
+
+    /* ---------------- Photo ---------------- */
+    if (photoInput && pvPhoto) {
+      photoInput.addEventListener('change', function (e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          pvPhoto.innerHTML =
+            '<img src="' + ev.target.result + '" ' +
+            'style="width:100%; height:100%; object-fit:cover; border-radius:50%;">';
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /* ---------------- Initials helper ---------------- */
+    function updateInitials(fullName) {
+      const parts = fullName.split(/\s+/).filter(Boolean);
+      const initials = parts.slice(0, 2).map(p => p[0].toUpperCase()).join('');
+      if (initials && pvPhoto && !pvPhoto.querySelector('img')) {
+        pvPhoto.textContent = initials;
+      }
+    }
+
+    /* ============================================================
+       Trim whitespace on text inputs before submit
+       ============================================================ */
+    form.addEventListener('submit', function () {
+      form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]')
+        .forEach(function (el) { el.value = el.value.trim(); });
+    });
+
+    /* ============================================================
+       Ctrl / Cmd + Enter → submit
+       ============================================================ */
+    form.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        form.submit();
+      }
+    });
+
+  })();
+</script>
+{% endblock %}

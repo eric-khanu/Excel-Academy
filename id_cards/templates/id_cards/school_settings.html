@@ -1,0 +1,922 @@
+{% extends "id_cards/base.html" %}
+{% block title %}School Branding & Settings{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     LAYOUT — form on left, live preview on right
+     ============================================================ */
+  .settings-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 40px;
+    align-items: start;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 8px 0 40px;
+  }
+
+  @media (max-width: 1000px) {
+    .settings-layout {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+  }
+
+  /* ---------- Form card ---------- */
+  .settings-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px;
+    box-shadow: 0 8px 32px rgba(60, 30, 20, 0.08);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+  }
+
+  .settings-card h1 {
+    font-family: 'Cinzel', serif;
+    color: var(--primary);
+    font-size: 1.55rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+
+  .settings-card .subtitle {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  /* ---------- Sections ---------- */
+  .form-section {
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px dashed rgba(139, 32, 32, 0.12);
+  }
+  .form-section:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .section-title i {
+    color: var(--secondary);
+    font-size: 0.95rem;
+  }
+  .section-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(200,122,44,0.35), transparent);
+    margin-left: 8px;
+  }
+
+  /* ---------- Grid ---------- */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 22px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-group.full {
+    grid-column: 1 / -1;
+  }
+
+  .form-group label {
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--primary);
+    margin-bottom: 6px;
+    letter-spacing: 0.2px;
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="email"],
+  .form-group input[type="tel"],
+  .form-group input[type="file"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fdfcf9;
+    color: var(--text);
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 3px rgba(200, 122, 44, 0.15);
+    background: #fff;
+  }
+
+  .form-group .helptext {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* ---------- Color pickers ---------- */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .color-field {
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    background: #fbfaf6;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    transition: border-color 0.15s;
+  }
+  .color-field:hover {
+    border-color: var(--secondary);
+  }
+
+  .color-field label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .color-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .color-input {
+    width: 48px;
+    height: 48px;
+    padding: 3px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    background: #fff;
+    flex-shrink: 0;
+  }
+  .color-input::-webkit-color-swatch-wrapper { padding: 0; }
+  .color-input::-webkit-color-swatch { border: none; border-radius: 7px; }
+  .color-input::-moz-color-swatch { border: none; border-radius: 7px; }
+
+  .color-hex {
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.8rem;
+    color: var(--text);
+    background: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    flex: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  /* ---------- Logo upload ---------- */
+  .logo-field {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .logo-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 16px;
+    background: var(--accent);
+    border: 2px solid var(--secondary);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 2rem;
+    box-shadow: 0 4px 12px rgba(60, 30, 20, 0.1);
+  }
+  .logo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+    background: #fff;
+  }
+
+  .logo-input-wrap {
+    flex: 1;
+    min-width: 220px;
+  }
+
+  /* ---------- Actions ---------- */
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 24px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.12);
+  }
+
+  /* ---------- Preview panel ---------- */
+  .preview-panel {
+    position: sticky;
+    top: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .preview-panel .preview-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+  }
+  .preview-panel .preview-hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+    max-width: 280px;
+  }
+
+  /* Mini card wrappers for both sides */
+  .mini-card-wrap {
+    width: 100%;
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 8px 24px rgba(60, 30, 20, 0.08);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+  }
+
+  .mini-card-wrap + .mini-card-wrap {
+    margin-top: 4px;
+  }
+
+  /* ---------- Errors ---------- */
+  .field-error {
+    color: #dc2626;
+    font-size: 0.78rem;
+    margin-top: 5px;
+    font-weight: 500;
+  }
+  .form-group.has-error input,
+  .form-group.has-error select {
+    border-color: #f87171;
+    background: #fef2f2;
+  }
+
+  .form-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    color: #991b1b;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 22px;
+    font-size: 0.88rem;
+  }
+  .form-errors strong {
+    display: block;
+    margin-bottom: 6px;
+  }
+  .form-errors ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .color-grid { grid-template-columns: 1fr; }
+    .settings-card { padding: 24px 20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="settings-layout">
+
+  <!-- ============================================================
+       LEFT: Form
+       ============================================================ -->
+  <div class="settings-card">
+    <h1>School Branding &amp; Settings</h1>
+    <p class="subtitle">
+      Customise your school's identity. Changes apply instantly across all
+      ID cards, the dashboard, and print layouts.
+    </p>
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <strong><i class="fas fa-triangle-exclamation"></i> Please fix the following:</strong>
+        <ul>
+          {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="settingsForm" novalidate>
+      {% csrf_token %}
+
+      <!-- ========== SECTION 1: Identity ========== -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-school"></i> Identity
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group full {% if form.name.errors %}has-error{% endif %}">
+            <label for="{{ form.name.id_for_label }}">School Name <span style="color:#dc2626;">*</span></label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="field-error">{{ form.name.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group {% if form.short_name.errors %}has-error{% endif %}">
+            <label for="{{ form.short_name.id_for_label }}">Short Name (ID Prefix)</label>
+            {{ form.short_name }}
+            <span class="helptext">
+              Used at the start of every Employee ID, e.g. <strong>EJSS</strong>-2026-001.
+            </span>
+            {% if form.short_name.errors %}<div class="field-error">{{ form.short_name.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group {% if form.established.errors %}has-error{% endif %}">
+            <label for="{{ form.established.id_for_label }}">Established</label>
+            {{ form.established }}
+            <span class="helptext">Year the school was founded.</span>
+            {% if form.established.errors %}<div class="field-error">{{ form.established.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group full {% if form.tagline.errors %}has-error{% endif %}">
+            <label for="{{ form.tagline.id_for_label }}">Tagline / Motto</label>
+            {{ form.tagline }}
+            {% if form.tagline.errors %}<div class="field-error">{{ form.tagline.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group full {% if form.scripture_ref.errors %}has-error{% endif %}">
+            <label for="{{ form.scripture_ref.id_for_label }}">Scripture Reference</label>
+            {{ form.scripture_ref }}
+            <span class="helptext">
+              Displayed on the back of cards and in the footer of internal documents.
+            </span>
+            {% if form.scripture_ref.errors %}<div class="field-error">{{ form.scripture_ref.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group full {% if form.address.errors %}has-error{% endif %}">
+            <label for="{{ form.address.id_for_label }}">School Address</label>
+            {{ form.address }}
+            <span class="helptext">Shown on the back of the ID card.</span>
+            {% if form.address.errors %}<div class="field-error">{{ form.address.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== SECTION 2: Contact ========== -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-phone"></i> Contact
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group {% if form.contact_phone_1.errors %}has-error{% endif %}">
+            <label for="{{ form.contact_phone_1.id_for_label }}">Primary Phone</label>
+            {{ form.contact_phone_1 }}
+            <span class="helptext">Shown on the back of the card.</span>
+            {% if form.contact_phone_1.errors %}<div class="field-error">{{ form.contact_phone_1.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group {% if form.contact_phone_2.errors %}has-error{% endif %}">
+            <label for="{{ form.contact_phone_2.id_for_label }}">Secondary Phone</label>
+            {{ form.contact_phone_2 }}
+            <span class="helptext">Optional second phone number.</span>
+            {% if form.contact_phone_2.errors %}<div class="field-error">{{ form.contact_phone_2.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== SECTION 3: Logo ========== -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-image"></i> Logo
+        </div>
+
+        <div class="form-group full {% if form.logo.errors %}has-error{% endif %}">
+          <div class="logo-field">
+            <div class="logo-preview" id="logoPreview">
+              {% if form.instance.logo %}
+                <img src="{{ form.instance.logo.url }}" alt="Current logo">
+              {% else %}
+                <i class="fas fa-graduation-cap" style="opacity:0.4;"></i>
+              {% endif %}
+            </div>
+            <div class="logo-input-wrap">
+              <label for="{{ form.logo.id_for_label }}" style="margin-bottom:8px;">Upload Logo</label>
+              {{ form.logo }}
+              <span class="helptext">
+                Recommended: PNG with transparent background, at least 400×400px.
+                Shown inside a circular frame on the ID card.
+              </span>
+              {% if form.instance.logo %}
+                <span class="helptext">
+                  Current: <a href="{{ form.instance.logo.url }}" target="_blank">view file</a>
+                </span>
+              {% endif %}
+            </div>
+          </div>
+          {% if form.logo.errors %}<div class="field-error">{{ form.logo.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <!-- ========== SECTION 4: Colors ========== -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-palette"></i> Brand Colors
+        </div>
+
+        <div class="color-grid">
+
+          <div class="color-field {% if form.primary_color.errors %}has-error{% endif %}">
+            <label for="{{ form.primary_color.id_for_label }}">Primary Color</label>
+            <div class="color-input-row">
+              {{ form.primary_color }}
+              <span class="color-hex" id="primaryHex">{{ form.primary_color.value|default:"#8B2020" }}</span>
+            </div>
+            <span class="helptext">Header background &amp; headline text.</span>
+          </div>
+
+          <div class="color-field {% if form.secondary_color.errors %}has-error{% endif %}">
+            <label for="{{ form.secondary_color.id_for_label }}">Secondary Color</label>
+            <div class="color-input-row">
+              {{ form.secondary_color }}
+              <span class="color-hex" id="secondaryHex">{{ form.secondary_color.value|default:"#C87A2C" }}</span>
+            </div>
+            <span class="helptext">Accents, borders, and gold bars.</span>
+          </div>
+
+          <div class="color-field {% if form.accent_color.errors %}has-error{% endif %}">
+            <label for="{{ form.accent_color.id_for_label }}">Accent / Cream</label>
+            <div class="color-input-row">
+              {{ form.accent_color }}
+              <span class="color-hex" id="accentHex">{{ form.accent_color.value|default:"#FBF6EC" }}</span>
+            </div>
+            <span class="helptext">Card background &amp; soft fills.</span>
+          </div>
+
+          <div class="color-field {% if form.text_color.errors %}has-error{% endif %}">
+            <label for="{{ form.text_color.id_for_label }}">Text Color</label>
+            <div class="color-input-row">
+              {{ form.text_color }}
+              <span class="color-hex" id="textHex">{{ form.text_color.value|default:"#2A1810" }}</span>
+            </div>
+            <span class="helptext">Body copy on light surfaces.</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ========== Actions ========== -->
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> Save Branding
+        </button>
+        <a href="{% url 'card_list' %}" class="btn btn-outline">
+          Cancel
+        </a>
+        <a href="/admin/id_cards/school/1/change/" target="_blank" class="btn btn-outline">
+          <i class="fas fa-shield-halved"></i> Advanced (Admin)
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- ============================================================
+       RIGHT: Live preview — front & back mini cards
+       ============================================================ -->
+  <div class="preview-panel no-print">
+    <div class="preview-label">Live Preview</div>
+
+    <!-- ============ FRONT MINI CARD ============ -->
+    <div class="mini-card-wrap">
+      <div id="miniCardFront" style="
+        width: 100%;
+        aspect-ratio: 2.125 / 3.375;
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--accent, #FBF6EC);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      ">
+        <!-- Header -->
+        <div style="
+          background: var(--primary, #8B2020);
+          padding: 10px 10px 8px 10px;
+          border-bottom: 2px solid var(--secondary, #C87A2C);
+        ">
+          <!-- Logo left + school name -->
+          <div style="display:flex; align-items:center; gap:6px; padding-bottom:5px;">
+            <div style="
+              width: 32px; height: 32px;
+              border-radius: 50%;
+              background: #FBF6EC;
+              border: 1.5px solid var(--secondary, #C87A2C);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              overflow: hidden;
+              flex-shrink: 0;
+            ">
+              {% if form.instance.logo %}
+                <img src="{{ form.instance.logo.url }}" alt=""
+                     style="width:100%; height:100%; object-fit:contain; padding:2px;">
+              {% else %}
+                <i class="fas fa-graduation-cap"
+                   style="font-size:0.8rem; color:var(--primary, #8B2020);"></i>
+              {% endif %}
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="
+                font-family: 'Cinzel', serif;
+                font-size: 6px;
+                font-weight: 700;
+                color: #F5C87A;
+                letter-spacing: 0.4px;
+                line-height: 1.1;
+                text-transform: uppercase;
+              ">EXCEL SENIOR SECONDARY</div>
+              <div style="
+                font-family: 'Cinzel', serif;
+                font-size: 6px;
+                font-weight: 700;
+                color: #F5C87A;
+                letter-spacing: 1.4px;
+                line-height: 1.1;
+                text-transform: uppercase;
+              ">SCHOOL</div>
+            </div>
+          </div>
+          <div style="
+            height: 0.5px;
+            background: linear-gradient(90deg, transparent, var(--secondary, #C87A2C), transparent);
+            opacity: 0.85;
+          "></div>
+        </div>
+
+        <!-- Role strip -->
+        <div id="miniRoleTag" style="
+          text-align: center;
+          font-family: 'Cinzel', serif;
+          font-size: 6px;
+          font-weight: 800;
+          color: var(--primary, #8B2020);
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          padding: 3px 6px;
+          border-top: 0.5px solid rgba(200,122,44,0.35);
+          border-bottom: 0.5px solid rgba(200,122,44,0.35);
+          background: linear-gradient(180deg, rgba(200,122,44,0.14) 0%, rgba(200,122,44,0.04) 100%);
+        ">FACULTY</div>
+
+        <!-- Photo -->
+        <div style="text-align:center; padding: 8px 0 0 0;">
+          <div style="
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: var(--accent, #FBF6EC);
+            border: 1.5px solid var(--secondary, #C87A2C);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--primary, #8B2020);
+          ">SC</div>
+        </div>
+
+        <!-- Name & details -->
+        <div style="text-align:center; padding: 6px 6px 0 6px; flex:1; display:flex; flex-direction:column;">
+          <div style="
+            font-family: 'Cinzel', serif;
+            font-size: 7px;
+            font-weight: 800;
+            color: var(--primary, #8B2020);
+            letter-spacing: 0.3px;
+          ">SARAH CHEN</div>
+
+          <div style="
+            font-size: 4.5px;
+            font-weight: 700;
+            color: var(--primary, #8B2020);
+            background: rgba(200,122,44,0.15);
+            padding: 1px 6px;
+            border-radius: 10px;
+            border: 0.4px solid rgba(200,122,44,0.4);
+            margin: 3px auto 0 auto;
+            display: inline-block;
+            letter-spacing: 0.3px;
+          ">SENIOR TEACHER</div>
+
+          <div style="
+            background: #fff;
+            border: 0.6px solid rgba(140,60,30,0.18);
+            border-radius: 4px;
+            padding: 4px;
+            margin-top: 5px;
+            font-size: 4px;
+            color: #2A1810;
+            line-height: 1.55;
+            text-align: center;
+          ">
+            <div><span style="color:#8A6A50;">ID:</span> <strong style="color:var(--primary, #8B2020);">EJSS-2026-001</strong></div>
+            <div><span style="color:#8A6A50;">Dept:</span> <strong style="color:var(--primary, #8B2020);">Mathematics</strong></div>
+            <div><span style="color:#8A6A50;">Levels:</span> <strong style="color:var(--primary, #8B2020);">JSS1, JSS2</strong></div>
+          </div>
+
+          <div style="flex:1;"></div>
+
+          <div style="
+            font-family: 'Cinzel', serif;
+            font-size: 4px;
+            font-weight: 700;
+            color: var(--primary, #8B2020);
+            letter-spacing: 0.8px;
+            padding-bottom: 5px;
+          ">STAFF IDENTIFICATION</div>
+        </div>
+
+        <!-- Gold bar -->
+        <div style="
+          height: 4px;
+          background: linear-gradient(90deg,
+            #8B5A1E 0%,
+            var(--secondary, #C87A2C) 25%,
+            #E8B860 50%,
+            var(--secondary, #C87A2C) 75%,
+            #8B5A1E 100%);
+        "></div>
+      </div>
+    </div>
+
+    <!-- ============ BACK MINI CARD ============ -->
+    <div class="mini-card-wrap">
+      <div id="miniCardBack" style="
+        width: 100%;
+        aspect-ratio: 2.125 / 3.375;
+        border-radius: 10px;
+        overflow: hidden;
+        background: linear-gradient(160deg, #1B2B44 0%, #16233A 50%, #0E1929 100%);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        position: relative;
+      ">
+        <!-- Black strip -->
+        <div style="height: 22px; background: #0A0F16;"></div>
+
+        <!-- Panel -->
+        <div style="
+          margin: 12px 8px 0 8px;
+          padding: 6px 8px;
+          border: 0.5px solid var(--secondary, #C87A2C);
+          background: #1B2B44;
+        ">
+          <div style="text-align:center; padding: 4px 0;">
+            <div style="
+              font-family: 'Cinzel', serif;
+              font-size: 6px;
+              font-weight: 800;
+              color: #F5C87A;
+              letter-spacing: 0.8px;
+              text-transform: uppercase;
+            ">Emergency Contact</div>
+            <div style="
+              font-size: 5px;
+              color: #E8EEF6;
+              margin-top: 2px;
+              line-height: 1.3;
+            " id="miniEmergencyPhone">+234 800 000 0000</div>
+          </div>
+        </div>
+
+        <!-- Blood group line -->
+        <div style="
+          text-align: center;
+          margin-top: 10px;
+          font-size: 5.5px;
+          color: #E8EEF6;
+        ">
+          <span style="color:#F5C87A; font-weight:bold;">BLOOD GROUP:</span>
+          <span style="color:#FFF; font-weight:bold;">O+</span>
+        </div>
+
+        <!-- Footer with school name + contact -->
+        <div style="
+          margin-top: auto;
+          text-align: center;
+          padding: 6px 10px 10px 10px;
+          font-size: 4.5px;
+          line-height: 1.35;
+          color: #C8D2E0;
+        ">
+          <div style="
+            font-size: 5.5px;
+            color: #FFFFFF;
+            font-weight: 700;
+            margin-bottom: 3px;
+            letter-spacing: 0.3px;
+          " id="miniBackSchoolName">{{ form.name.value|default:"Excel Junior Secondary School"|truncatechars:36 }}</div>
+          <div id="miniBackPhone1">{{ form.contact_phone_1.value|default:"—" }}</div>
+          <div id="miniBackPhone2">{{ form.contact_phone_2.value|default:"" }}</div>
+        </div>
+
+        <!-- Gold bar -->
+        <div style="
+          height: 5px;
+          background: linear-gradient(90deg,
+            #8B5A1E 0%,
+            var(--secondary, #C87A2C) 25%,
+            #E8B860 50%,
+            var(--secondary, #C87A2C) 75%,
+            #8B5A1E 100%);
+        "></div>
+      </div>
+    </div>
+
+    <p class="preview-hint">
+      Update the color pickers or contact fields to see the card change instantly.
+      Save to apply across all real cards.
+    </p>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  /* ============================================================
+     LIVE COLOR PREVIEW
+     ============================================================ */
+  (function () {
+    const root = document.documentElement;
+
+    const colorMap = {
+      primary_color:   '--primary',
+      secondary_color: '--secondary',
+      accent_color:    '--accent',
+      text_color:      '--text',
+    };
+
+    const hexLabels = {
+      primary_color:   'primaryHex',
+      secondary_color: 'secondaryHex',
+      accent_color:    'accentHex',
+      text_color:      'textHex',
+    };
+
+    Object.keys(colorMap).forEach(function (name) {
+      const input = document.querySelector('input[name="' + name + '"]');
+      const hexLabel = document.getElementById(hexLabels[name]);
+      if (!input) return;
+
+      if (hexLabel) hexLabel.textContent = input.value.toUpperCase();
+
+      function update() {
+        const val = input.value;
+        root.style.setProperty(colorMap[name], val);
+        if (hexLabel) hexLabel.textContent = val.toUpperCase();
+      }
+
+      input.addEventListener('input', update);
+      input.addEventListener('change', update);
+    });
+  })();
+
+  /* ============================================================
+     LIVE LOGO PREVIEW
+     ============================================================ */
+  (function () {
+    const fileInput = document.querySelector('input[type="file"][name="logo"]');
+    const previewBox = document.getElementById('logoPreview');
+    if (!fileInput || !previewBox) return;
+
+    fileInput.addEventListener('change', function (e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        previewBox.innerHTML = '<img src="' + ev.target.result + '" alt="Logo preview">';
+
+        // Also update the mini-card front logo
+        const miniLogoWrap = document.querySelector('#miniCardFront div div div');
+        if (miniLogoWrap) {
+          miniLogoWrap.innerHTML =
+            '<img src="' + ev.target.result + '" alt="" ' +
+            'style="width:100%; height:100%; object-fit:contain; padding:2px;">';
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  })();
+
+  /* ============================================================
+     LIVE SCHOOL NAME → mini front + mini back
+     ============================================================ */
+  (function () {
+    const nameInput = document.querySelector('input[name="name"]');
+    const miniBackName = document.getElementById('miniBackSchoolName');
+    if (!nameInput || !miniBackName) return;
+
+    nameInput.addEventListener('input', function () {
+      const val = nameInput.value || '—';
+      miniBackName.textContent = val.slice(0, 36);
+    });
+  })();
+
+  /* ============================================================
+     LIVE CONTACT PHONES → mini back
+     ============================================================ */
+  (function () {
+    const p1 = document.querySelector('input[name="contact_phone_1"]');
+    const p2 = document.querySelector('input[name="contact_phone_2"]');
+    const miniP1 = document.getElementById('miniBackPhone1');
+    const miniP2 = document.getElementById('miniBackPhone2');
+
+    if (p1 && miniP1) {
+      p1.addEventListener('input', function () {
+        miniP1.textContent = p1.value || '—';
+      });
+    }
+    if (p2 && miniP2) {
+      p2.addEventListener('input', function () {
+        miniP2.textContent = p2.value || '';
+      });
+    }
+  })();
+
+  /* ============================================================
+     LIVE SHORT NAME → mini role tag (front)
+     ============================================================ */
+  (function () {
+    const shortInput = document.querySelector('input[name="short_name"]');
+    const miniTag = document.getElementById('miniRoleTag');
+    if (!shortInput || !miniTag) return;
+
+    shortInput.addEventListener('input', function () {
+      const val = (shortInput.value || '').toUpperCase();
+      miniTag.textContent = val ? val : 'FACULTY';
+    });
+  })();
+
+  /* ============================================================
+     Ctrl/Cmd + Enter submits the form
+     ============================================================ */
+  (function () {
+    const form = document.getElementById('settingsForm');
+    if (!form) return;
+    form.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        form.submit();
+      }
+    });
+  })();
+</script>
+{% endblock %}

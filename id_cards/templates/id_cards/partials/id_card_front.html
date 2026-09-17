@@ -1,0 +1,386 @@
+{% load static %}
+
+<!-- ============================================================
+     FRONT OF CARD
+     ============================================================ -->
+<div class="id-card-front-wrapper">
+  <div class="id-card-front" style="
+    --primary: {{ school.primary_color|default:'#8B2020' }};
+    --secondary: {{ school.secondary_color|default:'#C87A2C' }};
+    --accent: {{ school.accent_color|default:'#FBF6EC' }};
+    --text: {{ school.text_color|default:'#2A1810' }};
+  ">
+
+    <!-- HEADER -->
+    <div class="front-card-header">
+      <div class="front-header-top">
+        <div class="front-header-logo">
+          {% if school.logo %}
+            <img src="{{ school.logo.url }}" alt="{{ school.name }}"
+                 style="width:100%; height:100%; object-fit:contain;">
+          {% else %}
+            <i class="fas fa-graduation-cap"
+               style="font-size: 1.1rem; color: var(--primary);"></i>
+          {% endif %}
+        </div>
+
+        <div class="front-header-text">
+          <div class="front-header-school-line1">EXCEL ACADEMY</div>
+        </div>
+      </div>
+
+      <div class="front-gold-divider"></div>
+    </div>
+
+    <!-- ROLE — just above the profile picture -->
+    <div class="front-role-above-photo">
+      {{ teacher.get_role_display|default:"Faculty"|upper }}
+    </div>
+
+    <!-- PHOTO -->
+    <div class="front-photo-section">
+      <div class="front-photo-ring">
+        {% if teacher.photo %}
+          <img src="{{ teacher.photo.url }}" alt="{{ teacher.full_name }}">
+        {% else %}
+          <div class="front-photo-placeholder">
+            {{ teacher.initials|default:"?" }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="front-info">
+      <div class="front-teacher-name">{{ teacher.full_name|upper }}</div>
+      <div class="front-designation">{{ teacher.designation|upper|truncatechars:40 }}</div>
+
+      <div class="front-details-panel">
+        <div class="front-details">
+          <div>
+            <span class="front-label">Department :</span>
+            <span class="front-value">{{ teacher.department_display }}</span>
+          </div>
+
+          {% if teacher.phone %}
+          <div>
+            <span class="front-label">Phone :</span>
+            <span class="front-value">{{ teacher.phone }}</span>
+          </div>
+          {% endif %}
+
+          {% if teacher.valid_thru %}
+          <div>
+            <span class="front-label">Valid Till :</span>
+            <span class="front-value">{{ teacher.valid_thru|date:"m/Y" }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="front-footer">
+      <div class="front-staff-info">
+        {{ teacher.template.card_footer_text|default:"STAFF IDENTIFICATION" }}
+      </div>
+    </div>
+
+    {% if not teacher.template or teacher.template.show_hologram %}
+    <div class="front-holo-sticker">
+      <div class="front-holo-short-name">{{ school.short_name|default:"ID"|upper|slice:":5" }}</div>
+      <div class="front-holo-authentic">AUTHENTIC</div>
+    </div>
+    {% endif %}
+
+    {% if not teacher.template or teacher.template.show_gold_bar %}
+    <div class="front-gold-bar"></div>
+    {% endif %}
+
+  </div>
+</div>
+
+<style>
+  /* ============================================================
+     FRONT OF CARD — self-contained styles
+     ============================================================ */
+
+  .id-card-front-wrapper {
+    display: inline-block;
+    padding: 12px;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.7),
+      rgba(255, 255, 255, 0.35)
+    );
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow: 0 20px 45px -15px rgba(60, 30, 20, 0.35);
+  }
+
+  .id-card-front {
+    width: 2.125in;
+    height: 3.375in;
+    background: var(--accent);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 10px rgba(60, 30, 20, 0.25);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+  }
+
+  /* --- Header --- */
+  .front-card-header {
+    background: linear-gradient(160deg, var(--primary) 0%, #5A1414 100%);
+    padding: 8px 8px 6px 8px;
+    position: relative;
+    border-bottom: 2px solid var(--secondary);
+  }
+
+  .front-header-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 5px;
+  }
+
+  .front-header-logo {
+    width: 0.45in;
+    height: 0.45in;
+    border-radius: 50%;
+    background: #FBF6EC;
+    border: 1.5px solid var(--secondary);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+
+  .front-header-text {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+  }
+
+  .front-header-school-line1 {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #F5C87A;
+    text-transform: uppercase;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-bottom: 4px;
+  }
+
+  .front-header-school-line2 {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    color: #F5C87A;
+    text-transform: uppercase;
+    line-height: 1.15;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .front-gold-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+    margin: 2px auto 0 auto;
+    opacity: 0.85;
+  }
+
+  /* --- Role strip above the photo --- */
+  .front-role-above-photo {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1.2px;
+    color: var(--primary);
+    background: linear-gradient(
+      180deg,
+      rgba(200, 122, 44, 0.14) 0%,
+      rgba(200, 122, 44, 0.04) 100%
+    );
+    border-top: 0.5px solid rgba(200, 122, 44, 0.35);
+    border-bottom: 0.5px solid rgba(200, 122, 44, 0.35);
+    padding: 3px 8px;
+    text-transform: uppercase;
+  }
+
+  /* --- Photo --- */
+  .front-photo-section {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+    position: relative;
+    z-index: 5;
+  }
+
+  .front-photo-ring {
+    width: 1.05in;
+    height: 1.05in;
+    border-radius: 50%;
+    background: var(--accent);
+    padding: 4px;
+    border: 2px solid var(--secondary);
+    box-shadow: 0 6px 16px -2px rgba(60, 30, 20, 0.45);
+    overflow: hidden;
+  }
+
+  .front-photo-ring img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+  }
+
+  .front-photo-placeholder {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 1.8rem;
+    color: var(--primary);
+  }
+
+  /* --- Info block --- */
+  .front-info {
+    text-align: center;
+    padding: 8px 8px 0 8px;
+    position: relative;
+    z-index: 3;
+  }
+
+  .front-teacher-name {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    color: var(--primary);
+    line-height: 1.15;
+    word-break: break-word;
+  }
+
+  .front-designation {
+    font-family: 'Inter', sans-serif;
+    font-size: 6px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+    text-transform: uppercase;
+    display: inline-block;
+    background: rgba(200, 122, 44, 0.15);
+    padding: 1.5px 8px;
+    border-radius: 20px;
+    border: 0.4px solid rgba(200, 122, 44, 0.4);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .front-details-panel {
+    margin: 6px 8px 0 8px;
+    padding: 5px 6px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAF4E8 100%);
+    border: 0.6px solid rgba(140, 60, 30, 0.18);
+    border-radius: 5px;
+  }
+
+  .front-details {
+    font-family: 'Inter', sans-serif;
+    font-size: 8px;
+    line-height: 1.65;
+    color: var(--text);
+    text-align: center;
+  }
+
+  .front-details div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .front-details .front-label { color: #8A6A50; font-weight: 500; }
+  .front-details .front-value { color: var(--primary); font-weight: 700; }
+
+  /* --- Footer --- */
+  .front-footer {
+    margin-top: auto;
+    text-align: center;
+    padding: 3px 8px 4px 8px;
+    position: relative;
+    z-index: 4;
+  }
+
+  .front-staff-info {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1.1px;
+  }
+
+  /* --- Hologram --- */
+  .front-holo-sticker {
+    position: absolute;
+    bottom: 7px; right: 7px;
+    width: 30px; height: 22px;
+    border-radius: 3px;
+    background: conic-gradient(
+      from 210deg at 50% 50%,
+      #F5EDE0 0deg, #D8B890 60deg, #FFF8EC 120deg,
+      #B89878 180deg, #F0E0C8 240deg, #D0B090 300deg, #F5EDE0 360deg
+    );
+    border: 0.7px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 5px rgba(60, 30, 20, 0.35);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--primary);
+    text-align: center;
+    line-height: 1.05;
+    z-index: 5;
+  }
+
+  .front-holo-short-name { font-size: 4.4px; font-weight: 800; }
+  .front-holo-authentic { font-size: 3.2px; font-weight: 700; margin-top: 0.4px; }
+
+  /* --- Gold bar --- */
+  .front-gold-bar {
+    height: 5px;
+    width: 100%;
+    margin-top: auto;
+    background: linear-gradient(
+      90deg,
+      #8B5A1E 0%,
+      var(--secondary) 25%,
+      #E8B860 50%,
+      var(--secondary) 75%,
+      #8B5A1E 100%
+    );
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  }
+</style>

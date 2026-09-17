@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Staff ID Manager{% endblock %}</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+  /* ====================================================================
+     THEME VARIABLES — driven by School branding from context
+     ==================================================================== */
+  :root {
+    --primary:   {{ school.primary_color|default:"#8B2020" }};
+    --secondary: {{ school.secondary_color|default:"#C87A2C" }};
+    --accent:    {{ school.accent_color|default:"#FBF6EC" }};
+    --text:      {{ school.text_color|default:"#2A1810" }};
+
+    --primary-dark: #5A1414;
+    --secondary-dark: #8B4513;
+    --muted: #7a6a5a;
+    --border: #e0d8cc;
+  }
+
+  /* ====================================================================
+     RESET
+     ==================================================================== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f5f2ed 0%, #ebe5dc 100%);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ====================================================================
+     TOP NAVIGATION
+     ==================================================================== */
+  .topbar {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #fff;
+    padding: 14px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 4px 20px rgba(90, 20, 20, 0.25);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-decoration: none;
+    color: #fff;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .topbar .brand i {
+    font-size: 1.4rem;
+    color: var(--secondary);
+    flex-shrink: 0;
+  }
+
+  .topbar .brand .brand-name {
+    /* Allow the full name to be shown, wrapping to two lines if needed */
+    line-height: 1.15;
+    max-width: 380px;
+    white-space: normal;
+    overflow: visible;
+    word-break: break-word;
+  }
+
+  .topbar nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .topbar nav a {
+    color: #fff;
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    opacity: 0.9;
+    transition: background 0.2s, opacity 0.2s;
+    white-space: nowrap;
+  }
+
+  .topbar nav a:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .topbar nav a.active {
+    background: rgba(255, 255, 255, 0.18);
+    opacity: 1;
+  }
+
+  .topbar nav a i { margin-right: 6px; }
+
+  /* Dropdown group */
+  .nav-group {
+    position: relative;
+  }
+  .nav-group > a::after {
+    content: "\f107";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    margin-left: 6px;
+    font-size: 0.75rem;
+  }
+  .nav-group .dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: #fff;
+    color: var(--text);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(60, 30, 20, 0.18);
+    padding: 8px;
+    min-width: 200px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity 0.18s, transform 0.18s, visibility 0.18s;
+    z-index: 60;
+  }
+  .nav-group:hover .dropdown,
+  .nav-group:focus-within .dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  .nav-group .dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    border-radius: 8px;
+    opacity: 1;
+    font-weight: 500;
+  }
+  .nav-group .dropdown a:hover {
+    background: var(--accent);
+    color: var(--primary);
+  }
+  .nav-group .dropdown a i {
+    color: var(--secondary);
+    width: 16px;
+    margin: 0;
+  }
+
+  /* ====================================================================
+     LAYOUT
+     ==================================================================== */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .page-header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.85rem;
+    color: var(--primary);
+    font-weight: 800;
+    line-height: 1.15;
+  }
+
+  .page-header p {
+    color: var(--muted);
+    margin-top: 4px;
+    font-size: 0.9rem;
+  }
+
+  .page-header .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ====================================================================
+     BUTTONS
+     ==================================================================== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+    font-family: 'Inter', sans-serif;
+    line-height: 1;
+  }
+  .btn i { font-size: 0.9rem; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(139, 32, 32, 0.35);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(139, 32, 32, 0.45);
+  }
+
+  .btn-secondary {
+    background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(200, 122, 44, 0.3);
+  }
+  .btn-secondary:hover { transform: translateY(-2px); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--primary);
+    border: 1.5px solid var(--primary);
+  }
+  .btn-outline:hover { background: var(--primary); color: #fff; }
+
+  .btn-danger {
+    background: #dc2626;
+    color: #fff;
+  }
+  .btn-danger:hover { background: #b91c1c; }
+
+  .btn-sm {
+    padding: 7px 12px;
+    font-size: 0.78rem;
+    border-radius: 8px;
+  }
+
+  /* ====================================================================
+     CARDS GRID — teachers / departments / levels
+     ==================================================================== */
+  .teachers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+  }
+
+  .teacher-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(60, 30, 20, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid rgba(139, 32, 32, 0.06);
+  }
+
+  .teacher-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(60, 30, 20, 0.15);
+  }
+
+  .teacher-card .header {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .teacher-card .avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--secondary);
+    background: var(--accent);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 1.1rem;
+  }
+  .teacher-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .teacher-card h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--primary);
+    margin-bottom: 3px;
+    line-height: 1.2;
+  }
+
+  .teacher-card .role {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .teacher-card .meta {
+    font-size: 0.8rem;
+    color: #5a4a3a;
+    padding: 10px 0;
+    border-top: 1px dashed rgba(139, 32, 32, 0.15);
+    border-bottom: 1px dashed rgba(139, 32, 32, 0.15);
+    margin-bottom: 12px;
+  }
+  .teacher-card .meta div { margin: 3px 0; }
+  .teacher-card .meta i { color: var(--secondary); width: 16px; }
+
+  .teacher-card .actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* ====================================================================
+     BADGES
+     ==================================================================== */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+  }
+  .badge-active   { background: #dcfce7; color: #166534; }
+  .badge-inactive { background: #fef3c7; color: #92400e; }
+  .badge-expired  { background: #fee2e2; color: #991b1b; }
+  .badge-role     { background: #e0e7ff; color: #3730a3; }
+
+  /* ====================================================================
+     FORMS
+     ==================================================================== */
+  .form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px;
+    box-shadow: 0 8px 32px rgba(60, 30, 20, 0.1);
+  }
+
+  .form-container h2 {
+    font-family: 'Cinzel', serif;
+    color: var(--primary);
+    margin-bottom: 24px;
+    font-size: 1.5rem;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .form-group { margin-bottom: 18px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--primary);
+  }
+
+  .form-input,
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fdfcf9;
+    color: var(--text);
+  }
+
+  .form-input:focus,
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 3px rgba(200, 122, 44, 0.15);
+  }
+
+  .form-group small,
+  .form-group .helptext {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .color-input {
+    width: 60px;
+    height: 42px;
+    padding: 3px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+  }
+
+  /* ====================================================================
+     MESSAGES
+     ==================================================================== */
+  .messages { margin-bottom: 20px; }
+
+  .message {
+    padding: 14px 20px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .message.success { background: #dcfce7; color: #166534; border-left: 4px solid #16a34a; }
+  .message.error   { background: #fee2e2; color: #991b1b; border-left: 4px solid #dc2626; }
+  .message.warning { background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; }
+  .message.info    { background: #dbeafe; color: #1e40af; border-left: 4px solid #3b82f6; }
+
+  /* ====================================================================
+     STATS
+     ==================================================================== */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 14px;
+    border-left: 4px solid var(--secondary);
+    box-shadow: 0 2px 10px rgba(60, 30, 20, 0.06);
+  }
+
+  .stat-card .num {
+    font-family: 'Cinzel', serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1.1;
+  }
+
+  .stat-card .lbl {
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 4px;
+  }
+
+  /* ====================================================================
+     RESPONSIVE
+     ==================================================================== */
+  @media (max-width: 900px) {
+    .topbar {
+      padding: 12px 16px;
+      flex-wrap: wrap;
+    }
+    .topbar nav {
+      width: 100%;
+      justify-content: flex-start;
+    }
+    .container { padding: 20px 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .topbar .brand .brand-name { max-width: 100%; }
+  }
+
+  @media (max-width: 600px) {
+    .topbar .brand { font-size: 0.95rem; }
+    .topbar .brand .brand-name { max-width: 100%; font-size: 0.92rem; }
+    .topbar nav a { padding: 6px 10px; font-size: 0.8rem; }
+    .topbar nav a i { margin-right: 4px; }
+    .page-header h1 { font-size: 1.4rem; }
+  }
+
+  /* ====================================================================
+     PRINT
+     ==================================================================== */
+  @media print {
+    body { background: #fff; }
+    .topbar, .page-header, .no-print { display: none !important; }
+    .container { padding: 0; max-width: none; }
+  }
+</style>
+
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ==================================================================
+     TOP NAVIGATION
+     ================================================================== -->
+<div class="topbar no-print">
+  <a href="{% url 'card_list' %}" class="brand">
+    <i class="fas fa-id-card"></i>
+    <span class="brand-name">{{ school.name|default:"Staff ID Manager" }}</span>
+  </a>
+
+  <nav>
+    <a href="{% url 'card_list' %}"
+       class="{% if request.resolver_match.url_name == 'card_list' %}active{% endif %}">
+      <i class="fas fa-users"></i> All Cards
+    </a>
+
+    <a href="{% url 'card_create' %}"
+       class="{% if request.resolver_match.url_name == 'card_create' %}active{% endif %}">
+      <i class="fas fa-plus"></i> New
+    </a>
+
+    <a href="{% url 'card_print_all' %}">
+      <i class="fas fa-print"></i> Print All
+    </a>
+
+    <div class="nav-group">
+      <a href="#"><i class="fas fa-cog"></i> Manage</a>
+      <div class="dropdown">
+        <a href="{% url 'department_list' %}">
+          <i class="fas fa-building"></i> Departments
+        </a>
+        <a href="{% url 'level_list' %}">
+          <i class="fas fa-layer-group"></i> Levels
+        </a>
+        <a href="{% url 'bulk_import' %}">
+          <i class="fas fa-file-csv"></i> Bulk Import
+        </a>
+        <a href="{% url 'school_settings' %}">
+          <i class="fas fa-palette"></i> School Settings
+        </a>
+        <a href="/admin/" target="_blank">
+          <i class="fas fa-shield-halved"></i> Django Admin
+        </a>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<!-- ==================================================================
+     MAIN CONTENT
+     ================================================================== -->
+<div class="container">
+  {% if messages %}
+    <div class="messages">
+      {% for msg in messages %}
+        <div class="message {{ msg.tags }}">
+          {% if msg.tags == 'success' %}
+            <i class="fas fa-circle-check"></i>
+          {% elif msg.tags == 'error' %}
+            <i class="fas fa-circle-exclamation"></i>
+          {% elif msg.tags == 'warning' %}
+            <i class="fas fa-triangle-exclamation"></i>
+          {% else %}
+            <i class="fas fa-circle-info"></i>
+          {% endif %}
+          <span>{{ msg }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</div>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

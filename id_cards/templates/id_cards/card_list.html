@@ -1,0 +1,542 @@
+{% extends "id_cards/base.html" %}
+{% block title %}All Staff ID Cards{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     FILTER BAR
+     ============================================================ */
+  .filter-bar {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(60, 30, 20, 0.06);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .filter-bar .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+    flex: 1 1 140px;
+  }
+
+  .filter-bar label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+  }
+
+  .filter-bar select,
+  .filter-bar input {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    font-size: 0.88rem;
+    font-family: 'Inter', sans-serif;
+    background: #fdfcf9;
+    color: var(--text);
+    width: 100%;
+  }
+
+  .filter-bar select:focus,
+  .filter-bar input:focus {
+    outline: none;
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 3px rgba(200, 122, 44, 0.15);
+    background: #fff;
+  }
+
+  .filter-bar .filter-actions {
+    display: flex;
+    gap: 8px;
+    align-self: flex-end;
+  }
+
+  /* Active filter chips */
+  .active-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  .active-filters .label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: var(--accent);
+    border: 1px solid rgba(200, 122, 44, 0.35);
+    border-radius: 20px;
+    font-size: 0.78rem;
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .filter-chip:hover {
+    background: #f0e2cc;
+  }
+  .filter-chip i {
+    font-size: 0.7rem;
+    opacity: 0.7;
+  }
+
+  /* ============================================================
+     TEACHER CARD — ENHANCED
+     ============================================================ */
+  .teacher-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .teacher-card .badge-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  .teacher-card .meta {
+    flex: 1;
+  }
+
+  .teacher-card .meta a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .teacher-card .meta a:hover {
+    color: var(--primary);
+    text-decoration: underline;
+  }
+
+  /* Level mini-tags inside the meta */
+  .meta-levels {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    padding-left: 22px;
+  }
+  .meta-level-tag {
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: var(--accent);
+    border: 1px solid rgba(200, 122, 44, 0.3);
+    color: var(--primary);
+    letter-spacing: 0.3px;
+  }
+
+  /* Blood group chip on card */
+  .meta-blood {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    margin-top: 4px;
+    margin-left: 22px;
+  }
+  .meta-blood i {
+    color: #dc2626;
+    font-size: 0.6rem;
+    width: auto;
+  }
+
+  /* Grouped actions */
+  .teacher-card .actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .teacher-card .actions .spacer {
+    flex: 1;
+  }
+  .teacher-card .actions .icon-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 8px;
+  }
+
+  /* ============================================================
+     EMPTY STATE
+     ============================================================ */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 70px 24px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(60, 30, 20, 0.06);
+    border: 1px dashed rgba(139, 32, 32, 0.18);
+  }
+  .empty-state i {
+    font-size: 4rem;
+    opacity: 0.25;
+    color: var(--primary);
+  }
+  .empty-state h2 {
+    margin-top: 20px;
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
+    color: var(--primary);
+    font-weight: 800;
+  }
+  .empty-state p {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.92rem;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+  }
+  .empty-state .empty-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ============================================================
+     RESULTS COUNT STRIP
+     ============================================================ */
+  .results-count {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .results-count .count-num {
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .results-count .sort-hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 700px) {
+    .filter-bar .filter-group {
+      min-width: 100%;
+      flex: 1 1 100%;
+    }
+    .filter-bar .filter-actions {
+      width: 100%;
+    }
+    .filter-bar .filter-actions .btn {
+      flex: 1;
+      justify-content: center;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     PAGE HEADER
+     ============================================================ -->
+<div class="page-header">
+  <div>
+    <h1>Staff ID Cards</h1>
+    <p>
+      {% if teachers %}
+        {{ teachers|length }} staff record{{ teachers|length|pluralize }} on file
+      {% else %}
+        No records yet
+      {% endif %}
+    </p>
+  </div>
+  <div class="actions">
+    <a href="{% url 'bulk_import' %}" class="btn btn-outline">
+      <i class="fas fa-file-csv"></i> Bulk Import
+    </a>
+    <a href="{% url 'card_print_all' %}" class="btn btn-secondary">
+      <i class="fas fa-print"></i> Print All
+    </a>
+    <a href="{% url 'card_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> New Staff
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================
+     STATS
+     ============================================================ -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="num">{{ stats.total|default:teachers.count }}</div>
+    <div class="lbl">Total Staff</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">{{ stats.active|default:0 }}</div>
+    <div class="lbl">Active</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">{{ stats.teachers|default:0 }}</div>
+    <div class="lbl">Teachers</div>
+  </div>
+  <div class="stat-card">
+    <div class="num">{{ stats.departments|default:0 }}</div>
+    <div class="lbl">Departments</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     FILTER BAR
+     ============================================================ -->
+<form method="get" class="filter-bar no-print">
+
+  <div class="filter-group" style="flex: 2 1 240px;">
+    <label for="q">Search</label>
+    <input type="text" name="q" id="q"
+           placeholder="Name, employee ID, email, or phone…"
+           value="{{ current_filters.q }}">
+  </div>
+
+  <div class="filter-group">
+    <label for="role">Role</label>
+    <select name="role" id="role">
+      <option value="">All roles</option>
+      {% for key, label in roles %}
+        <option value="{{ key }}" {% if current_filters.role == key %}selected{% endif %}>
+          {{ label }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label for="dept">Department</label>
+    <select name="dept" id="dept">
+      <option value="">All departments</option>
+      {% for d in departments %}
+        <option value="{{ d.id }}" {% if current_filters.dept == d.id|stringformat:"s" %}selected{% endif %}>
+          {{ d.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label for="status">Status</label>
+    <select name="status" id="status">
+      <option value="">All statuses</option>
+      <option value="active"   {% if current_filters.status == 'active' %}selected{% endif %}>Active</option>
+      <option value="inactive" {% if current_filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+      <option value="expired"  {% if current_filters.status == 'expired' %}selected{% endif %}>Expired</option>
+    </select>
+  </div>
+
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="fas fa-filter"></i> Filter
+    </button>
+    <a href="{% url 'card_list' %}" class="btn btn-outline btn-sm" title="Clear all filters">
+      <i class="fas fa-xmark"></i> Clear
+    </a>
+  </div>
+</form>
+
+<!-- ============================================================
+     ACTIVE FILTER CHIPS
+     ============================================================ -->
+{% if current_filters.q or current_filters.role or current_filters.dept or current_filters.status %}
+  <div class="active-filters no-print">
+    <span class="label">Active filters:</span>
+
+    {% if current_filters.q %}
+      <a href="?{% if current_filters.role %}role={{ current_filters.role }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}{% endif %}"
+         class="filter-chip">
+        <i class="fas fa-magnifying-glass"></i> "{{ current_filters.q }}" <i class="fas fa-xmark"></i>
+      </a>
+    {% endif %}
+
+    {% if current_filters.role %}
+      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}{% endif %}"
+         class="filter-chip">
+        <i class="fas fa-briefcase"></i> {{ current_filters.role }} <i class="fas fa-xmark"></i>
+      </a>
+    {% endif %}
+
+    {% if current_filters.dept %}
+      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.role %}role={{ current_filters.role }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}{% endif %}"
+         class="filter-chip">
+        <i class="fas fa-building"></i> Dept #{{ current_filters.dept }} <i class="fas fa-xmark"></i>
+      </a>
+    {% endif %}
+
+    {% if current_filters.status %}
+      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.role %}role={{ current_filters.role }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept }}{% endif %}"
+         class="filter-chip">
+        <i class="fas fa-circle"></i> {{ current_filters.status|title }} <i class="fas fa-xmark"></i>
+      </a>
+    {% endif %}
+
+    <a href="{% url 'card_list' %}" class="filter-chip" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">
+      <i class="fas fa-xmark"></i> Clear all
+    </a>
+  </div>
+{% endif %}
+
+<!-- ============================================================
+     RESULTS COUNT
+     ============================================================ -->
+{% if teachers %}
+  <div class="results-count">
+    <div>
+      Showing <span class="count-num">{{ teachers|length }}</span>
+      result{{ teachers|length|pluralize }}
+    </div>
+    <div class="sort-hint">
+      <i class="fas fa-sort-alpha-down"></i> Sorted alphabetically by name
+    </div>
+  </div>
+{% endif %}
+
+<!-- ============================================================
+     CARD GRID
+     ============================================================ -->
+<div class="teachers-grid">
+  {% for teacher in teachers %}
+    <div class="teacher-card">
+
+      <!-- Header: avatar + name + badges -->
+      <div class="header">
+        <div class="avatar">
+          {% if teacher.photo %}
+            <img src="{{ teacher.photo.url }}" alt="{{ teacher.full_name }}">
+          {% else %}
+            {{ teacher.initials }}
+          {% endif %}
+        </div>
+        <div style="flex:1; min-width:0;">
+          <h3>
+            <a href="{% url 'card_detail' teacher.pk %}"
+               style="color:inherit; text-decoration:none;">
+              {{ teacher.full_name }}
+            </a>
+          </h3>
+          <div class="role">{{ teacher.designation }}</div>
+          <div class="badge-row">
+            <span class="badge badge-{{ teacher.status }}">{{ teacher.get_status_display }}</span>
+            <span class="badge badge-role">{{ teacher.get_role_display }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meta info -->
+      <div class="meta">
+        <div><i class="fas fa-id-badge"></i> {{ teacher.employee_id }}</div>
+        <div><i class="fas fa-building"></i> {{ teacher.department_display }}</div>
+
+        {% if teacher.valid_thru %}
+          <div>
+            <i class="fas fa-calendar-check"></i>
+            Valid thru: {{ teacher.valid_thru|date:"M Y" }}
+          </div>
+        {% endif %}
+
+        {% if teacher.levels_display %}
+          <div class="meta-levels">
+            {% for level in teacher.levels.all %}
+              <span class="meta-level-tag">{{ level.name }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if teacher.blood_group %}
+          <div class="meta-blood">
+            <i class="fas fa-droplet"></i> {{ teacher.blood_group }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <a href="{% url 'card_detail' teacher.pk %}" class="btn btn-outline btn-sm">
+          <i class="fas fa-eye"></i> View
+        </a>
+        <a href="{% url 'card_edit' teacher.pk %}" class="btn btn-outline btn-sm">
+          <i class="fas fa-pen"></i>
+        </a>
+        <div class="spacer"></div>
+        <a href="{% url 'card_print' teacher.pk %}"
+           class="btn btn-secondary btn-sm icon-btn"
+           title="Print">
+          <i class="fas fa-print"></i>
+        </a>
+        <a href="{% url 'card_pdf' teacher.pk %}"
+           class="btn btn-primary btn-sm icon-btn"
+           title="Download PDF">
+          <i class="fas fa-file-pdf"></i>
+        </a>
+      </div>
+    </div>
+  {% empty %}
+    <div class="empty-state">
+      <i class="fas fa-id-card"></i>
+      {% if current_filters.q or current_filters.role or current_filters.dept or current_filters.status %}
+        <h2>No results match your filters</h2>
+        <p>Try widening your search or clearing some filters to see more staff.</p>
+        <div class="empty-actions">
+          <a href="{% url 'card_list' %}" class="btn btn-outline">
+            <i class="fas fa-xmark"></i> Clear Filters
+          </a>
+        </div>
+      {% else %}
+        <h2>No staff records yet</h2>
+        <p>
+          Get started by adding your first staff member or importing a list of
+          staff from a CSV file.
+        </p>
+        <div class="empty-actions">
+          <a href="{% url 'card_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add First Staff
+          </a>
+          <a href="{% url 'bulk_import' %}" class="btn btn-outline">
+            <i class="fas fa-file-csv"></i> Bulk Import
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

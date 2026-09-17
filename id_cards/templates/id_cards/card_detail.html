@@ -1,0 +1,618 @@
+{% extends "id_cards/base.html" %}
+{% block title %}{{ teacher.full_name }} — Staff ID{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ============================================================
+     MAIN LAYOUT
+     Three columns on one line: [FRONT] [BACK] [INFO]
+     ============================================================ */
+  .detail-layout {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+    padding: 12px 0 40px;
+    max-width: 1500px;
+    margin: 0 auto;
+  }
+
+  /* ============================================================
+     COLUMN 1 & 2: card previews (front + back)
+     ============================================================ */
+  .card-previews-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-preview .preview-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-preview .preview-label .label-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--accent);
+    border: 1px solid rgba(200, 122, 44, 0.35);
+    color: var(--primary);
+    font-weight: 800;
+  }
+
+  /* ============================================================
+     HOVER-TO-ZOOM WRAPPER
+     ============================================================ */
+  .preview-zoom {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    cursor: zoom-in;
+    border-radius: 20px;
+  }
+
+  .preview-zoom .preview-zoom-inner {
+    transition:
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      filter 0.35s ease;
+    transform-origin: center center;
+    will-change: transform;
+  }
+
+  .preview-zoom:hover .preview-zoom-inner {
+    transform: scale(1.55);
+    filter: drop-shadow(0 30px 60px rgba(60, 30, 20, 0.4));
+    z-index: 100;
+    position: relative;
+  }
+
+  .preview-zoom:hover {
+    cursor: zoom-out;
+  }
+
+  /* Small caption under each card */
+  .preview-zoom-hint {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  /* ============================================================
+     COLUMN 3: info panel
+     ============================================================ */
+  .info-panel {
+    background: #fff;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 8px 32px rgba(60, 30, 20, 0.08);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+    min-width: 0; /* allow text truncation inside grid item */
+  }
+
+  .info-panel .panel-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding-bottom: 18px;
+    border-bottom: 1px dashed rgba(139, 32, 32, 0.15);
+    margin-bottom: 16px;
+  }
+
+  .info-panel .panel-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--secondary);
+    background: var(--accent);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--primary);
+  }
+  .info-panel .panel-avatar img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+
+  .info-panel .panel-header-text { flex: 1; min-width: 0; }
+
+  .info-panel .panel-header-text h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    color: var(--primary);
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 3px;
+  }
+
+  .info-panel .panel-header-text .sub {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* --- Section titles --- */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 20px 0 10px 0;
+  }
+  .section-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(200,122,44,0.3), transparent);
+  }
+  .section-label:first-of-type { margin-top: 0; }
+
+  /* --- Info grid --- */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 20px;
+    margin-bottom: 6px;
+  }
+
+  .info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+  }
+
+  .info-item .info-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--secondary);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .info-item .info-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .info-item .info-label {
+    font-size: 0.66rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .info-item .info-value {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.3;
+  }
+
+  .info-item .info-value.empty {
+    color: #b0a090;
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  /* --- Blood group badge --- */
+  .blood-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    border: 1px solid #fecaca;
+  }
+
+  /* --- Level tags --- */
+  .level-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 3px;
+  }
+  .level-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--accent);
+    border: 1px solid rgba(200, 122, 44, 0.35);
+    color: var(--primary);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  /* --- Actions --- */
+  .panel-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 18px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.15);
+    margin-top: 18px;
+  }
+  .panel-actions .btn {
+    padding: 9px 14px;
+    font-size: 0.82rem;
+  }
+
+  /* --- Danger zone --- */
+  .danger-zone {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .danger-zone .danger-text {
+    font-size: 0.78rem;
+    color: #991b1b;
+    flex: 1;
+    min-width: 0;
+  }
+  .danger-zone .danger-text strong {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  /* ============================================================
+     RESPONSIVE
+     On smaller screens, the three columns collapse progressively
+     ============================================================ */
+
+  /* Tablet: side-by-side cards, info below */
+  @media (max-width: 1200px) {
+    .detail-layout {
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .info-panel {
+      grid-column: 1 / -1;   /* span both columns, full width */
+    }
+    .preview-zoom:hover .preview-zoom-inner {
+      transform: scale(1.35);
+    }
+  }
+
+  /* Small tablet / large phone: stack everything */
+  @media (max-width: 800px) {
+    .detail-layout {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    .card-previews-col {
+      /* still center each card */
+    }
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+    .preview-zoom:hover .preview-zoom-inner {
+      transform: scale(1.2);
+    }
+  }
+
+  /* Phone: reduce padding further */
+  @media (max-width: 500px) {
+    .preview-zoom {
+      padding: 8px;
+    }
+    .info-panel {
+      padding: 20px 16px;
+    }
+    .preview-zoom:hover .preview-zoom-inner {
+      transform: scale(1.1);
+    }
+  }
+
+  /* --- Accessibility --- */
+  @media (prefers-reduced-motion: reduce) {
+    .preview-zoom .preview-zoom-inner {
+      transition: none;
+    }
+    .preview-zoom:hover .preview-zoom-inner {
+      transform: none;
+      filter: drop-shadow(0 20px 40px rgba(60, 30, 20, 0.25));
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ==================================================================
+     PAGE HEADER
+     ================================================================== -->
+<div class="page-header">
+  <div>
+    <h1>{{ teacher.full_name }}</h1>
+    <p>
+      {{ teacher.designation }}
+      <span style="margin: 0 6px; opacity: 0.4;">·</span>
+      <span style="font-family: monospace; font-weight: 600;">{{ teacher.employee_id }}</span>
+    </p>
+  </div>
+  <div class="actions">
+    <a href="{% url 'card_list' %}" class="btn btn-outline">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <a href="{% url 'card_edit' teacher.pk %}" class="btn btn-secondary">
+      <i class="fas fa-pen"></i> Edit
+    </a>
+  </div>
+</div>
+
+<!-- ==================================================================
+     MAIN LAYOUT — FRONT | BACK | INFO  (all on one line)
+     ================================================================== -->
+<div class="detail-layout">
+
+  <!-- ============ COLUMN 1: FRONT ============ -->
+  <div class="card-previews-col">
+    <div class="card-preview">
+      <div class="preview-label">
+        <span class="label-tag">FRONT</span>
+      </div>
+      <div class="preview-zoom" title="Hover to zoom in">
+        <div class="preview-zoom-inner">
+          {% include "id_cards/partials/id_card_front.html" with teacher=teacher school=school %}
+        </div>
+      </div>
+      <div class="preview-zoom-hint">Hover to zoom</div>
+    </div>
+  </div>
+
+  <!-- ============ COLUMN 2: BACK ============ -->
+  <div class="card-previews-col">
+    <div class="card-preview">
+      <div class="preview-label">
+        <span class="label-tag">BACK</span>
+      </div>
+      <div class="preview-zoom" title="Hover to zoom in">
+        <div class="preview-zoom-inner">
+          {% include "id_cards/partials/id_card_back.html" with teacher=teacher school=school %}
+        </div>
+      </div>
+      <div class="preview-zoom-hint">CR80 · 2.125" × 3.375"</div>
+    </div>
+  </div>
+
+  <!-- ============ COLUMN 3: INFO PANEL ============ -->
+  <div class="info-panel">
+
+    <!-- Header: avatar, name, badges -->
+    <div class="panel-header">
+      <div class="panel-avatar">
+        {% if teacher.photo %}
+          <img src="{{ teacher.photo.url }}" alt="{{ teacher.full_name }}">
+        {% else %}
+          {{ teacher.initials }}
+        {% endif %}
+      </div>
+      <div class="panel-header-text">
+        <h2>{{ teacher.full_name }}</h2>
+        <div class="sub">{{ teacher.designation }}</div>
+        <div class="badge-row">
+          <span class="badge badge-{{ teacher.status }}">{{ teacher.get_status_display }}</span>
+          <span class="badge badge-role">{{ teacher.get_role_display }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ EMPLOYMENT ============ -->
+    <div class="section-label">
+      <i class="fas fa-briefcase" style="color:var(--secondary);"></i> Employment
+    </div>
+
+    <div class="info-grid">
+
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-id-badge"></i></div>
+        <div class="info-text">
+          <span class="info-label">Employee ID</span>
+          <span class="info-value">{{ teacher.employee_id }}</span>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-user-tag"></i></div>
+        <div class="info-text">
+          <span class="info-label">Role</span>
+          <span class="info-value">{{ teacher.get_role_display }}</span>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-building"></i></div>
+        <div class="info-text">
+          <span class="info-label">Department</span>
+          <span class="info-value {% if not teacher.department %}empty{% endif %}">
+            {{ teacher.department_display }}
+          </span>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-calendar-check"></i></div>
+        <div class="info-text">
+          <span class="info-label">Valid Thru</span>
+          <span class="info-value {% if not teacher.valid_thru %}empty{% endif %}">
+            {% if teacher.valid_thru %}
+              {{ teacher.valid_thru|date:"F Y" }}
+            {% else %}
+              Not set
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      {% if teacher.levels.all %}
+      <div class="info-item" style="grid-column: 1 / -1;">
+        <div class="info-icon"><i class="fas fa-layer-group"></i></div>
+        <div class="info-text" style="flex: 1;">
+          <span class="info-label">Levels Handled</span>
+          <div class="level-tags">
+            {% for level in teacher.levels.all %}
+              <span class="level-tag">{{ level.name }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- ============ CONTACT ============ -->
+    <div class="section-label">
+      <i class="fas fa-address-book" style="color:var(--secondary);"></i> Contact
+    </div>
+
+    <div class="info-grid">
+
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-envelope"></i></div>
+        <div class="info-text">
+          <span class="info-label">Email</span>
+          <span class="info-value {% if not teacher.email %}empty{% endif %}">
+            {% if teacher.email %}
+              <a href="mailto:{{ teacher.email }}" style="color:inherit; text-decoration:none;">{{ teacher.email }}</a>
+            {% else %}
+              Not provided
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-phone"></i></div>
+        <div class="info-text">
+          <span class="info-label">Phone</span>
+          <span class="info-value {% if not teacher.phone %}empty{% endif %}">
+            {% if teacher.phone %}
+              <a href="tel:{{ teacher.phone }}" style="color:inherit; text-decoration:none;">{{ teacher.phone }}</a>
+            {% else %}
+              Not provided
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============ BACK OF CARD ============ -->
+    <div class="section-label">
+      <i class="fas fa-credit-card" style="color:var(--secondary);"></i> Back of Card
+    </div>
+
+    <div class="info-grid">
+
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-droplet"></i></div>
+        <div class="info-text">
+          <span class="info-label">Blood Group</span>
+          <span class="info-value {% if not teacher.blood_group %}empty{% endif %}">
+            {% if teacher.blood_group %}
+              <span class="blood-badge">{{ teacher.blood_group }}</span>
+            {% else %}
+              Not provided
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-phone-volume"></i></div>
+        <div class="info-text">
+          <span class="info-label">Emergency Contact</span>
+          <span class="info-value {% if not teacher.emergency_contact_phone %}empty{% endif %}">
+            {% if teacher.emergency_contact_phone %}
+              <a href="tel:{{ teacher.emergency_contact_phone }}" style="color:inherit; text-decoration:none;">{{ teacher.emergency_contact_phone }}</a>
+            {% else %}
+              Not provided
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============ ACTIONS ============ -->
+    <div class="panel-actions">
+      <a href="{% url 'card_print' teacher.pk %}" class="btn btn-secondary">
+        <i class="fas fa-print"></i> Print
+      </a>
+      <a href="{% url 'card_pdf' teacher.pk %}" class="btn btn-primary">
+        <i class="fas fa-file-pdf"></i> PDF
+      </a>
+      <a href="{% url 'card_print' teacher.pk %}?autoprint=1" class="btn btn-outline">
+        <i class="fas fa-bolt"></i> Quick
+      </a>
+    </div>
+
+    <!-- ============ DANGER ZONE ============ -->
+    <div class="danger-zone">
+      <div class="danger-text">
+        <strong><i class="fas fa-triangle-exclamation"></i> Danger zone</strong>
+        Permanently delete this staff record and its ID card.
+      </div>
+      <a href="{% url 'card_delete' teacher.pk %}" class="btn btn-danger btn-sm">
+        <i class="fas fa-trash"></i> Delete
+      </a>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

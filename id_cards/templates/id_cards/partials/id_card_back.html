@@ -1,0 +1,294 @@
+{% load static %}
+
+<!-- ============================================================
+     BACK OF CARD
+     ============================================================ -->
+<div class="id-card-back-wrapper">
+  <div class="id-card-back" style="
+    --primary: {{ school.primary_color|default:'#8B2020' }};
+    --secondary: {{ school.secondary_color|default:'#C87A2C' }};
+    --accent: {{ school.accent_color|default:'#FBF6EC' }};
+    --text: {{ school.text_color|default:'#2A1810' }};
+  ">
+
+    <!-- Decorative diagonal accents -->
+    <div class="back-diagonal-1"></div>
+    <div class="back-diagonal-2"></div>
+
+    <!-- Top black strip -->
+    <div class="back-top-strip"></div>
+
+    <!-- Main info panel -->
+    <div class="back-panel">
+
+      <!-- Emergency Contact -->
+      <div class="back-section">
+        <div class="back-section-title">Emergency Contact</div>
+        <div class="back-section-body">
+          {% if teacher.emergency_contact_phone %}
+            {{ teacher.emergency_contact_phone }}
+          {% else %}
+            Contact HR Dept.
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Blood Group -->
+      {% if teacher.blood_group %}
+      <div class="back-section back-section-divider">
+        <div class="back-section-title">Blood Group</div>
+        <div class="back-section-body back-blood-value">
+          {{ teacher.blood_group|upper }}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- ============================================================
+         QR CODE — encodes the Employee ID (plain text)
+         ============================================================ -->
+    <div class="back-qr-block">
+      <img class="back-qr-image"
+           src="{% url 'qr_employee_svg' teacher.employee_id %}"
+           alt="Employee ID QR">
+      <div class="back-qr-caption">
+        {{ teacher.employee_id }}
+      </div>
+    </div>
+
+    <!-- Bottom school info -->
+    <div class="back-footer">
+      <div class="back-footer-school">{{ school.name|default:"School Name" }}</div>
+
+      {% if school.address %}
+        <div class="back-footer-line back-footer-address">{{ school.address }}</div>
+      {% endif %}
+
+      {% if school.contact_phone_1 %}
+        <div class="back-footer-line">Contact: {{ school.contact_phone_1 }}</div>
+      {% endif %}
+      {% if school.contact_phone_2 %}
+        <div class="back-footer-line">{{ school.contact_phone_2 }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Gold bottom bar -->
+    <div class="back-gold-bar"></div>
+
+  </div>
+</div>
+
+<style>
+  /* ============================================================
+     BACK OF CARD — self-contained styles
+     ============================================================ */
+
+  .id-card-back-wrapper {
+    display: inline-block;
+    padding: 12px;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.7),
+      rgba(255, 255, 255, 0.35)
+    );
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow: 0 20px 45px -15px rgba(60, 30, 20, 0.35);
+  }
+
+  .id-card-back {
+    width: 2.125in;
+    height: 3.375in;
+    background: linear-gradient(
+      160deg,
+      #1B2B44 0%,
+      #16233A 50%,
+      #0E1929 100%
+    );
+    color: #FFFFFF;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 10px rgba(60, 30, 20, 0.25);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* --- Decorative diagonal strips --- */
+  .back-diagonal-1 {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 60%;
+    height: 45%;
+    background: linear-gradient(
+      135deg,
+      transparent 40%,
+      rgba(200, 122, 44, 0.15) 40%,
+      rgba(200, 122, 44, 0.15) 42%,
+      transparent 42%
+    );
+    pointer-events: none;
+  }
+  .back-diagonal-2 {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 70%;
+    height: 40%;
+    background: linear-gradient(
+      -45deg,
+      transparent 45%,
+      rgba(200, 122, 44, 0.12) 45%,
+      rgba(200, 122, 44, 0.12) 47%,
+      transparent 47%
+    );
+    pointer-events: none;
+  }
+
+  /* --- Top black strip --- */
+  .back-top-strip {
+    background: #0A0F16;
+    height: 22px;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* --- Central info panel --- */
+  .back-panel {
+    margin: 14px 10px 0 10px;
+    padding: 8px 10px;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+    border: 0.5px solid rgba(200, 122, 44, 0.45);
+    border-radius: 6px;
+    position: relative;
+    z-index: 3;
+  }
+
+  .back-section {
+    padding: 6px 0;
+    text-align: center;
+  }
+
+  .back-section-divider {
+    border-top: 0.4px solid rgba(200, 122, 44, 0.3);
+    margin-top: 2px;
+    padding-top: 8px;
+  }
+
+  .back-section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 6.5px;
+    font-weight: 800;
+    letter-spacing: 0.9px;
+    color: #F5C87A;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .back-section-body {
+    font-family: 'Inter', sans-serif;
+    font-size: 5.5px;
+    color: #E8EEF6;
+    line-height: 1.4;
+    letter-spacing: 0.3px;
+  }
+
+  .back-blood-value {
+    font-size: 8px;
+    font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: 1.5px;
+    margin-top: 1px;
+  }
+
+  /* ============================================================
+     QR CODE — encodes the employee ID
+     ============================================================ */
+  .back-qr-block {
+    margin: 12px auto 0 auto;
+    text-align: center;
+    position: relative;
+    z-index: 3;
+    padding: 5px;
+    background: #FFFFFF;
+    border: 1px solid rgba(200, 122, 44, 0.5);
+    border-radius: 6px;
+    width: fit-content;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+
+  .back-qr-image {
+    display: block;
+    width: 62px;
+    height: 62px;
+    margin: 0 auto;
+  }
+
+  .back-qr-caption {
+    font-family: 'Courier New', monospace;
+    font-size: 4.8px;
+    font-weight: 700;
+    color: #1B2B44;
+    letter-spacing: 0.4px;
+    margin-top: 3px;
+    text-transform: uppercase;
+  }
+
+  /* --- Bottom school info --- */
+  .back-footer {
+    margin-top: auto;
+    text-align: center;
+    padding: 8px 10px 10px 10px;
+    position: relative;
+    z-index: 3;
+  }
+
+  .back-footer-school {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #FFFFFF;
+    letter-spacing: 0.3px;
+    margin-bottom: 3px;
+  }
+
+  .back-footer-line {
+    font-family: 'Inter', sans-serif;
+    font-size: 8px;
+    color: #C8D2E0;
+    letter-spacing: 0.3px;
+    line-height: 1.35;
+  }
+
+  .back-footer-address {
+    font-style: italic;
+    color: #A8B4C8;
+    margin-bottom: 2px;
+  }
+
+  /* --- Gold bottom bar --- */
+  .back-gold-bar {
+    height: 5px;
+    width: 100%;
+    margin-top: auto;
+    background: linear-gradient(
+      90deg,
+      #8B5A1E 0%,
+      var(--secondary) 25%,
+      #E8B860 50%,
+      var(--secondary) 75%,
+      #8B5A1E 100%
+    );
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  }
+</style>

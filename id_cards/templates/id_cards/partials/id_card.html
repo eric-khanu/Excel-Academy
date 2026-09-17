@@ -1,0 +1,19 @@
+{% load static %}
+
+{% comment %}
+USAGE:
+  Front: {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="front" %}
+  Back:  {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="back" %}
+If `side` is not provided, defaults to "front".
+
+Each side is fully self-contained (markup + CSS):
+  - id_card_front.html
+  - id_card_back.html
+Edit either file independently.
+{% endcomment %}
+
+{% if side == "back" %}
+  {% include "id_cards/partials/id_card_back.html" with teacher=teacher school=school %}
+{% else %}
+  {% include "id_cards/partials/id_card_front.html" with teacher=teacher school=school %}
+{% endif %}
