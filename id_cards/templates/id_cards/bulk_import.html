@@ -1,0 +1,364 @@
+{% extends "id_cards/base.html" %}
+{% block title %}Bulk Import Staff{% endblock %}
+
+{% block extra_head %}
+<style>
+  .import-layout {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 8px 0 40px;
+  }
+  .import-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px;
+    box-shadow: 0 8px 32px rgba(60, 30, 20, 0.08);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+  }
+  .import-card h1 {
+    font-family: 'Cinzel', serif;
+    color: var(--primary);
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .import-card .subtitle {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 26px;
+    line-height: 1.5;
+  }
+
+  /* Schema info box */
+  .schema-box {
+    background: #fbfaf6;
+    border: 1px solid rgba(139, 32, 32, 0.1);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    font-size: 0.82rem;
+    color: #5a4a3a;
+    line-height: 1.6;
+  }
+  .schema-box .sb-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .schema-box .sb-title i { color: var(--secondary); }
+  .schema-box code {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.78rem;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .schema-box .sb-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 4px 0;
+  }
+  .schema-box .sb-row .field {
+    min-width: 130px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 0.76rem;
+  }
+  .schema-box .sb-row .desc {
+    color: #6b5a4a;
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+  .schema-box .sb-row .badge-req {
+    color: #dc2626;
+    font-weight: 700;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+  }
+  .schema-box .sb-row .badge-opt {
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+  }
+  .schema-box .sb-note {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.12);
+    font-size: 0.76rem;
+    color: var(--muted);
+  }
+
+  /* Download sample */
+  .sample-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--accent);
+    border: 1px solid rgba(200, 122, 44, 0.35);
+    border-radius: 10px;
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-top: 12px;
+    transition: background 0.15s;
+  }
+  .sample-download:hover { background: #f0e2cc; }
+
+  /* File drop zone */
+  .file-zone {
+    padding: 30px 24px;
+    border: 2px dashed rgba(139, 32, 32, 0.25);
+    border-radius: 14px;
+    text-align: center;
+    background: #fdfcf9;
+    margin-bottom: 20px;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+    position: relative;
+  }
+  .file-zone:hover,
+  .file-zone.dragover {
+    border-color: var(--secondary);
+    background: #fbfaf6;
+  }
+  .file-zone .fz-icon {
+    font-size: 2.4rem;
+    color: var(--secondary);
+    margin-bottom: 10px;
+    opacity: 0.8;
+  }
+  .file-zone .fz-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+  .file-zone .fz-sub {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .file-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .file-zone .fz-filename {
+    display: none;
+    margin-top: 12px;
+    padding: 8px 14px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.8rem;
+    color: var(--primary);
+    font-weight: 600;
+    word-break: break-all;
+  }
+  .file-zone.has-file .fz-filename { display: inline-block; }
+  .file-zone.has-file .fz-icon { color: #16a34a; }
+
+  /* Errors */
+  .field-error {
+    color: #dc2626;
+    font-size: 0.78rem;
+    margin-top: 5px;
+    font-weight: 500;
+  }
+  .form-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    color: #991b1b;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 22px;
+    font-size: 0.88rem;
+  }
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 22px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.12);
+    margin-top: 8px;
+  }
+  @media (max-width: 600px) {
+    .import-card { padding: 24px 20px; }
+    .schema-box .sb-row { flex-direction: column; gap: 2px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="import-layout">
+  <div class="import-card">
+    <h1>Bulk Import Staff</h1>
+    <p class="subtitle">
+      Upload a CSV file to create multiple staff records at once. Employee IDs
+      are generated automatically. Each row must have at least a full name.
+    </p>
+
+    <!-- Schema info -->
+    <div class="schema-box">
+      <div class="sb-title">
+        <i class="fas fa-table-columns"></i> CSV Format
+      </div>
+
+      <div class="sb-row">
+        <span class="field">full_name</span>
+        <span class="badge-req">Required</span>
+        <span class="desc">Staff member's full name</span>
+      </div>
+      <div class="sb-row">
+        <span class="field">designation</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Job title, e.g. <em>Senior Mathematics Teacher</em></span>
+      </div>
+      <div class="sb-row">
+        <span class="field">role</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">One of the role keys: <code>TEACHER</code>, <code>SECRETARY</code>, <code>ACCOUNTANT</code>, <code>PRINCIPAL</code>, etc.</span>
+      </div>
+      <div class="sb-row">
+        <span class="field">department</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Department <em>name</em> (must already exist)</span>
+      </div>
+      <div class="sb-row">
+        <span class="field">levels</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Semicolon-separated level names, e.g. <code>JSS1;JSS2</code></span>
+      </div>
+      <div class="sb-row">
+        <span class="field">email</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Contact email address</span>
+      </div>
+      <div class="sb-row">
+        <span class="field">phone</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Contact phone number</span>
+      </div>
+      <div class="sb-row">
+        <span class="field">valid_thru</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Expiry date — <code>YYYY-MM-DD</code> or <code>MM/YYYY</code></span>
+      </div>
+      <div class="sb-row">
+        <span class="field">blood_group</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">One of <code>O+</code>, <code>O-</code>, <code>A+</code>, <code>A-</code>, <code>B+</code>, <code>B-</code>, <code>AB+</code>, <code>AB-</code></span>
+      </div>
+      <div class="sb-row">
+        <span class="field">emergency_contact_phone</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Emergency contact number (shown on the back of the ID card)</span>
+      </div>
+
+      <div class="sb-note">
+        <i class="fas fa-circle-info" style="color:var(--secondary);"></i>
+        The first row of the CSV must be the header row. Unknown columns are
+        ignored. Department and level names are matched case-insensitively.
+      </div>
+
+      <a href="data:text/csv;charset=utf-8,full_name,designation,role,department,levels,email,phone,valid_thru,blood_group,emergency_contact_phone%0ASarah%20Chen,Senior%20Mathematics%20Teacher,TEACHER,Mathematics,JSS1;JSS2,sarah%40school.edu,%2B234%20800%20111%202222,2027-12-31,O%2B,%2B234%20800%20333%204444"
+         download="staff_import_sample.csv"
+         class="sample-download">
+        <i class="fas fa-download"></i> Download Sample CSV
+      </a>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <strong><i class="fas fa-triangle-exclamation"></i> Please fix:</strong>
+        <ul style="margin: 6px 0 0; padding-left: 20px;">
+          {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" novalidate id="importForm">
+      {% csrf_token %}
+
+      <div class="file-zone" id="fileZone">
+        <div class="fz-icon"><i class="fas fa-file-csv"></i></div>
+        <div class="fz-title">Drop your CSV here or click to browse</div>
+        <div class="fz-sub">Maximum file size: 5 MB · Accepts .csv only</div>
+        <div class="fz-filename" id="fzFilename"></div>
+        {{ form.csv_file }}
+      </div>
+
+      {% if form.csv_file.errors %}
+        <div class="field-error">{{ form.csv_file.errors.0 }}</div>
+      {% endif %}
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-upload"></i> Import Staff
+        </button>
+        <a href="{% url 'card_list' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const zone   = document.getElementById('fileZone');
+    const input  = zone ? zone.querySelector('input[type="file"]') : null;
+    const label  = document.getElementById('fzFilename');
+    if (!zone || !input) return;
+
+    function sync() {
+      if (input.files && input.files.length) {
+        label.textContent = input.files[0].name;
+        zone.classList.add('has-file');
+      } else {
+        label.textContent = '';
+        zone.classList.remove('has-file');
+      }
+    }
+
+    input.addEventListener('change', sync);
+
+    // Drag-and-drop polish (files still go through the native input)
+    ['dragenter', 'dragover'].forEach(function (evt) {
+      zone.addEventListener(evt, function (e) {
+        e.preventDefault(); e.stopPropagation();
+        zone.classList.add('dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach(function (evt) {
+      zone.addEventListener(evt, function (e) {
+        e.preventDefault(); e.stopPropagation();
+        zone.classList.remove('dragover');
+        if (evt === 'drop' && e.dataTransfer.files.length) {
+          input.files = e.dataTransfer.files;
+          sync();
+        }
+      });
+    });
+  })();
+</script>
+{% endblock %}

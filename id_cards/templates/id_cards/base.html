@@ -24,6 +24,17 @@
     --secondary-dark: #8B4513;
     --muted: #7a6a5a;
     --border: #e0d8cc;
+
+    /* Print-status palette — used across list, detail, print, admin */
+    --print-unprinted-bg: #fef3c7;
+    --print-unprinted-fg: #92400e;
+    --print-unprinted-br: #fde68a;
+    --print-printed-bg:   #d1fae5;
+    --print-printed-fg:   #065f46;
+    --print-printed-br:   #a7f3d0;
+    --print-reprinted-bg: #dbeafe;
+    --print-reprinted-fg: #1e40af;
+    --print-reprinted-br: #bfdbfe;
   }
 
   /* ====================================================================
@@ -80,13 +91,27 @@
   }
 
   .topbar .brand .brand-name {
-    /* Allow the full name to be shown, wrapping to two lines if needed */
     line-height: 1.15;
     max-width: 380px;
     white-space: normal;
     overflow: visible;
     word-break: break-word;
   }
+
+  /* ---- Nav toggle (mobile only) ---- */
+  .nav-toggle {
+    display: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+  }
+  .nav-toggle:hover { background: rgba(255, 255, 255, 0.22); }
 
   .topbar nav {
     display: flex;
@@ -141,7 +166,7 @@
     border-radius: 12px;
     box-shadow: 0 12px 32px rgba(60, 30, 20, 0.18);
     padding: 8px;
-    min-width: 200px;
+    min-width: 220px;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-6px);
@@ -172,6 +197,11 @@
     color: var(--secondary);
     width: 16px;
     margin: 0;
+  }
+  .nav-group .dropdown .dropdown-divider {
+    height: 1px;
+    background: rgba(139, 32, 32, 0.1);
+    margin: 6px 4px;
   }
 
   /* ====================================================================
@@ -269,83 +299,6 @@
   }
 
   /* ====================================================================
-     CARDS GRID — teachers / departments / levels
-     ==================================================================== */
-  .teachers-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 24px;
-  }
-
-  .teacher-card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 4px 16px rgba(60, 30, 20, 0.08);
-    transition: transform 0.2s, box-shadow 0.2s;
-    border: 1px solid rgba(139, 32, 32, 0.06);
-  }
-
-  .teacher-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(60, 30, 20, 0.15);
-  }
-
-  .teacher-card .header {
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    margin-bottom: 14px;
-  }
-
-  .teacher-card .avatar {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 2px solid var(--secondary);
-    background: var(--accent);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: var(--primary);
-    font-size: 1.1rem;
-  }
-  .teacher-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-  .teacher-card h3 {
-    font-family: 'Cinzel', serif;
-    font-size: 1rem;
-    color: var(--primary);
-    margin-bottom: 3px;
-    line-height: 1.2;
-  }
-
-  .teacher-card .role {
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-
-  .teacher-card .meta {
-    font-size: 0.8rem;
-    color: #5a4a3a;
-    padding: 10px 0;
-    border-top: 1px dashed rgba(139, 32, 32, 0.15);
-    border-bottom: 1px dashed rgba(139, 32, 32, 0.15);
-    margin-bottom: 12px;
-  }
-  .teacher-card .meta div { margin: 3px 0; }
-  .teacher-card .meta i { color: var(--secondary); width: 16px; }
-
-  .teacher-card .actions {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  /* ====================================================================
      BADGES
      ==================================================================== */
   .badge {
@@ -362,6 +315,37 @@
   .badge-inactive { background: #fef3c7; color: #92400e; }
   .badge-expired  { background: #fee2e2; color: #991b1b; }
   .badge-role     { background: #e0e7ff; color: #3730a3; }
+
+  .badge-print {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+  .badge-print i { font-size: 0.62rem; }
+
+  .badge-print-unprinted {
+    background: var(--print-unprinted-bg);
+    color: var(--print-unprinted-fg);
+    border: 1px solid var(--print-unprinted-br);
+  }
+  .badge-print-printed {
+    background: var(--print-printed-bg);
+    color: var(--print-printed-fg);
+    border: 1px solid var(--print-printed-br);
+  }
+  .badge-print-reprinted {
+    background: var(--print-reprinted-bg);
+    color: var(--print-reprinted-fg);
+    border: 1px solid var(--print-reprinted-br);
+  }
 
   /* ====================================================================
      FORMS
@@ -494,9 +478,119 @@
     margin-top: 4px;
   }
 
+  .stat-card.stat-unprinted { border-left-color: #f59e0b; }
+  .stat-card.stat-unprinted .num { color: #b45309; }
+  .stat-card.stat-printed   { border-left-color: #16a34a; }
+  .stat-card.stat-printed   .num { color: #047857; }
+  .stat-card.stat-reprinted { border-left-color: #2563eb; }
+  .stat-card.stat-reprinted .num { color: #1d4ed8; }
+
+  /* ====================================================================
+     UTILITY CLASSES
+     ==================================================================== */
+
+  /* Print-status pill (screen only) */
+  .pl-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .pl-pill.pill-unprinted {
+    background: var(--print-unprinted-bg);
+    color: var(--print-unprinted-fg);
+    border-color: var(--print-unprinted-br);
+  }
+  .pl-pill.pill-printed {
+    background: var(--print-printed-bg);
+    color: var(--print-printed-fg);
+    border-color: var(--print-printed-br);
+  }
+  .pl-pill.pill-reprinted {
+    background: var(--print-reprinted-bg);
+    color: var(--print-reprinted-fg);
+    border-color: var(--print-reprinted-br);
+  }
+
+  .mono {
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+
+  /* Empty state block */
+  .empty-state {
+    text-align: center;
+    padding: 70px 24px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(60, 30, 20, 0.06);
+    border: 1px dashed rgba(139, 32, 32, 0.18);
+    margin-bottom: 24px;
+  }
+  .empty-state i {
+    font-size: 4rem;
+    opacity: 0.25;
+    color: var(--primary);
+  }
+  .empty-state h2 {
+    margin-top: 20px;
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
+    color: var(--primary);
+    font-weight: 800;
+  }
+  .empty-state p {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.92rem;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+  }
+  .empty-state .empty-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .keyboard-hint {
+    margin-top: 20px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  .keyboard-hint kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: #f0ebe3;
+    border: 1px solid #d8d0c4;
+    font-family: monospace;
+    font-size: 0.72rem;
+    color: #5a4a3a;
+    font-weight: 600;
+  }
+
+  /* Anchor scroll offset — prevents the sticky topbar from covering
+     the target when navigating with #anchors (e.g. #print-tracking). */
+  [id] { scroll-margin-top: 90px; }
+
   /* ====================================================================
      RESPONSIVE
      ==================================================================== */
+
+  /* Tablet — nav stays horizontal */
   @media (max-width: 900px) {
     .topbar {
       padding: 12px 16px;
@@ -512,12 +606,90 @@
     .topbar .brand .brand-name { max-width: 100%; }
   }
 
-  @media (max-width: 600px) {
-    .topbar .brand { font-size: 0.95rem; }
-    .topbar .brand .brand-name { max-width: 100%; font-size: 0.92rem; }
-    .topbar nav a { padding: 6px 10px; font-size: 0.8rem; }
-    .topbar nav a i { margin-right: 4px; }
+  /* Mobile — collapse nav behind a hamburger toggle */
+  @media (max-width: 700px) {
+    .topbar { padding: 12px 16px; }
+
+    .topbar .brand {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.95rem;
+    }
+    .topbar .brand .brand-name {
+      max-width: 100%;
+      font-size: 0.92rem;
+    }
+
+    .nav-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Hide nav until toggled */
+    .topbar nav {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .topbar nav.is-open { display: flex; }
+    .topbar nav a {
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      width: 100%;
+    }
+    .topbar nav a i {
+      margin-right: 8px;
+      width: 18px;
+    }
+
+    /* Dropdown becomes a collapsible section */
+    .nav-group { width: 100%; }
+    .nav-group > a::after {
+      margin-left: auto;
+      transition: transform 0.2s;
+    }
+    .nav-group.is-open > a::after {
+      transform: rotate(180deg);
+    }
+    .nav-group .dropdown {
+      position: static;
+      opacity: 1;
+      visibility: visible;
+      transform: none;
+      box-shadow: none;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 4px;
+      margin-top: 4px;
+      display: none;
+      border-radius: 10px;
+    }
+    .nav-group.is-open .dropdown { display: block; }
+    .nav-group .dropdown a {
+      color: #fff;
+      padding: 9px 14px;
+      font-size: 0.85rem;
+    }
+    .nav-group .dropdown a:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
+    .nav-group .dropdown a i { color: var(--secondary); }
+    .nav-group .dropdown .dropdown-divider {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
     .page-header h1 { font-size: 1.4rem; }
+  }
+
+  @media (max-width: 480px) {
+    .topbar .brand { font-size: 0.88rem; }
+    .topbar .brand .brand-name { font-size: 0.85rem; }
   }
 
   /* ====================================================================
@@ -525,7 +697,10 @@
      ==================================================================== */
   @media print {
     body { background: #fff; }
-    .topbar, .page-header, .no-print { display: none !important; }
+    .topbar,
+    .page-header,
+    .nav-toggle,
+    .no-print { display: none !important; }
     .container { padding: 0; max-width: none; }
   }
 </style>
@@ -543,7 +718,16 @@
     <span class="brand-name">{{ school.name|default:"Staff ID Manager" }}</span>
   </a>
 
-  <nav>
+  <button type="button"
+          class="nav-toggle"
+          id="navToggle"
+          aria-label="Toggle navigation"
+          aria-expanded="false"
+          aria-controls="primaryNav">
+    <i class="fas fa-bars" id="navToggleIcon"></i>
+  </button>
+
+  <nav id="primaryNav">
     <a href="{% url 'card_list' %}"
        class="{% if request.resolver_match.url_name == 'card_list' %}active{% endif %}">
       <i class="fas fa-users"></i> All Cards
@@ -554,12 +738,19 @@
       <i class="fas fa-plus"></i> New
     </a>
 
-    <a href="{% url 'card_print_all' %}">
+    <a href="{% url 'card_print_all' %}"
+       class="{% if request.resolver_match.url_name == 'card_print_all' %}active{% endif %}">
       <i class="fas fa-print"></i> Print All
     </a>
 
-    <div class="nav-group">
-      <a href="#"><i class="fas fa-cog"></i> Manage</a>
+    <div class="nav-group" id="manageGroup">
+      {% with url_name=request.resolver_match.url_name|default:"" %}
+        <a href="#"
+           id="manageToggle"
+           class="{% if url_name in 'school_settings,department_list,department_create,department_edit,department_delete,level_list,level_create,level_edit,level_delete,bulk_import,reset_all_print_counts' %}active{% endif %}">
+          <i class="fas fa-cog"></i> Manage
+        </a>
+      {% endwith %}
       <div class="dropdown">
         <a href="{% url 'department_list' %}">
           <i class="fas fa-building"></i> Departments
@@ -570,10 +761,19 @@
         <a href="{% url 'bulk_import' %}">
           <i class="fas fa-file-csv"></i> Bulk Import
         </a>
+
+        <div class="dropdown-divider"></div>
+
         <a href="{% url 'school_settings' %}">
           <i class="fas fa-palette"></i> School Settings
         </a>
-        <a href="/admin/" target="_blank">
+        <a href="{% url 'school_settings' %}#print-tracking">
+          <i class="fas fa-print"></i> Print Tracking
+        </a>
+
+        <div class="dropdown-divider"></div>
+
+        <a href="/admin/" target="_blank" rel="noopener">
           <i class="fas fa-shield-halved"></i> Django Admin
         </a>
       </div>
@@ -606,6 +806,89 @@
 
   {% block content %}{% endblock %}
 </div>
+
+<script>
+  /* ==================================================================
+     MOBILE NAVIGATION TOGGLE
+     ------------------------------------------------------------------
+     - Small screens: hamburger toggles the whole nav.
+     - The "Manage" group gets its own sub-toggle.
+     - Clicking a nav link closes the menu.
+     - Escape closes the menu.
+     - Clicking outside the nav closes the menu.
+     ================================================================== */
+  (function () {
+    const toggle      = document.getElementById('navToggle');
+    const toggleIcon  = document.getElementById('navToggleIcon');
+    const nav         = document.getElementById('primaryNav');
+    const manageGroup = document.getElementById('manageGroup');
+    const manageLink  = document.getElementById('manageToggle');
+
+    if (!toggle || !nav) return;
+
+    function isMobile() {
+      return window.matchMedia('(max-width: 700px)').matches;
+    }
+
+    function setNav(open) {
+      nav.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (toggleIcon) {
+        toggleIcon.className = open ? 'fas fa-xmark' : 'fas fa-bars';
+      }
+      if (!open && manageGroup) {
+        manageGroup.classList.remove('is-open');
+      }
+    }
+
+    toggle.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      setNav(!nav.classList.contains('is-open'));
+    });
+
+    if (manageLink && manageGroup) {
+      manageLink.addEventListener('click', function (e) {
+        if (!isMobile()) return; // desktop uses hover
+        e.preventDefault();
+        e.stopPropagation();
+        manageGroup.classList.toggle('is-open');
+      });
+    }
+
+    nav.querySelectorAll('a[href]').forEach(function (a) {
+      a.addEventListener('click', function () {
+        if (a.id === 'manageToggle' && isMobile()) return;
+        if (isMobile()) setNav(false);
+      });
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && nav.classList.contains('is-open')) {
+        setNav(false);
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!nav.classList.contains('is-open')) return;
+      if (!nav.contains(e.target) && e.target !== toggle) {
+        setNav(false);
+      }
+    });
+
+    let lastMobile = isMobile();
+    window.addEventListener('resize', function () {
+      const nowMobile = isMobile();
+      if (nowMobile !== lastMobile) {
+        lastMobile = nowMobile;
+        setNav(false);
+        if (manageGroup) manageGroup.classList.remove('is-open');
+      }
+    });
+
+    setNav(false);
+  })();
+</script>
 
 {% block extra_js %}{% endblock %}
 </body>

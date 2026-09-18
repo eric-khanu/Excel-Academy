@@ -1,15 +1,28 @@
 {% load static %}
 
 {% comment %}
-USAGE:
-  Front: {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="front" %}
-  Back:  {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="back" %}
-If `side` is not provided, defaults to "front".
+================================================================================
+  ID CARD PARTIAL — DISPATCHER
+================================================================================
 
-Each side is fully self-contained (markup + CSS):
-  - id_card_front.html
-  - id_card_back.html
-Edit either file independently.
+  Usage (front):
+    {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="front" %}
+
+  Usage (back):
+    {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="back" %}
+
+  If `side` is omitted, defaults to "front".
+
+  Both variants receive the SAME context:
+    - teacher  → Teacher instance (required)
+    - school   → School instance (required for branding)
+
+  The partial renders one of two fully self-contained files:
+    - id_cards/partials/id_card_front.html
+    - id_cards/partials/id_card_back.html
+
+  Each file owns its own markup + CSS. Neither imports the other.
+================================================================================
 {% endcomment %}
 
 {% if side == "back" %}

@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, IntegrityError, transaction
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 from django.utils.text import slugify
@@ -68,8 +68,15 @@ class School(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
+        """Force this model to behave as a singleton — pk=1 always."""
         self.pk = 1
         super().save(*args, **kwargs)
+
+    @classmethod
+    def get_solo(cls):
+        """Convenience: fetch-or-create the single branding row."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
 
 
 # ============================================================================
@@ -125,6 +132,9 @@ class Department(models.Model):
     def __str__(self):
         return f"{self.name} ({self.code})" if self.code else self.name
 
+    # ------------------------------------------------------------------
+    # Code generation
+    # ------------------------------------------------------------------
     def _generate_code(self):
         """
         Rules (in order):
@@ -143,7 +153,7 @@ class Department(models.Model):
         if not words:
             base = "DEP"
         elif len(words) >= 2:
-            base = ''.join(w[0] for w in words[:4]).upper()
+            base = ''.join(w[0] for w in words[:4]).upper() or "DEP"
         else:
             word = words[0].upper()
             base = word[:3] if len(word) >= 3 else word
@@ -157,16 +167,22 @@ class Department(models.Model):
             code = f"{base[:8]}{suffix}"[:10]
         return code
 
+    def _resolve_collision(self, base):
+        """Given a user-supplied code, find a unique variant with a suffix."""
+        qs = Department.objects.exclude(pk=self.pk) if self.pk else Department.objects.all()
+        code = base
+        suffix = 1
+        while qs.filter(code=code).exists():
+            suffix += 1
+            code = f"{base[:8]}{suffix}"[:10]
+        return code
+
     def save(self, *args, **kwargs):
         if self.code:
             self.code = self.code.upper().strip()
             qs = Department.objects.exclude(pk=self.pk) if self.pk else Department.objects.all()
             if qs.filter(code=self.code).exists():
-                base = self.code
-                suffix = 1
-                while qs.filter(code=self.code).exists():
-                    suffix += 1
-                    self.code = f"{base[:8]}{suffix}"[:10]
+                self.code = self._resolve_collision(self.code)
         else:
             self.code = self._generate_code()
         super().save(*args, **kwargs)
@@ -186,6 +202,9 @@ class IDCardTemplate(models.Model):
     card_footer_subtext = models.CharField(
         max_length=100, default="(SEE REVERSE FOR DETAILS)"
     )
+
+    class Meta:
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -290,6 +309,20 @@ class Teacher(models.Model):
         help_text="Phone number for emergency contact.",
     )
 
+    # --- Print tracking -----------------------------------------------------
+    print_count = models.PositiveIntegerField(
+        default=0,
+        help_text="How many times this card has been printed.",
+    )
+    first_printed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the card was first printed.",
+    )
+    last_printed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the card was last printed.",
+    )
+
     # --- Status & template --------------------------------------------------
     status = models.CharField(
         max_length=20, choices=CARD_STATUS, default='active'
@@ -304,10 +337,18 @@ class Teacher(models.Model):
 
     class Meta:
         ordering = ['full_name']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['print_count']),
+            models.Index(fields=['employee_id']),
+        ]
 
     def __str__(self):
         return f"{self.full_name} ({self.employee_id})"
 
+    # ------------------------------------------------------------------
+    # Employee ID generation
+    # ------------------------------------------------------------------
     def _generate_employee_id(self):
         """
         Format:  <SCHOOL_SHORT>-<YEAR>-<NNN>
@@ -341,10 +382,28 @@ class Teacher(models.Model):
         return f"{pattern}{next_num:03d}"
 
     def save(self, *args, **kwargs):
+        """
+        Assign an employee ID on first save.
+
+        If two concurrent saves race for the same ID (very unlikely in a
+        small school tool, but possible during a bulk import), retry once
+        with a fresh number.
+        """
         if not self.employee_id:
             self.employee_id = self._generate_employee_id()
+            try:
+                with transaction.atomic():
+                    super().save(*args, **kwargs)
+                return
+            except IntegrityError:
+                # Another request claimed the ID first; regenerate and retry.
+                self.employee_id = self._generate_employee_id()
+
         super().save(*args, **kwargs)
 
+    # ------------------------------------------------------------------
+    # Display helpers
+    # ------------------------------------------------------------------
     @property
     def initials(self):
         parts = self.full_name.split()
@@ -358,3 +417,112 @@ class Teacher(models.Model):
     def levels_display(self):
         names = list(self.levels.values_list('name', flat=True))
         return ', '.join(names) if names else ''
+
+    @property
+    def is_expired(self):
+        """True if valid_thru is set and in the past."""
+        if not self.valid_thru:
+            return False
+        return self.valid_thru < timezone.now().date()
+    # ------------------------------------------------------------------
+    # Print tracking
+    # ------------------------------------------------------------------
+    @property
+    def is_printed(self):
+        """True if the card has been printed at least once."""
+        return self.print_count > 0
+
+    @property
+    def is_reprinted(self):
+        """True if the card has been printed more than once."""
+        return self.print_count > 1
+
+    @property
+    def print_status(self):
+        """Machine-friendly status key: 'unprinted' | 'printed' | 'reprinted'."""
+        if self.print_count == 0:
+            return 'unprinted'
+        if self.print_count == 1:
+            return 'printed'
+        return 'reprinted'
+
+    @property
+    def print_status_display(self):
+        """Human-friendly label for UI badges."""
+        if self.print_count == 0:
+            return 'Not Printed'
+        if self.print_count == 1:
+            return 'Printed'
+        return f'Reprinted ×{self.print_count}'
+
+    def mark_printed(self, save=True):
+        """
+        Record a print event.
+
+        - Increments print_count
+        - Sets first_printed_at on the first print
+        - Always refreshes last_printed_at
+
+        Returns True if a save was performed.
+        """
+        now = timezone.now()
+        if self.first_printed_at is None:
+            self.first_printed_at = now
+        self.last_printed_at = now
+        self.print_count = (self.print_count or 0) + 1
+
+        if save:
+            self.save(update_fields=[
+                'print_count', 'first_printed_at', 'last_printed_at',
+            ])
+        return True
+
+    @classmethod
+    def mark_many_printed(cls, teachers):
+        """
+        Efficiently record a print event for multiple teachers at once.
+        Use this in bulk print/PDF views instead of calling mark_printed()
+        in a Python loop — it runs a single UPDATE query.
+        Returns the number of rows updated.
+        """
+        teachers = list(teachers)
+        if not teachers:
+            return 0
+
+        now = timezone.now()
+        ids = [t.pk for t in teachers if t.pk]
+        if not ids:
+            return 0
+
+        # First print: stamp first_printed_at where it's still NULL
+        cls.objects.filter(
+            pk__in=ids, first_printed_at__isnull=True
+        ).update(first_printed_at=now)
+
+        # Refresh last_printed_at + increment print_count
+        return cls.objects.filter(pk__in=ids).update(
+            last_printed_at=now,
+            print_count=models.F('print_count') + 1,
+        )
+
+    @classmethod
+    def reset_all_print_tracking(cls):
+        """
+        Wipe print history for every teacher.
+        Returns the number of rows updated.
+        """
+        return cls.objects.update(
+            print_count=0,
+            first_printed_at=None,
+            last_printed_at=None,
+        )
+
+    def reset_print_tracking(self, save=True):
+        """Erase all print history for this card."""
+        self.print_count = 0
+        self.first_printed_at = None
+        self.last_printed_at = None
+        if save:
+            self.save(update_fields=[
+                'print_count', 'first_printed_at', 'last_printed_at',
+            ])

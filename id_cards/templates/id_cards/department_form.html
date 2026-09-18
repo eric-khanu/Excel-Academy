@@ -1,0 +1,187 @@
+{% extends "id_cards/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-layout-single {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 8px 0 40px;
+  }
+  .form-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px;
+    box-shadow: 0 8px 32px rgba(60, 30, 20, 0.08);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+  }
+  .form-card h1 {
+    font-family: 'Cinzel', serif;
+    color: var(--primary);
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .form-card .subtitle {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 26px;
+    line-height: 1.5;
+  }
+  .form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
+  .form-group label {
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--primary);
+    margin-bottom: 6px;
+  }
+  .form-group label .required { color: #dc2626; margin-left: 2px; }
+  .form-group input[type="text"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-family: 'Inter', sans-serif;
+    background: #fdfcf9;
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 3px rgba(200, 122, 44, 0.15);
+    background: #fff;
+  }
+  .form-group .helptext {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: #fbfaf6;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    transition: border-color 0.15s;
+  }
+  .checkbox-row:hover { border-color: var(--secondary); }
+  .checkbox-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+  }
+  .checkbox-row label {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    margin: 0;
+  }
+  .field-error {
+    color: #dc2626;
+    font-size: 0.78rem;
+    margin-top: 5px;
+    font-weight: 500;
+  }
+  .form-group.has-error input,
+  .form-group.has-error select { border-color: #f87171; background: #fef2f2; }
+  .form-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    color: #991b1b;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 22px;
+    font-size: 0.88rem;
+  }
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 22px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.12);
+    margin-top: 8px;
+  }
+  @media (max-width: 600px) {
+    .form-card { padding: 24px 20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-layout-single">
+  <div class="form-card">
+    <h1>{{ title }}</h1>
+    <p class="subtitle">
+      {% if department %}
+        Update the department details. The code can't be changed once created.
+      {% else %}
+        Add a new department. Leave the code blank to auto-generate it.
+      {% endif %}
+    </p>
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <strong><i class="fas fa-triangle-exclamation"></i> Please fix:</strong>
+        <ul style="margin: 6px 0 0; padding-left: 20px;">
+          {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+        <label for="{{ form.name.id_for_label }}">
+          Department Name <span class="required">*</span>
+        </label>
+        {{ form.name }}
+        {% if form.name.help_text %}<span class="helptext">{{ form.name.help_text }}</span>{% endif %}
+        {% if form.name.errors %}<div class="field-error">{{ form.name.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group {% if form.code.errors %}has-error{% endif %}">
+        <label for="{{ form.code.id_for_label }}">Department Code</label>
+        {{ form.code }}
+        {% if form.code.help_text %}<span class="helptext">{{ form.code.help_text }}</span>{% endif %}
+        {% if form.code.errors %}<div class="field-error">{{ form.code.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group {% if form.is_active.errors %}has-error{% endif %}">
+        <div class="checkbox-row">
+          {{ form.is_active }}
+          <label for="{{ form.is_active.id_for_label }}">
+            Active — show this department in staff forms
+          </label>
+        </div>
+        {% if form.is_active.help_text %}<span class="helptext">{{ form.is_active.help_text }}</span>{% endif %}
+        {% if form.is_active.errors %}<div class="field-error">{{ form.is_active.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i>
+          {% if department %}Save Changes{% else %}Create Department{% endif %}
+        </button>
+        <a href="{% url 'department_list' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

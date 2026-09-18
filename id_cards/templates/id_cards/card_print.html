@@ -26,6 +26,16 @@
     --accent:    {{ school.accent_color|default:"#FBF6EC" }};
     --text:      {{ school.text_color|default:"#2A1810" }};
     --primary-dark: #5A1414;
+
+    --print-unprinted-bg: #fef3c7;
+    --print-unprinted-fg: #92400e;
+    --print-unprinted-br: #fde68a;
+    --print-printed-bg:   #d1fae5;
+    --print-printed-fg:   #065f46;
+    --print-printed-br:   #a7f3d0;
+    --print-reprinted-bg: #dbeafe;
+    --print-reprinted-fg: #1e40af;
+    --print-reprinted-br: #bfdbfe;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -56,7 +66,7 @@
     margin: 0 auto 28px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 16px;
     flex-wrap: wrap;
   }
@@ -105,6 +115,84 @@
   }
 
   /* ============================================================
+     PRINT-MODE BANNER
+     ============================================================ */
+  .print-mode-banner {
+    max-width: 1100px;
+    margin: 0 auto 22px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    border: 1px solid transparent;
+  }
+  .print-mode-banner .pmb-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.6);
+    flex-shrink: 0;
+    font-size: 0.9rem;
+  }
+  .print-mode-banner .pmb-text { flex: 1; min-width: 200px; }
+  .print-mode-banner .pmb-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    line-height: 1.15;
+  }
+  .print-mode-banner .pmb-sub {
+    font-size: 0.78rem;
+    opacity: 0.85;
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+
+  .print-mode-banner.banner-unprinted {
+    background: var(--print-unprinted-bg);
+    border-color: var(--print-unprinted-br);
+    color: var(--print-unprinted-fg);
+  }
+  .print-mode-banner.banner-printed {
+    background: var(--print-printed-bg);
+    border-color: var(--print-printed-br);
+    color: var(--print-printed-fg);
+  }
+  .print-mode-banner.banner-reprinted {
+    background: var(--print-reprinted-bg);
+    border-color: var(--print-reprinted-br);
+    color: var(--print-reprinted-fg);
+  }
+  .print-mode-banner.banner-mixed {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #334155;
+  }
+  .print-mode-banner.banner-mixed .pmb-icon {
+    background: #e2e8f0;
+    color: #475569;
+  }
+  /* Preview (no tracking) mode */
+  .print-mode-banner.banner-preview {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #475569;
+    border-style: dashed;
+  }
+  .print-mode-banner.banner-preview .pmb-icon {
+    background: #e2e8f0;
+    color: #64748b;
+  }
+
+  /* ============================================================
      PRINT GRID — cards arranged for cutting
      ============================================================ */
   .print-grid {
@@ -118,7 +206,6 @@
     padding: 8px;
   }
 
-  /* Each teacher's front + back as a matched pair */
   .card-pair {
     display: flex;
     gap: 10px;
@@ -129,16 +216,81 @@
     border-radius: 14px;
     page-break-inside: avoid;
     break-inside: avoid;
+    position: relative;
+    padding-top: 32px; /* room for the pair-label */
   }
 
+  /* ---------- Pair label (screen only) ---------- */
   .card-pair .pair-label {
-    display: none; /* shown only on screen */
     position: absolute;
-    font-size: 0.7rem;
+    top: 8px;
+    left: 14px;
+    right: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.68rem;
     font-weight: 700;
-    color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .card-pair .pair-label .pl-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .card-pair .pair-label .pl-left .pl-name {
+    color: var(--primary);
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+  }
+  .card-pair .pair-label .pl-left .pl-id {
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.64rem;
+  }
+
+  /* Print status pill in the pair label */
+  .pair-label .pl-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .pair-label .pl-pill i { font-size: 0.58rem; }
+
+  .pair-label .pl-pill.pill-unprinted {
+    background: var(--print-unprinted-bg);
+    color: var(--print-unprinted-fg);
+    border-color: var(--print-unprinted-br);
+  }
+  .pair-label .pl-pill.pill-printed {
+    background: var(--print-printed-bg);
+    color: var(--print-printed-fg);
+    border-color: var(--print-printed-br);
+  }
+  .pair-label .pl-pill.pill-reprinted {
+    background: var(--print-reprinted-bg);
+    color: var(--print-reprinted-fg);
+    border-color: var(--print-reprinted-br);
   }
 
   .card-pair .pair-divider {
@@ -257,6 +409,48 @@
     margin-top: 3px;
   }
 
+  /* Print tracking summary inside the cut guide */
+  .cut-guide .tracking-summary {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.15);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .cut-guide .tracking-summary .ts-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border: 1px solid transparent;
+  }
+  .cut-guide .tracking-summary .ts-chip i { font-size: 0.7rem; }
+  .cut-guide .tracking-summary .ts-unprinted {
+    background: var(--print-unprinted-bg);
+    color: var(--print-unprinted-fg);
+    border-color: var(--print-unprinted-br);
+  }
+  .cut-guide .tracking-summary .ts-printed {
+    background: var(--print-printed-bg);
+    color: var(--print-printed-fg);
+    border-color: var(--print-printed-br);
+  }
+  .cut-guide .tracking-summary .ts-reprinted {
+    background: var(--print-reprinted-bg);
+    color: var(--print-reprinted-fg);
+    border-color: var(--print-reprinted-br);
+  }
+  .cut-guide .tracking-summary .ts-preview {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+  }
+
   /* ============================================================
      PRINT RULES
      ============================================================ */
@@ -270,8 +464,10 @@
 
     /* Hide everything that isn't the cards */
     .print-header,
+    .print-mode-banner,
     .no-print-bar,
-    .cut-guide {
+    .cut-guide,
+    .card-pair .pair-label {
       display: none !important;
     }
 
@@ -283,7 +479,6 @@
       display: block;
     }
 
-    /* Each teacher's front+back prints on its own row */
     .card-pair {
       display: flex;
       gap: 4px;
@@ -296,12 +491,10 @@
       break-inside: avoid;
     }
 
-    /* Hide the dashed divider on print */
     .card-pair .pair-divider {
       display: none;
     }
 
-    /* Prevent cards from splitting across pages */
     .card-pair > * {
       page-break-inside: avoid;
       break-inside: avoid;
@@ -382,19 +575,107 @@
 </div>
 
 <!-- ============================================================
+     PRINT-MODE BANNER (hidden on print)
+     ============================================================ -->
+{% if print_all %}
+  {% if tracked == False %}
+    {% comment %}Preview mode — tracking is disabled for this batch.{% endcomment %}
+    <div class="print-mode-banner no-print banner-preview">
+      <div class="pmb-icon"><i class="fas fa-eye"></i></div>
+      <div class="pmb-text">
+        <div class="pmb-title">Preview Mode — No Tracking</div>
+        <div class="pmb-sub">
+          This batch will <strong>not</strong> be recorded against staff print
+          history. Use this to review layouts before a real print run.
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="print-mode-banner no-print banner-mixed">
+      <div class="pmb-icon"><i class="fas fa-layer-group"></i></div>
+      <div class="pmb-text">
+        <div class="pmb-title">Bulk Print Session</div>
+        <div class="pmb-sub">
+          This batch will be recorded against each staff member's print history.
+          {% if print_tracking_summary %}
+            {{ print_tracking_summary }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% else %}
+  {% if teacher.print_count == 0 %}
+    <div class="print-mode-banner no-print banner-unprinted">
+      <div class="pmb-icon"><i class="fas fa-circle-exclamation"></i></div>
+      <div class="pmb-text">
+        <div class="pmb-title">First Print — Original Copy</div>
+        <div class="pmb-sub">
+          This is the first time this card is being printed. The audit strip will
+          read <strong>"Copy #1"</strong>.
+        </div>
+      </div>
+    </div>
+  {% elif teacher.print_count == 1 %}
+    <div class="print-mode-banner no-print banner-printed">
+      <div class="pmb-icon"><i class="fas fa-circle-check"></i></div>
+      <div class="pmb-text">
+        <div class="pmb-title">Already Printed Once — Reprinting</div>
+        <div class="pmb-sub">
+          This card was first printed on
+          <strong>{{ teacher.first_printed_at|date:"M j, Y" }}</strong>.
+          This reprint will become <strong>"Copy #2"</strong>.
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="print-mode-banner no-print banner-reprinted">
+      <div class="pmb-icon"><i class="fas fa-rotate-right"></i></div>
+      <div class="pmb-text">
+        <div class="pmb-title">Reprinting — Copy #{{ teacher.print_count|add:1 }}</div>
+        <div class="pmb-sub">
+          First printed <strong>{{ teacher.first_printed_at|date:"M j, Y" }}</strong>
+          · Last printed <strong>{{ teacher.last_printed_at|date:"M j, Y" }}</strong>.
+          This will be copy number {{ teacher.print_count|add:1 }}.
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endif %}
+
+<!-- ============================================================
      CARD GRID — front + back per teacher
      ============================================================ -->
 <div class="print-grid">
   {% if print_all %}
     {% for teacher in teachers %}
       <div class="card-pair">
-        {# FRONT #}
+
+        {% comment %}Pair label (screen only).{% endcomment %}
+        <div class="pair-label" aria-hidden="true">
+          <div class="pl-left">
+            <span class="pl-name">{{ teacher.full_name }}</span>
+            <span class="pl-id">{{ teacher.employee_id }}</span>
+          </div>
+          {% if teacher.print_count == 0 %}
+            <span class="pl-pill pill-unprinted">
+              <i class="fas fa-circle-exclamation"></i> Not Printed
+            </span>
+          {% elif teacher.print_count == 1 %}
+            <span class="pl-pill pill-printed">
+              <i class="fas fa-circle-check"></i> Printed
+            </span>
+          {% else %}
+            <span class="pl-pill pill-reprinted">
+              <i class="fas fa-rotate-right"></i> Reprinted ×{{ teacher.print_count }}
+            </span>
+          {% endif %}
+        </div>
+
         {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="front" %}
 
-        {# DASHED DIVIDER (screen only) #}
         <div class="pair-divider" aria-hidden="true"></div>
 
-        {# BACK #}
         {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="back" %}
       </div>
     {% empty %}
@@ -406,13 +687,32 @@
     {% endfor %}
   {% else %}
     <div class="card-pair">
-      {# FRONT #}
+
+      {% comment %}Pair label (screen only).{% endcomment %}
+      <div class="pair-label" aria-hidden="true">
+        <div class="pl-left">
+          <span class="pl-name">{{ teacher.full_name }}</span>
+          <span class="pl-id">{{ teacher.employee_id }}</span>
+        </div>
+        {% if teacher.print_count == 0 %}
+          <span class="pl-pill pill-unprinted">
+            <i class="fas fa-circle-exclamation"></i> Not Printed
+          </span>
+        {% elif teacher.print_count == 1 %}
+          <span class="pl-pill pill-printed">
+            <i class="fas fa-circle-check"></i> Printed
+          </span>
+        {% else %}
+          <span class="pl-pill pill-reprinted">
+            <i class="fas fa-rotate-right"></i> Reprinted ×{{ teacher.print_count }}
+          </span>
+        {% endif %}
+      </div>
+
       {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="front" %}
 
-      {# DASHED DIVIDER (screen only) #}
       <div class="pair-divider" aria-hidden="true"></div>
 
-      {# BACK #}
       {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="back" %}
     </div>
   {% endif %}
@@ -420,23 +720,32 @@
 
 <!-- ============================================================
      FLOATING TOOLBAR (screen only)
+
+     The "PDF" link carries the current query-string forward so
+     filters like ?printed=no and ?track=0 are preserved when the
+     user jumps from the browser-print view to the PDF view.
      ============================================================ -->
 <div class="no-print-bar no-print">
   <div class="bar-text">
-    <i class="fas fa-print"></i>
-    <span>
-      {% if print_all %}
-        {{ teachers|length }} record{{ teachers|length|pluralize }} ready
-      {% else %}
-        Ready to print
-      {% endif %}
-    </span>
+    {% if tracked == False %}
+      <i class="fas fa-eye"></i>
+      <span>Preview only — not tracking</span>
+    {% else %}
+      <i class="fas fa-print"></i>
+      <span>
+        {% if print_all %}
+          {{ teachers|length }} record{{ teachers|length|pluralize }} ready
+        {% else %}
+          Ready to print
+        {% endif %}
+      </span>
+    {% endif %}
   </div>
   <div class="bar-buttons">
     <button onclick="window.print()">
       <i class="fas fa-print"></i> Print Now
     </button>
-    <a href="{% if print_all %}{% url 'card_pdf_all' %}{% else %}{% url 'card_pdf' teacher.pk %}{% endif %}"
+    <a href="{% if print_all %}{% url 'card_pdf_all' %}{% else %}{% url 'card_pdf' teacher.pk %}{% endif %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
        class="btn-ghost">
       <i class="fas fa-file-pdf"></i> PDF
     </a>
@@ -468,6 +777,43 @@
     <i class="fas fa-circle-check"></i>
     <span>Each card is CR80 sized (2.125" × 3.375") — standard ID card. Cut along the outer edge with a guillotine.</span>
   </div>
+
+  {% comment %}Print tracking summary (screen only).{% endcomment %}
+  {% if print_all and teachers %}
+    <div class="tracking-summary">
+      {% if tracked == False %}
+        <span class="ts-chip ts-preview">
+          <i class="fas fa-eye"></i>
+          Preview — print history will NOT be updated
+        </span>
+      {% else %}
+        <span class="ts-chip ts-unprinted">
+          <i class="fas fa-circle-exclamation"></i>
+          {{ teachers|length }} card{{ teachers|length|pluralize }} in this batch
+        </span>
+        <span class="ts-chip ts-printed">
+          <i class="fas fa-info-circle"></i>
+          Print history updated on this print run
+        </span>
+      {% endif %}
+    </div>
+  {% elif not print_all and teacher %}
+    <div class="tracking-summary">
+      {% if teacher.print_count == 0 %}
+        <span class="ts-chip ts-unprinted">
+          <i class="fas fa-circle-exclamation"></i> First print — original
+        </span>
+      {% elif teacher.print_count == 1 %}
+        <span class="ts-chip ts-printed">
+          <i class="fas fa-circle-check"></i> Copy #2 of this card
+        </span>
+      {% else %}
+        <span class="ts-chip ts-reprinted">
+          <i class="fas fa-rotate-right"></i> Copy #{{ teacher.print_count|add:1 }} of this card
+        </span>
+      {% endif %}
+    </div>
+  {% endif %}
 </div>
 
 <script>

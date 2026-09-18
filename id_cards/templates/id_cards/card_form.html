@@ -48,6 +48,89 @@
     line-height: 1.5;
   }
 
+  /* ---------- Edit-mode print status banner ---------- */
+  .edit-print-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 22px;
+    border: 1px solid var(--border);
+    background: #fbfaf6;
+    font-size: 0.84rem;
+  }
+  .edit-print-banner.print-banner-unprinted {
+    background: var(--print-unprinted-bg, #fef3c7);
+    border-color: var(--print-unprinted-br, #fde68a);
+    color: var(--print-unprinted-fg, #92400e);
+  }
+  .edit-print-banner.print-banner-printed {
+    background: var(--print-printed-bg, #d1fae5);
+    border-color: var(--print-printed-br, #a7f3d0);
+    color: var(--print-printed-fg, #065f46);
+  }
+  .edit-print-banner.print-banner-reprinted {
+    background: var(--print-reprinted-bg, #dbeafe);
+    border-color: var(--print-reprinted-br, #bfdbfe);
+    color: var(--print-reprinted-fg, #1e40af);
+  }
+
+  .edit-print-banner .pb-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .edit-print-banner .pb-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    background: rgba(255,255,255,0.55);
+    flex-shrink: 0;
+  }
+  .edit-print-banner .pb-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    line-height: 1.15;
+  }
+  .edit-print-banner .pb-sub {
+    font-size: 0.74rem;
+    opacity: 0.85;
+    margin-top: 2px;
+    line-height: 1.3;
+  }
+  .edit-print-banner .pb-sub strong { font-weight: 700; }
+
+  .edit-print-banner .pb-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .edit-print-banner .pb-actions .btn {
+    padding: 6px 11px;
+    font-size: 0.74rem;
+    border-radius: 7px;
+  }
+  .edit-print-banner .pb-actions .btn-outline {
+    border-color: currentColor;
+    color: inherit;
+  }
+  .edit-print-banner .pb-actions .btn-outline:hover {
+    background: currentColor;
+    color: #fff;
+  }
+
   /* ---------- Sections ---------- */
   .form-section {
     margin-bottom: 28px;
@@ -232,6 +315,35 @@
     max-width: 280px;
   }
 
+  /* ---------- Mini print-status pill under preview ---------- */
+  .preview-print-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+  }
+  .preview-print-pill.pill-unprinted {
+    background: var(--print-unprinted-bg, #fef3c7);
+    color: var(--print-unprinted-fg, #92400e);
+    border-color: var(--print-unprinted-br, #fde68a);
+  }
+  .preview-print-pill.pill-printed {
+    background: var(--print-printed-bg, #d1fae5);
+    color: var(--print-printed-fg, #065f46);
+    border-color: var(--print-printed-br, #a7f3d0);
+  }
+  .preview-print-pill.pill-reprinted {
+    background: var(--print-reprinted-bg, #dbeafe);
+    color: var(--print-reprinted-fg, #1e40af);
+    border-color: var(--print-reprinted-br, #bfdbfe);
+  }
+
   /* ---------- Non-field errors ---------- */
   .form-errors {
     background: #fef2f2;
@@ -256,6 +368,209 @@
     .form-grid { grid-template-columns: 1fr; }
     .form-card { padding: 24px 20px; }
   }
+
+  /* ============================================================
+     LIVE PREVIEW CARD — self-contained (matches id_card_front.html)
+     ============================================================ */
+  .id-card-wrapper {
+    display: inline-block;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35));
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 20px 45px -15px rgba(60,30,20,0.35);
+  }
+  .id-card {
+    width: 2.125in;
+    height: 3.375in;
+    background: var(--accent);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 10px rgba(60,30,20,0.25);
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+  }
+  .card-header {
+    background: linear-gradient(160deg, var(--primary) 0%, #5A1414 100%);
+    padding: 10px 8px 6px 8px;
+    border-bottom: 2px solid var(--secondary);
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 6px;
+  }
+  .header-logo {
+    width: 0.45in;
+    height: 0.45in;
+    border-radius: 50%;
+    background: #FBF6EC;
+    border: 1.5px solid var(--secondary);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+  .header-text {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+  }
+  .header-school-line1 {
+    font-family: 'Cinzel', serif;
+    font-size: 8.5px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #F5C87A;
+    text-transform: uppercase;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gold-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+    margin: 2px auto 0 auto;
+    opacity: 0.85;
+  }
+  .role-above-photo {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 6.5px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: var(--primary);
+    background: linear-gradient(180deg, rgba(200,122,44,0.14) 0%, rgba(200,122,44,0.04) 100%);
+    border-top: 0.5px solid rgba(200,122,44,0.35);
+    border-bottom: 0.5px solid rgba(200,122,44,0.35);
+    padding: 3px 8px;
+    text-transform: uppercase;
+  }
+  .photo-section {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+    position: relative;
+    z-index: 5;
+  }
+  .photo-ring {
+    width: 1.05in;
+    height: 1.05in;
+    border-radius: 50%;
+    background: var(--accent);
+    padding: 4px;
+    border: 2px solid var(--secondary);
+    box-shadow: 0 6px 16px -2px rgba(60,30,20,0.45);
+    overflow: hidden;
+  }
+  .photo-ring img { width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
+  .photo-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--primary);
+  }
+  .info {
+    text-align: center;
+    padding: 8px 8px 0 8px;
+    position: relative;
+    z-index: 3;
+  }
+  .teacher-name {
+    font-family: 'Cinzel', serif;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    color: var(--primary);
+    line-height: 1.2;
+  }
+  .designation {
+    font-family: 'Inter', sans-serif;
+    font-size: 4.8px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.5px;
+    margin-top: 3px;
+    text-transform: uppercase;
+    display: inline-block;
+    background: rgba(200,122,44,0.15);
+    padding: 1.5px 8px;
+    border-radius: 20px;
+    border: 0.4px solid rgba(200,122,44,0.4);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .details-panel {
+    margin: 6px 8px 0 8px;
+    padding: 5px 6px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAF4E8 100%);
+    border: 0.6px solid rgba(140,60,30,0.18);
+    border-radius: 5px;
+  }
+  .details {
+    font-family: 'Inter', sans-serif;
+    font-size: 5px;
+    line-height: 1.65;
+    color: var(--text);
+    text-align: center;
+  }
+  .details div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .details .label { color: #8A6A50; font-weight: 500; }
+  .details .value { color: var(--primary); font-weight: 700; }
+  .footer {
+    margin-top: auto;
+    text-align: center;
+    padding: 3px 8px 4px 8px;
+  }
+  .footer .staff-info {
+    font-family: 'Cinzel', serif;
+    font-size: 5px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1.1px;
+  }
+  .holo-sticker {
+    position: absolute;
+    bottom: 7px; right: 7px;
+    width: 30px; height: 22px;
+    border-radius: 3px;
+    background: conic-gradient(from 210deg at 50% 50%,
+      #F5EDE0 0deg, #D8B890 60deg, #FFF8EC 120deg,
+      #B89878 180deg, #F0E0C8 240deg, #D0B090 300deg, #F5EDE0 360deg);
+    border: 0.7px solid rgba(255,255,255,0.95);
+    box-shadow: 0 2px 5px rgba(60,30,20,0.35);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--primary); text-align: center;
+    line-height: 1.05;
+  }
+  .holo-sticker .short-name { font-size: 4.4px; font-weight: 800; }
+  .holo-sticker .authentic { font-size: 3.2px; font-weight: 700; margin-top: 0.4px; }
+  .gold-bar {
+    height: 5px;
+    width: 100%;
+    margin-top: auto;
+    background: linear-gradient(90deg, #8B5A1E 0%, var(--secondary) 25%, #E8B860 50%, var(--secondary) 75%, #8B5A1E 100%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
+  }
 </style>
 {% endblock %}
 
@@ -275,6 +590,64 @@
         Fill in the details below. The Employee ID will be generated automatically on save.
       {% endif %}
     </p>
+
+    {% comment %}Print status banner — edit mode only{% endcomment %}
+    {% if teacher %}
+      <div class="edit-print-banner
+        {% if teacher.print_count == 0 %}print-banner-unprinted
+        {% elif teacher.print_count == 1 %}print-banner-printed
+        {% else %}print-banner-reprinted{% endif %}">
+
+        <div class="pb-left">
+          <div class="pb-icon">
+            {% if teacher.print_count == 0 %}
+              <i class="fas fa-circle-exclamation"></i>
+            {% elif teacher.print_count == 1 %}
+              <i class="fas fa-circle-check"></i>
+            {% else %}
+              <i class="fas fa-rotate-right"></i>
+            {% endif %}
+          </div>
+          <div>
+            <div class="pb-title">
+              {% if teacher.print_count == 0 %}
+                Not Printed
+              {% elif teacher.print_count == 1 %}
+                Printed Once
+              {% else %}
+                Reprinted ×{{ teacher.print_count }}
+              {% endif %}
+            </div>
+            <div class="pb-sub">
+              {% if teacher.print_count == 0 %}
+                This card has never been printed.
+              {% else %}
+                First: <strong>{{ teacher.first_printed_at|date:"M j, Y" }}</strong>
+                · Last: <strong>{{ teacher.last_printed_at|date:"M j, Y H:i" }}</strong>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="pb-actions">
+          {% if teacher.print_count > 0 %}
+            <form method="post"
+                  action="{% url 'card_print_reset' teacher.pk %}"
+                  onsubmit="return confirm('Reset all print tracking for {{ teacher.full_name|escapejs }}? This cannot be undone.');"
+                  style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline">
+                <i class="fas fa-eraser"></i> Reset
+              </button>
+            </form>
+          {% endif %}
+          <a href="{% url 'card_print' teacher.pk %}" class="btn btn-outline">
+            <i class="fas fa-print"></i>
+            {% if teacher.print_count == 0 %}Print{% else %}Reprint{% endif %}
+          </a>
+        </div>
+      </div>
+    {% endif %}
 
     {% if form.non_field_errors %}
       <div class="form-errors">
@@ -497,13 +870,18 @@
           <a href="{% url 'card_detail' teacher.pk %}" class="btn btn-outline">
             <i class="fas fa-eye"></i> View Card
           </a>
+          <a href="{% url 'card_print' teacher.pk %}" class="btn btn-secondary">
+            <i class="fas fa-print"></i>
+            {% if teacher.print_count == 0 %}Print Now{% else %}Reprint Now{% endif %}
+          </a>
         {% endif %}
       </div>
     </form>
   </div>
 
   <!-- ============================================================
-       RIGHT: Live preview (matches the current partial layout)
+       RIGHT: Live preview
+       Matches id_card_front.html layout (single header line).
        ============================================================ -->
   <div class="preview-panel no-print">
     <div class="preview-label">Live Preview</div>
@@ -516,7 +894,7 @@
         --text: {{ school.text_color|default:'#2A1810' }};
       ">
 
-        <!-- HEADER: logo (left) + school name (2 lines) -->
+        <!-- HEADER: logo (left) + single-line school name -->
         <div class="card-header">
           <div class="header-top">
             <div class="header-logo">
@@ -525,13 +903,14 @@
                      style="width:100%; height:100%; object-fit:contain;">
               {% else %}
                 <i class="fas fa-graduation-cap"
-                   style="font-size: 1.1rem; color: var(--primary);"></i>
+                   style="font-size: 0.85rem; color: var(--primary);"></i>
               {% endif %}
             </div>
 
             <div class="header-text">
-              <div class="header-school-line1">EXCEL SENIOR SECONDARY</div>
-              <div class="header-school-line2">SCHOOL</div>
+              <div class="header-school-line1">
+                {{ school.name|default:"School Name"|upper|truncatechars:44 }}
+              </div>
             </div>
           </div>
 
@@ -551,7 +930,7 @@
                 <img src="{{ form.instance.photo.url }}"
                      alt="" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
               {% else %}
-                ?
+                <span id="pvInitials">?</span>
               {% endif %}
             </div>
           </div>
@@ -569,7 +948,7 @@
           <div class="details-panel">
             <div class="details">
               <div>
-                <span class="label">Employee ID :</span>
+                <span class="label">ID :</span>
                 <span class="value" id="pvEmployeeId">
                   {% if teacher %}{{ teacher.employee_id }}{% else %}auto{% endif %}
                 </span>
@@ -583,7 +962,7 @@
                 <span class="value" id="pvLevels">—</span>
               </div>
               <div id="pvValidRow" style="display:none;">
-                <span class="label">Valid Thru :</span>
+                <span class="label">Valid Till :</span>
                 <span class="value" id="pvValid">—</span>
               </div>
             </div>
@@ -594,9 +973,6 @@
         <div class="footer">
           <div class="staff-info">
             {{ teacher.template.card_footer_text|default:"STAFF IDENTIFICATION" }}
-          </div>
-          <div class="see-reverse">
-            {{ teacher.template.card_footer_subtext|default:"(SEE REVERSE FOR DETAILS)" }}
           </div>
         </div>
 
@@ -611,6 +987,22 @@
       </div>
     </div>
 
+    {% comment %}Print status pill under preview{% endcomment %}
+    {% if teacher %}
+      <div class="preview-print-pill
+        {% if teacher.print_count == 0 %}pill-unprinted
+        {% elif teacher.print_count == 1 %}pill-printed
+        {% else %}pill-reprinted{% endif %}">
+        {% if teacher.print_count == 0 %}
+          <i class="fas fa-circle-exclamation"></i> Not Printed
+        {% elif teacher.print_count == 1 %}
+          <i class="fas fa-circle-check"></i> Printed
+        {% else %}
+          <i class="fas fa-rotate-right"></i> Reprinted ×{{ teacher.print_count }}
+        {% endif %}
+      </div>
+    {% endif %}
+
     <div class="preview-hint">
       Updates in real time as you fill the form.
       Employee ID is generated on save.
@@ -618,228 +1010,6 @@
   </div>
 
 </div>
-
-<!-- Card styles (self-contained for the live preview) -->
-<style>
-  .id-card-wrapper {
-    display: inline-block;
-    padding: 12px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35));
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.75);
-    box-shadow: 0 20px 45px -15px rgba(60,30,20,0.35);
-  }
-  .id-card {
-    width: 2.125in;
-    height: 3.375in;
-    background: var(--accent);
-    border-radius: 10px;
-    overflow: hidden;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 4px 10px rgba(60,30,20,0.25);
-    font-family: 'Inter', sans-serif;
-    color: var(--text);
-  }
-  .card-header {
-    background: linear-gradient(160deg, var(--primary) 0%, #5A1414 100%);
-    padding: 8px 8px 6px 8px;
-    border-bottom: 2px solid var(--secondary);
-  }
-  .header-top {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding-bottom: 5px;
-  }
-  .header-logo {
-    width: 0.45in;
-    height: 0.45in;
-    border-radius: 50%;
-    background: #FBF6EC;
-    border: 1.5px solid var(--secondary);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    padding: 2px;
-    flex-shrink: 0;
-  }
-  .header-text {
-    flex: 1;
-    min-width: 0;
-    text-align: left;
-  }
-  .header-school-line1 {
-    font-family: 'Cinzel', serif;
-    font-size: 7px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    color: #F5C87A;
-    text-transform: uppercase;
-    line-height: 1.15;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .header-school-line2 {
-    font-family: 'Cinzel', serif;
-    font-size: 7px;
-    font-weight: 700;
-    letter-spacing: 1.4px;
-    color: #F5C87A;
-    text-transform: uppercase;
-    line-height: 1.15;
-    margin-top: 1px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .gold-divider {
-    width: 100%;
-    height: 0.6px;
-    background: linear-gradient(90deg, transparent, var(--secondary), transparent);
-    margin: 2px auto 0 auto;
-    opacity: 0.85;
-  }
-  .role-above-photo {
-    text-align: center;
-    font-family: 'Cinzel', serif;
-    font-size: 7px;
-    font-weight: 800;
-    letter-spacing: 1.2px;
-    color: var(--primary);
-    background: linear-gradient(180deg, rgba(200,122,44,0.14) 0%, rgba(200,122,44,0.04) 100%);
-    border-top: 0.5px solid rgba(200,122,44,0.35);
-    border-bottom: 0.5px solid rgba(200,122,44,0.35);
-    padding: 3px 8px;
-    text-transform: uppercase;
-  }
-  .photo-section {
-    display: flex;
-    justify-content: center;
-    margin-top: 8px;
-    position: relative;
-    z-index: 5;
-  }
-  .photo-ring {
-    width: 1.05in;
-    height: 1.05in;
-    border-radius: 50%;
-    background: var(--accent);
-    padding: 4px;
-    border: 2px solid var(--secondary);
-    box-shadow: 0 6px 16px -2px rgba(60,30,20,0.45);
-    overflow: hidden;
-  }
-  .photo-ring img { width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
-  .photo-placeholder {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Cinzel', serif;
-    font-weight: 800;
-    font-size: 1.8rem;
-    color: var(--primary);
-  }
-  .info {
-    text-align: center;
-    padding: 8px 8px 0 8px;
-    position: relative;
-    z-index: 3;
-  }
-  .teacher-name {
-    font-family: 'Cinzel', serif;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.4px;
-    color: var(--primary);
-    line-height: 1.15;
-  }
-  .designation {
-    font-family: 'Inter', sans-serif;
-    font-size: 4.8px;
-    font-weight: 700;
-    color: var(--primary);
-    letter-spacing: 0.5px;
-    margin-top: 2px;
-    text-transform: uppercase;
-    display: inline-block;
-    background: rgba(200,122,44,0.15);
-    padding: 1.5px 8px;
-    border-radius: 20px;
-    border: 0.4px solid rgba(200,122,44,0.4);
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .details-panel {
-    margin: 6px 8px 0 8px;
-    padding: 5px 6px;
-    background: linear-gradient(180deg, #FFFFFF 0%, #FAF4E8 100%);
-    border: 0.6px solid rgba(140,60,30,0.18);
-    border-radius: 5px;
-  }
-  .details {
-    font-family: 'Inter', sans-serif;
-    font-size: 5px;
-    line-height: 1.65;
-    color: var(--text);
-    text-align: center;
-  }
-  .details div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .details .label { color: #8A6A50; font-weight: 500; }
-  .details .value { color: var(--primary); font-weight: 700; }
-  .footer {
-    margin-top: auto;
-    text-align: center;
-    padding: 3px 8px 4px 8px;
-  }
-  .footer .staff-info {
-    font-family: 'Cinzel', serif;
-    font-size: 5px;
-    font-weight: 700;
-    color: var(--primary);
-    letter-spacing: 1.1px;
-  }
-  .footer .see-reverse {
-    font-family: 'Inter', sans-serif;
-    font-size: 3.8px;
-    color: #A88A70;
-    margin-top: 1px;
-  }
-  .holo-sticker {
-    position: absolute;
-    bottom: 7px; right: 7px;
-    width: 30px; height: 22px;
-    border-radius: 3px;
-    background: conic-gradient(from 210deg at 50% 50%,
-      #F5EDE0 0deg, #D8B890 60deg, #FFF8EC 120deg,
-      #B89878 180deg, #F0E0C8 240deg, #D0B090 300deg, #F5EDE0 360deg);
-    border: 0.7px solid rgba(255,255,255,0.95);
-    box-shadow: 0 2px 5px rgba(60,30,20,0.35);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    color: var(--primary); text-align: center;
-    line-height: 1.05;
-  }
-  .holo-sticker .short-name { font-size: 4.4px; font-weight: 800; }
-  .holo-sticker .authentic { font-size: 3.2px; font-weight: 700; margin-top: 0.4px; }
-  .gold-bar {
-    height: 5px;
-    width: 100%;
-    margin-top: auto;
-    background: linear-gradient(90deg, #8B5A1E 0%, var(--secondary) 25%, #E8B860 50%, var(--secondary) 75%, #8B5A1E 100%);
-    box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
-  }
-</style>
 
 {% endblock %}
 
@@ -871,6 +1041,7 @@
     const pvValid       = document.getElementById('pvValid');
     const pvValidRow    = document.getElementById('pvValidRow');
     const pvPhoto       = document.getElementById('pvPhoto');
+    const pvInitials    = document.getElementById('pvInitials');
 
     /* ---------------- Name ---------------- */
     if (nameInput && pvName) {
@@ -879,6 +1050,9 @@
         pvName.textContent = v ? v.toUpperCase() : '—';
         updateInitials(v);
       });
+
+      // Run once on load so any pre-filled value is reflected
+      if (nameInput.value) updateInitials(nameInput.value.trim());
     }
 
     /* ---------------- Designation ---------------- */
@@ -926,11 +1100,10 @@
           pvValidRow.style.display = 'none';
           return;
         }
+        // <input type="date"> gives YYYY-MM-DD
         const parts = v.split('-');
-        if (parts.length === 2) {
-          pvValid.textContent = parts[1] + '/' + parts[0];
-        } else if (parts.length === 3) {
-          pvValid.textContent = parts[1] + '/' + parts[0];
+        if (parts.length === 3) {
+          pvValid.textContent = parts[1] + '/' + parts[0]; // MM/YYYY
         } else {
           pvValid.textContent = v;
         }
@@ -957,8 +1130,14 @@
     function updateInitials(fullName) {
       const parts = fullName.split(/\s+/).filter(Boolean);
       const initials = parts.slice(0, 2).map(p => p[0].toUpperCase()).join('');
-      if (initials && pvPhoto && !pvPhoto.querySelector('img')) {
-        pvPhoto.textContent = initials;
+      // Update the placeholder initials if the photo hasn't been replaced
+      // with an <img> yet.
+      if (pvPhoto && !pvPhoto.querySelector('img')) {
+        if (pvInitials) {
+          pvInitials.textContent = initials || '?';
+        } else {
+          pvPhoto.textContent = initials || '?';
+        }
       }
     }
 

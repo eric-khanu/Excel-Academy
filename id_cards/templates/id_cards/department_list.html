@@ -1,0 +1,179 @@
+{% extends "id_cards/base.html" %}
+{% block title %}Departments{% endblock %}
+
+{% block extra_head %}
+<style>
+  .dept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .dept-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px 22px;
+    box-shadow: 0 4px 16px rgba(60, 30, 20, 0.08);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+    border-left: 4px solid var(--secondary);
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .dept-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(60, 30, 20, 0.14);
+  }
+  .dept-card.inactive {
+    opacity: 0.6;
+    border-left-color: #9ca3af;
+  }
+  .dept-card .dept-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .dept-card h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1.2;
+    margin: 0;
+    min-width: 0;
+    word-break: break-word;
+  }
+  .dept-card .dept-code {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    background: var(--accent);
+    border: 1px solid rgba(200, 122, 44, 0.35);
+    border-radius: 20px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .dept-card .dept-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .dept-card .dept-meta i { color: var(--secondary); width: 14px; }
+  .dept-card .dept-count {
+    font-size: 0.82rem;
+    color: var(--text);
+    font-weight: 600;
+    padding: 8px 12px;
+    background: #fdfcf9;
+    border-radius: 10px;
+    border: 1px dashed rgba(139, 32, 32, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dept-card .dept-count i { color: var(--secondary); }
+  .dept-card .dept-count strong { color: var(--primary); }
+  .dept-card .dept-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.12);
+    margin-top: auto;
+  }
+  .dept-card .dept-actions .btn {
+    padding: 6px 11px;
+    font-size: 0.75rem;
+  }
+  .status-pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .status-pill.active { background: #d1fae5; color: #065f46; }
+  .status-pill.inactive { background: #e5e7eb; color: #374151; }
+  @media (max-width: 600px) {
+    .dept-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Departments</h1>
+    <p>{{ departments|length }} department{{ departments|length|pluralize }} on file</p>
+  </div>
+  <div class="actions">
+    <a href="{% url 'card_list' %}" class="btn btn-outline">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <a href="{% url 'department_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Department
+    </a>
+  </div>
+</div>
+
+{% if departments %}
+  <div class="dept-grid">
+    {% for dept in departments %}
+      <div class="dept-card {% if not dept.is_active %}inactive{% endif %}">
+        <div class="dept-head">
+          <h3>{{ dept.name }}</h3>
+          <span class="dept-code">{{ dept.code }}</span>
+        </div>
+
+        <div class="dept-meta">
+          <div><i class="fas fa-calendar"></i> Created {{ dept.created_at|date:"M j, Y" }}</div>
+          <div>
+            <span class="status-pill {% if dept.is_active %}active{% else %}inactive{% endif %}">
+              {% if dept.is_active %}Active{% else %}Inactive{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <div class="dept-count">
+          <i class="fas fa-users"></i>
+          <strong>{{ dept.teachers.count }}</strong> staff member{{ dept.teachers.count|pluralize }}
+        </div>
+
+        <div class="dept-actions">
+          <a href="{% url 'department_edit' dept.pk %}" class="btn btn-outline">
+            <i class="fas fa-pen"></i> Edit
+          </a>
+          <a href="{% url 'department_delete' dept.pk %}" class="btn btn-outline" style="color:#dc2626; border-color:#dc2626;">
+            <i class="fas fa-trash"></i> Delete
+          </a>
+          <a href="{% url 'card_list' %}?dept={{ dept.pk }}" class="btn btn-outline">
+            <i class="fas fa-list"></i> View Staff
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <i class="fas fa-building"></i>
+    <h2>No departments yet</h2>
+    <p>Departments group your staff by role or faculty. Add the first one to get started.</p>
+    <div class="empty-actions">
+      <a href="{% url 'department_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add First Department
+      </a>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

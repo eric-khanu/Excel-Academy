@@ -7,15 +7,17 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.contrib import messages
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count, Sum, Max
+from django.utils import timezone
 
 from .models import Teacher, School, IDCardTemplate, Department, Level
 from .forms import (
     TeacherForm, SchoolForm, DepartmentForm, LevelForm, BulkImportForm,
+    PrintResetForm,
 )
 
 # ---------------------------------------------------------------------------
@@ -89,22 +91,46 @@ def _render_pdf(template_name, context, filename):
     return response
 
 
+def _apply_print_filter(queryset, printed_param):
+    """
+    Apply the ?printed= filter to a teacher queryset.
+
+    Accepted values:
+        ''          → no filter (all)
+        'no'        → unprinted only (print_count == 0)
+        'yes'       → printed any number of times (print_count > 0)
+        'once'      → printed exactly once (print_count == 1)
+        'reprinted' → printed more than once (print_count > 1)
+    """
+    if printed_param == 'no':
+        return queryset.filter(print_count=0)
+    if printed_param == 'yes':
+        return queryset.filter(print_count__gt=0)
+    if printed_param == 'once':
+        return queryset.filter(print_count=1)
+    if printed_param == 'reprinted':
+        return queryset.filter(print_count__gt=1)
+    return queryset
+
+
 # ============================================================================
 # CARD / TEACHER VIEWS
 # ============================================================================
 def card_list(request):
-    """Dashboard — shows all staff cards with filters."""
+    """Dashboard — shows all staff cards with filters and print tracking."""
     teachers = (
         Teacher.objects
         .select_related('department', 'template')
         .prefetch_related('levels')
+        .order_by('full_name')
     )
 
     # --- Filters ---
-    q      = request.GET.get('q', '').strip()
-    role   = request.GET.get('role', '')
-    status = request.GET.get('status', '')
-    dept   = request.GET.get('dept', '')
+    q        = request.GET.get('q', '').strip()
+    role     = request.GET.get('role', '')
+    status   = request.GET.get('status', '')
+    dept     = request.GET.get('dept', '')
+    printed  = request.GET.get('printed', '')
 
     if q:
         teachers = teachers.filter(
@@ -120,16 +146,43 @@ def card_list(request):
     if dept:
         teachers = teachers.filter(department__id=dept)
 
-    # --- Stats (always across the whole DB, not the filtered set) ---
+    teachers = _apply_print_filter(teachers, printed)
+
+    # --- Materialise the queryset ONCE, then partition in Python ---
+    # This is faster than running three .filter().count() queries,
+    # and gives the template three pre-split lists to iterate over.
+    teachers = list(teachers)
+
+    unprinted_teachers = [t for t in teachers if t.print_count == 0]
+    printed_teachers   = [t for t in teachers if t.print_count == 1]
+    reprinted_teachers = [t for t in teachers if t.print_count > 1]
+
+    # --- Stats (across the whole DB, not the filtered set) ---
     stats = {
         'total':       Teacher.objects.count(),
         'active':      Teacher.objects.filter(status='active').count(),
         'teachers':    Teacher.objects.filter(role='TEACHER').count(),
         'departments': Department.objects.filter(is_active=True).count(),
+        'unprinted':   Teacher.objects.filter(print_count=0).count(),
+        'printed':     Teacher.objects.filter(print_count=1).count(),
+        'reprinted':   Teacher.objects.filter(print_count__gt=1).count(),
     }
 
     context = {
+        # Base list (still useful for the header count and empty check)
         'teachers': teachers,
+
+        # Three partitioned lists — the template iterates over these
+        'unprinted_teachers': unprinted_teachers,
+        'printed_teachers':   printed_teachers,
+        'reprinted_teachers': reprinted_teachers,
+
+        # Section counts
+        'unprinted_count': len(unprinted_teachers),
+        'printed_count':   len(printed_teachers),
+        'reprinted_count': len(reprinted_teachers),
+
+        # Rest of the page context
         'school': get_school(),
         'departments': Department.objects.filter(is_active=True),
         'roles': Teacher.ROLE_CHOICES,
@@ -139,10 +192,10 @@ def card_list(request):
             'role': role,
             'status': status,
             'dept': dept,
+            'printed': printed,
         },
     }
     return render(request, 'id_cards/card_list.html', context)
-
 
 def card_detail(request, pk):
     teacher = get_object_or_404(
@@ -153,7 +206,6 @@ def card_detail(request, pk):
         'teacher': teacher,
         'school': get_school(),
     })
-
 
 @require_http_methods(["GET", "POST"])
 def card_create(request):
@@ -209,10 +261,12 @@ def card_delete(request, pk):
 
 
 # ============================================================================
-# PRINT VIEWS (browser-native)
+# PRINT VIEWS (browser-native) — these MARK AS PRINTED
 # ============================================================================
 def card_print(request, pk):
+    """Print a single card — records a print event."""
     teacher = get_object_or_404(Teacher, pk=pk)
+    teacher.mark_printed()
     return render(request, 'id_cards/card_print.html', {
         'teacher': teacher,
         'school': get_school(),
@@ -220,19 +274,107 @@ def card_print(request, pk):
 
 
 def card_print_all(request):
-    teachers = Teacher.objects.filter(status='active').select_related('department')
+    """
+    Print all cards — records a print event per card (bulk).
+
+    Query params:
+        ?printed=no        → only unprinted cards
+        ?printed=yes       → only already-printed cards (any count)
+        ?printed=once      → only printed exactly once
+        ?printed=reprinted → only reprinted cards
+        (none)             → all active cards
+        ?track=0           → do NOT record print events (preview mode)
+    """
+    teachers_qs = (
+        Teacher.objects
+        .filter(status='active')
+        .select_related('department')
+        .order_by('full_name')
+    )
+
+    printed_filter = request.GET.get('printed', '')
+    teachers_qs = _apply_print_filter(teachers_qs, printed_filter)
+
+    teachers = list(teachers_qs)
+
+    # ---- Print tracking (skippable for preview runs) ----
+    track = request.GET.get('track', '1') != '0'
+    if track and teachers:
+        Teacher.mark_many_printed(teachers)
+        # Refresh the instances so the audit strip in the template
+        # reflects the NEW count.
+        for t in teachers:
+            t.refresh_from_db(
+                fields=['print_count', 'first_printed_at', 'last_printed_at']
+            )
+
     return render(request, 'id_cards/card_print.html', {
         'teachers': teachers,
         'school': get_school(),
         'print_all': True,
+        'tracked': track,
     })
 
 
+@require_POST
+def card_print_reset(request, pk):
+    """
+    Reset print tracking on a single card.
+
+    POST only. Protected by the PrintResetForm — the admin must type
+    "RESET" to confirm, so a misclick can't wipe the audit trail.
+    """
+    teacher = get_object_or_404(Teacher, pk=pk)
+    form = PrintResetForm(request.POST, teacher=teacher)
+
+    if form.is_valid():
+        previous_count = teacher.print_count or 0
+        teacher.reset_print_tracking()
+        messages.success(
+            request,
+            f"Print tracking reset for {teacher.full_name} "
+            f"(was {previous_count} print{'s' if previous_count != 1 else ''})."
+        )
+    else:
+        messages.error(
+            request,
+            "Print tracking was NOT reset — confirmation phrase didn't match."
+        )
+
+    return redirect('card_detail', pk=pk)
+
+
+@require_POST
+def reset_all_print_counts(request):
+    """
+    Bulk-reset print tracking for every staff member.
+
+    POST only, guarded by CSRF + an explicit confirmation in the template.
+    """
+    updated = Teacher.reset_all_print_tracking()
+    messages.success(
+        request,
+        f"Print tracking reset for {updated} staff record{'s' if updated != 1 else ''}."
+    )
+    return redirect('school_settings')
+
+
 # ============================================================================
-# PDF VIEWS
+# PDF VIEWS — these MARK AS PRINTED too
 # ============================================================================
 def card_pdf(request, pk):
+    """
+    Download a single card as PDF — records a print event.
+
+    Query params:
+        ?track=0 → do NOT record a print event (preview / re-download)
+    """
     teacher = get_object_or_404(Teacher, pk=pk)
+
+    track = request.GET.get('track', '1') != '0'
+    if track:
+        teacher.mark_printed()
+
     safe_name = teacher.full_name.replace(' ', '_').replace('/', '_')
     return _render_pdf(
         'id_cards/card_pdf.html',
@@ -242,7 +384,36 @@ def card_pdf(request, pk):
 
 
 def card_pdf_all(request):
-    teachers = Teacher.objects.filter(status='active').select_related('department')
+    """
+    Download all active cards as one PDF — records a print event per card.
+
+    Query params:
+        ?printed=no        → only unprinted
+        ?printed=yes       → only already-printed
+        ?printed=once      → exactly one print
+        ?printed=reprinted → reprinted
+        ?track=0           → do NOT record print events
+    """
+    teachers_qs = (
+        Teacher.objects
+        .filter(status='active')
+        .select_related('department')
+        .order_by('full_name')
+    )
+
+    printed_filter = request.GET.get('printed', '')
+    teachers_qs = _apply_print_filter(teachers_qs, printed_filter)
+
+    teachers = list(teachers_qs)
+
+    track = request.GET.get('track', '1') != '0'
+    if track and teachers:
+        Teacher.mark_many_printed(teachers)
+        for t in teachers:
+            t.refresh_from_db(
+                fields=['print_count', 'first_printed_at', 'last_printed_at']
+            )
+
     return _render_pdf(
         'id_cards/card_pdf.html',
         {'teachers': teachers, 'school': get_school(), 'print_all': True},
@@ -256,6 +427,7 @@ def card_pdf_all(request):
 @require_http_methods(["GET", "POST"])
 def school_settings(request):
     school = get_school()
+
     if request.method == 'POST':
         form = SchoolForm(request.POST, request.FILES, instance=school)
         if form.is_valid():
@@ -264,9 +436,26 @@ def school_settings(request):
             return redirect('school_settings')
     else:
         form = SchoolForm(instance=school)
+
+    # ---- Print tracking overview for the settings page ----
+    totals = Teacher.objects.aggregate(
+        total=Count('id'),
+        total_prints=Sum('print_count'),
+        last_print=Max('last_printed_at'),
+    )
+    print_stats = {
+        'total':        totals['total'] or 0,
+        'total_prints': totals['total_prints'] or 0,
+        'last_print':   totals['last_print'],
+        'unprinted':    Teacher.objects.filter(print_count=0).count(),
+        'printed':      Teacher.objects.filter(print_count=1).count(),
+        'reprinted':    Teacher.objects.filter(print_count__gt=1).count(),
+    }
+
     return render(request, 'id_cards/school_settings.html', {
         'form': form,
         'school': school,
+        'print_stats': print_stats,
     })
 
 
@@ -422,7 +611,9 @@ def bulk_import(request):
         created, skipped, errors = 0, 0, []
 
         valid_roles = dict(Teacher.ROLE_CHOICES)
-        valid_blood_groups = {choice[0] for choice in Teacher.BLOOD_GROUP_CHOICES if choice[0]}
+        valid_blood_groups = {
+            choice[0] for choice in Teacher.BLOOD_GROUP_CHOICES if choice[0]
+        }
 
         for i, row in enumerate(reader, start=2):  # row 1 = header
             full_name = (row.get('full_name') or '').strip()
@@ -468,7 +659,9 @@ def bulk_import(request):
                         phone=(row.get('phone') or '').strip(),
                         valid_thru=valid_thru,
                         blood_group=blood_group,
-                        emergency_contact_phone=(row.get('emergency_contact_phone') or '').strip(),
+                        emergency_contact_phone=(
+                            row.get('emergency_contact_phone') or ''
+                        ).strip(),
                     )
                     # Attach levels
                     levels_raw = (row.get('levels') or '').strip()
@@ -498,7 +691,9 @@ def bulk_import(request):
     })
 
 
-import io
+# ============================================================================
+# QR CODE
+# ============================================================================
 import qrcode
 from qrcode.image.svg import SvgPathImage
 
@@ -511,16 +706,13 @@ def qr_employee_svg(request, employee_id):
     """
     teacher = get_object_or_404(Teacher, employee_id=employee_id)
 
-    # What goes inside the QR code (plain text)
-    qr_data = teacher.employee_id
-
     qr = qrcode.QRCode(
         version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_M,
         box_size=10,
         border=1,
     )
-    qr.add_data(qr_data)
+    qr.add_data(teacher.employee_id)
     qr.make(fit=True)
 
     img = qr.make_image(image_factory=SvgPathImage)

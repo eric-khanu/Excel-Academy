@@ -91,22 +91,12 @@ WSGI_APPLICATION = "id_card_project.wsgi.application"
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 # ------------------------------------------------------------------
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME", default="excel_academy"),
-        "USER": config("DB_USER", default="excel_academy_user"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": config(
-            "DB_HOST",
-            default="dpg-dam4m9ou01pc73bfe3a0-a.oregon-postgres.render.com",
-        ),
-        "PORT": config("DB_PORT", default="5432"),
-        "OPTIONS": {
-            "sslmode": config("DB_SSLMODE", default="require"),
-        },
-        "CONN_MAX_AGE": 600,
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
 
 # ------------------------------------------------------------------
 # Password validation

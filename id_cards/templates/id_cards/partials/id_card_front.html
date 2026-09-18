@@ -5,10 +5,10 @@
      ============================================================ -->
 <div class="id-card-front-wrapper">
   <div class="id-card-front" style="
-    --primary: {{ school.primary_color|default:'#8B2020' }};
+    --primary:   {{ school.primary_color|default:'#8B2020' }};
     --secondary: {{ school.secondary_color|default:'#C87A2C' }};
-    --accent: {{ school.accent_color|default:'#FBF6EC' }};
-    --text: {{ school.text_color|default:'#2A1810' }};
+    --accent:    {{ school.accent_color|default:'#FBF6EC' }};
+    --text:      {{ school.text_color|default:'#2A1810' }};
   ">
 
     <!-- HEADER -->
@@ -20,12 +20,14 @@
                  style="width:100%; height:100%; object-fit:contain;">
           {% else %}
             <i class="fas fa-graduation-cap"
-               style="font-size: 1.1rem; color: var(--primary);"></i>
+               style="font-size: 0.85rem; color: var(--primary);"></i>
           {% endif %}
         </div>
 
         <div class="front-header-text">
-          <div class="front-header-school-line1">EXCEL ACADEMY</div>
+          <div class="front-header-school-line1">
+            {{ school.name|default:"School Name"|upper|truncatechars:44 }}
+          </div>
         </div>
       </div>
 
@@ -86,13 +88,6 @@
       </div>
     </div>
 
-    {% if not teacher.template or teacher.template.show_hologram %}
-    <div class="front-holo-sticker">
-      <div class="front-holo-short-name">{{ school.short_name|default:"ID"|upper|slice:":5" }}</div>
-      <div class="front-holo-authentic">AUTHENTIC</div>
-    </div>
-    {% endif %}
-
     {% if not teacher.template or teacher.template.show_gold_bar %}
     <div class="front-gold-bar"></div>
     {% endif %}
@@ -137,7 +132,7 @@
   /* --- Header --- */
   .front-card-header {
     background: linear-gradient(160deg, var(--primary) 0%, #5A1414 100%);
-    padding: 8px 8px 6px 8px;
+    padding: 10px 8px 6px 8px;
     position: relative;
     border-bottom: 2px solid var(--secondary);
   }
@@ -146,7 +141,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-bottom: 5px;
+    padding-bottom: 6px;
   }
 
   .front-header-logo {
@@ -167,40 +162,27 @@
   .front-header-text {
     flex: 1;
     min-width: 0;
-    text-align: center;
+    text-align: left;
   }
 
+  /* Single school-name line — sized to fit the header area */
   .front-header-school-line1 {
     font-family: 'Cinzel', serif;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 800;
     letter-spacing: 0.5px;
     color: #F5C87A;
     text-transform: uppercase;
-    line-height: 1.15;
+    line-height: 1.2;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    margin-bottom: 4px;
-  }
-
-  .front-header-school-line2 {
-    font-family: 'Cinzel', serif;
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: 1.4px;
-    color: #F5C87A;
-    text-transform: uppercase;
-    line-height: 1.15;
-    margin-top: 1px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    text-align: center;
   }
 
   .front-gold-divider {
     width: 100%;
-    height: 1px;
+    height: 2px;
     background: linear-gradient(90deg, transparent, var(--secondary), transparent);
     margin: 2px auto 0 auto;
     opacity: 0.85;
@@ -239,7 +221,7 @@
     height: 1.05in;
     border-radius: 50%;
     background: var(--accent);
-    padding: 4px;
+    padding: 0px;
     border: 2px solid var(--secondary);
     box-shadow: 0 6px 16px -2px rgba(60, 30, 20, 0.45);
     overflow: hidden;
@@ -261,7 +243,7 @@
     justify-content: center;
     font-family: 'Cinzel', serif;
     font-weight: 800;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     color: var(--primary);
   }
 
@@ -275,11 +257,11 @@
 
   .front-teacher-name {
     font-family: 'Cinzel', serif;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.4px;
     color: var(--primary);
-    line-height: 1.15;
+    line-height: 1.2;
     word-break: break-word;
   }
 
@@ -289,7 +271,7 @@
     font-weight: 700;
     color: var(--primary);
     letter-spacing: 0.5px;
-    margin-top: 2px;
+    margin-top: 3px;
     text-transform: uppercase;
     display: inline-block;
     background: rgba(200, 122, 44, 0.15);

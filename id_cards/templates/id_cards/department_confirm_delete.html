@@ -1,0 +1,188 @@
+{% extends "id_cards/base.html" %}
+{% block title %}Delete {{ department.name }}?{% endblock %}
+
+{% block extra_head %}
+<style>
+  .del-layout { max-width: 640px; margin: 0 auto; padding: 20px 0 40px; }
+  .del-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 12px 40px -12px rgba(220, 38, 38, 0.22);
+    border: 1px solid rgba(220, 38, 38, 0.15);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .del-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #dc2626, #f87171, #dc2626);
+  }
+  .del-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px -6px rgba(220, 38, 38, 0.35);
+    border: 2px solid #fecaca;
+  }
+  .del-card h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #7f1d1d;
+    margin-bottom: 8px;
+  }
+  .del-card .lead {
+    color: #6b5a4a;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    max-width: 440px;
+    margin: 0 auto 24px;
+  }
+  .dept-preview {
+    padding: 18px;
+    background: #fdfcf9;
+    border: 1.5px dashed rgba(220, 38, 38, 0.25);
+    border-radius: 14px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .dept-preview .dp-code {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    background: var(--accent);
+    border: 2px solid var(--secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+  .dept-preview .dp-info { text-align: left; }
+  .dept-preview .dp-info h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 3px;
+  }
+  .dept-preview .dp-info .dp-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .warning-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 26px;
+    text-align: left;
+    font-size: 0.85rem;
+    color: #7f1d1d;
+    line-height: 1.55;
+  }
+  .warning-box strong { font-weight: 700; color: #991b1b; }
+  .del-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .del-actions .btn { min-width: 140px; justify-content: center; }
+  .del-actions .btn-cancel {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(139, 32, 32, 0.3);
+  }
+  .del-actions .btn-cancel:hover { transform: translateY(-2px); }
+  .del-actions .btn-delete {
+    background: transparent;
+    color: #dc2626;
+    border: 1.5px solid #dc2626;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .del-actions .btn-delete:hover {
+    background: #dc2626;
+    color: #fff;
+  }
+  @media (max-width: 600px) {
+    .del-card { padding: 28px 22px; }
+    .del-actions .btn,
+    .del-actions .btn-cancel { width: 100%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="del-layout">
+  <div class="del-card">
+    <div class="del-icon"><i class="fas fa-triangle-exclamation"></i></div>
+
+    <h1>Delete this department?</h1>
+    <p class="lead">
+      The department will be removed from the system. Any staff currently
+      assigned to it will be left without a department.
+    </p>
+
+    <div class="dept-preview">
+      <div class="dp-code">{{ department.code }}</div>
+      <div class="dp-info">
+        <h3>{{ department.name }}</h3>
+        <div class="dp-sub">
+          {{ department.teachers.count }} staff member{{ department.teachers.count|pluralize }} assigned
+        </div>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <strong><i class="fas fa-circle-exclamation"></i> What will happen:</strong><br>
+      The department is permanently removed. Staff records remain, but their
+      department assignment becomes empty and must be reassigned manually.
+      This cannot be undone.
+    </div>
+
+    <form method="post" id="delForm">
+      {% csrf_token %}
+      <div class="del-actions">
+        <a href="{% url 'department_list' %}" class="btn-cancel">
+          <i class="fas fa-arrow-left"></i> Cancel
+        </a>
+        <button type="submit" class="btn-delete">
+          <i class="fas fa-trash"></i> Yes, Delete
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,346 @@
+{% extends "id_cards/base.html" %}
+{% block title %}Reset Print Tracking — {{ teacher.full_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .reset-layout {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 20px 0 40px;
+  }
+  .reset-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 12px 40px -12px rgba(220, 38, 38, 0.2);
+    border: 1px solid rgba(220, 38, 38, 0.15);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .reset-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #dc2626, #f87171, #dc2626);
+  }
+  .reset-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px -6px rgba(220, 38, 38, 0.35);
+    border: 2px solid #fecaca;
+  }
+  .reset-card h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #7f1d1d;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .reset-card .lead {
+    color: #6b5a4a;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    max-width: 440px;
+    margin: 0 auto 24px;
+  }
+  .teacher-mini {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: #fdfcf9;
+    border: 1.5px dashed rgba(220, 38, 38, 0.25);
+    border-radius: 12px;
+    margin-bottom: 22px;
+    text-align: left;
+  }
+  .teacher-mini .tm-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--secondary);
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+  .teacher-mini .tm-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .teacher-mini .tm-info h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 2px;
+  }
+  .teacher-mini .tm-info .tm-id {
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.76rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .current-state {
+    padding: 14px 18px;
+    background: var(--print-reprinted-bg, #dbeafe);
+    border: 1px solid var(--print-reprinted-br, #bfdbfe);
+    border-radius: 12px;
+    margin-bottom: 22px;
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--print-reprinted-fg, #1e40af);
+  }
+  .current-state .cs-label {
+    font-weight: 800;
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .current-state .cs-count {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .current-state .cs-dates {
+    font-size: 0.78rem;
+    opacity: 0.9;
+    line-height: 1.45;
+  }
+  .current-state .cs-dates strong { font-weight: 700; }
+
+  .reset-form .confirm-zone {
+    padding: 16px 18px;
+    background: #fdfcf9;
+    border: 1.5px dashed rgba(220, 38, 38, 0.3);
+    border-radius: 12px;
+    text-align: left;
+    margin-bottom: 22px;
+  }
+  .reset-form .cz-label {
+    display: block;
+    font-size: 0.82rem;
+    color: #7f1d1d;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .reset-form .cz-label strong {
+    font-weight: 700;
+    color: #991b1b;
+    font-family: 'Menlo', 'Consolas', monospace;
+  }
+  .reset-form input[type="text"] {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid #fecaca;
+    border-radius: 9px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: #fff;
+    color: #991b1b;
+  }
+  .reset-form input[type="text"]:focus {
+    outline: none;
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  }
+  .reset-form input[type="text"].is-match {
+    border-color: #16a34a;
+    background: #f0fdf4;
+    color: #166534;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  }
+  .reset-form .cz-hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .reset-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .reset-actions .btn { min-width: 150px; justify-content: center; }
+  .btn-reset-confirm {
+    background: #dc2626;
+    color: #fff;
+    padding: 12px 24px;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .btn-reset-confirm:hover:not(:disabled) {
+    background: #b91c1c;
+    transform: translateY(-1px);
+  }
+  .btn-reset-confirm:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #fca5a5;
+  }
+  .reset-actions .btn-cancel {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(139, 32, 32, 0.3);
+  }
+  .reset-actions .btn-cancel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(139, 32, 32, 0.4);
+  }
+  @media (max-width: 600px) {
+    .reset-card { padding: 28px 22px; }
+    .reset-actions .btn,
+    .reset-actions .btn-cancel { width: 100%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reset-layout">
+  <div class="reset-card">
+
+    <div class="reset-icon"><i class="fas fa-eraser"></i></div>
+
+    <h1>Reset print tracking?</h1>
+    <p class="lead">
+      This clears the print count and both timestamps for this card. The card
+      itself will be marked as <strong>never printed</strong> in reports.
+      This cannot be undone.
+    </p>
+
+    <div class="teacher-mini">
+      <div class="tm-avatar">
+        {% if teacher.photo %}
+          <img src="{{ teacher.photo.url }}" alt="{{ teacher.full_name }}">
+        {% else %}
+          {{ teacher.initials }}
+        {% endif %}
+      </div>
+      <div class="tm-info">
+        <h3>{{ teacher.full_name }}</h3>
+        <div class="tm-id">{{ teacher.employee_id }}</div>
+      </div>
+    </div>
+
+    <div class="current-state">
+      <div class="cs-label">Current print history</div>
+      <div class="cs-count">{{ teacher.print_count }} print{{ teacher.print_count|pluralize }}</div>
+      <div class="cs-dates">
+        First printed: <strong>{{ teacher.first_printed_at|date:"M j, Y · H:i"|default:"—" }}</strong><br>
+        Last printed: <strong>{{ teacher.last_printed_at|date:"M j, Y · H:i"|default:"—" }}</strong>
+      </div>
+    </div>
+
+    <form method="post" class="reset-form" id="resetForm" autocomplete="off">
+      {% csrf_token %}
+
+      <div class="confirm-zone">
+        <label class="cz-label" for="resetConfirm">
+          Type <strong>RESET</strong> to confirm you want to clear this card's
+          print history.
+        </label>
+        <input type="text"
+               name="confirm"
+               id="resetConfirm"
+               placeholder="Type RESET"
+               maxlength="10"
+               autocapitalize="characters"
+               autocomplete="off"
+               spellcheck="false"
+               required>
+        <div class="cz-hint">
+          <i class="fas fa-circle-info"></i>
+          The confirm button unlocks only when the word matches.
+        </div>
+      </div>
+
+      <div class="reset-actions">
+        <a href="{% url 'card_detail' teacher.pk %}" class="btn-cancel">
+          <i class="fas fa-arrow-left"></i> Cancel
+        </a>
+        <button type="submit" class="btn-reset-confirm" id="resetBtn" disabled>
+          <i class="fas fa-eraser"></i> Reset Print Tracking
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const input  = document.getElementById('resetConfirm');
+    const button = document.getElementById('resetBtn');
+    const form   = document.getElementById('resetForm');
+    if (!input || !button || !form) return;
+
+    const REQUIRED = 'RESET';
+
+    function sync() {
+      const value = (input.value || '').trim().toUpperCase();
+      const match = value === REQUIRED;
+      button.disabled = !match;
+      input.classList.toggle('is-match', match);
+    }
+
+    input.addEventListener('input', function () {
+      const upper = input.value.toUpperCase();
+      if (input.value !== upper) input.value = upper;
+      sync();
+    });
+
+    form.addEventListener('submit', function (e) {
+      if (button.disabled) { e.preventDefault(); input.focus(); return false; }
+    });
+
+    sync();
+  })();
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      window.location.href = "{% url 'card_detail' teacher.pk %}";
+    }
+  });
+</script>
+{% endblock %}

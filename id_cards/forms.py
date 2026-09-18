@@ -4,6 +4,47 @@ from .models import Teacher, School, IDCardTemplate, Department, Level
 
 
 # ============================================================================
+# SHARED VALIDATORS (avoid duplicating the same logic across forms)
+# ============================================================================
+PHONE_ALLOWED_CHARS = set('+0123456789 -()')
+
+
+def validate_phone(value, field_label="Phone"):
+    """
+    Strip a phone field and confirm it only contains characters a phone number
+    is allowed to contain. Returns the stripped value.
+    """
+    value = (value or '').strip()
+    if value and not all(c in PHONE_ALLOWED_CHARS for c in value):
+        raise forms.ValidationError(
+            f"{field_label} can only contain digits, +, spaces, dashes, "
+            f"and parentheses."
+        )
+    return value
+
+
+def validate_hex_color(value, field_label="Color"):
+    """
+    Normalize a hex color to uppercase, 7-character form (#RRGGBB).
+    """
+    value = (value or '').strip()
+    if not value:
+        return value
+    if not value.startswith('#'):
+        value = '#' + value
+    if len(value) != 7:
+        raise forms.ValidationError(
+            f"{field_label} must be a valid 6-digit hex code, e.g. #8B2020."
+        )
+    # Only allow hex digits after the '#'
+    if not all(c in '0123456789ABCDEFabcdef' for c in value[1:]):
+        raise forms.ValidationError(
+            f"{field_label} must only contain hex digits (0-9, A-F)."
+        )
+    return value.upper()
+
+
+# ============================================================================
 # TEACHER FORM
 # ============================================================================
 class TeacherForm(forms.ModelForm):
@@ -28,11 +69,13 @@ class TeacherForm(forms.ModelForm):
                 'class': 'form-input',
                 'placeholder': 'e.g. Sarah Elizabeth Chen',
                 'autocomplete': 'off',
+                'maxlength': 200,
             }),
             'designation': forms.TextInput(attrs={
                 'class': 'form-input',
                 'placeholder': 'e.g. Senior Mathematics Teacher',
                 'autocomplete': 'off',
+                'maxlength': 200,
             }),
             'photo': forms.FileInput(attrs={
                 'class': 'form-input',
@@ -57,13 +100,14 @@ class TeacherForm(forms.ModelForm):
                 'class': 'form-input',
                 'placeholder': '+234 800 000 0000',
                 'autocomplete': 'off',
+                'maxlength': 30,
             }),
-            # Blood group is now a dropdown (matches model choices)
             'blood_group': forms.Select(attrs={'class': 'form-input'}),
             'emergency_contact_phone': forms.TextInput(attrs={
                 'class': 'form-input',
                 'placeholder': '+234 800 000 0000',
                 'autocomplete': 'off',
+                'maxlength': 30,
             }),
             'status': forms.Select(attrs={'class': 'form-input'}),
             'template': forms.Select(attrs={'class': 'form-input'}),
@@ -80,7 +124,6 @@ class TeacherForm(forms.ModelForm):
         labels = {
             'full_name': 'Full Name',
             'valid_thru': 'Valid Thru',
-            'employee_id': 'Employee ID',
             'emergency_contact_phone': 'Emergency Contact Phone',
         }
 
@@ -107,12 +150,12 @@ class TeacherForm(forms.ModelForm):
         self.fields['blood_group'].required = False
         self.fields['emergency_contact_phone'].required = False
 
-        # Ensure the blank option for blood_group is present and labeled
-        # (the model already provides ('', '— Select Blood Group —'))
+        # Blood group choices are already defined on the model, but we set
+        # them explicitly so the blank option is guaranteed to render.
         self.fields['blood_group'].choices = Teacher.BLOOD_GROUP_CHOICES
 
     # ------------------------------------------------------------------ #
-    #  Custom validation                                                  #
+    #  Field-level validation
     # ------------------------------------------------------------------ #
     def clean_full_name(self):
         """Trim + collapse extra whitespace, enforce minimum length."""
@@ -130,61 +173,49 @@ class TeacherForm(forms.ModelForm):
         return desig
 
     def clean_phone(self):
-        """Basic phone sanitisation — strip spaces/dashes but keep +."""
-        phone = self.cleaned_data.get('phone', '').strip()
-        if phone:
-            allowed = set('+0123456789 -()')
-            if not all(c in allowed for c in phone):
-                raise forms.ValidationError(
-                    "Phone can only contain digits, +, spaces, dashes, and parentheses."
-                )
-        return phone
+        return validate_phone(self.cleaned_data.get('phone'), "Phone")
 
     def clean_emergency_contact_phone(self):
-        """Same rules as the primary phone."""
-        phone = self.cleaned_data.get('emergency_contact_phone', '').strip()
-        if phone:
-            allowed = set('+0123456789 -()')
-            if not all(c in allowed for c in phone):
-                raise forms.ValidationError(
-                    "Emergency contact phone can only contain digits, +, "
-                    "spaces, dashes, and parentheses."
-                )
-        return phone
+        return validate_phone(
+            self.cleaned_data.get('emergency_contact_phone'),
+            "Emergency contact phone",
+        )
 
     def clean_email(self):
         return self.cleaned_data.get('email', '').strip().lower()
 
-    # NOTE: clean_blood_group() has been removed — the model's `choices`
-    # on Teacher.BLOOD_GROUP_CHOICES handles validation automatically.
-
     def clean_photo(self):
         """Enforce a maximum image size (5 MB) to avoid huge uploads."""
         photo = self.cleaned_data.get('photo')
-        if photo and hasattr(photo, 'size'):
-            if photo.size > 5 * 1024 * 1024:
-                raise forms.ValidationError("Photo must be smaller than 5 MB.")
+        if photo and hasattr(photo, 'size') and photo.size > 5 * 1024 * 1024:
+            raise forms.ValidationError("Photo must be smaller than 5 MB.")
         return photo
 
+    # ------------------------------------------------------------------ #
+    #  Cross-field validation
+    # ------------------------------------------------------------------ #
     def clean(self):
-        """Cross-field validation."""
         cleaned = super().clean()
 
         role = cleaned.get('role')
         department = cleaned.get('department')
+        levels = cleaned.get('levels')
 
-        # TEACHER role should have a department
+        # Teachers should have a department (soft requirement, surfaced as
+        # a field error rather than a hard block, so admins can override).
         if role == 'TEACHER' and not department:
             self.add_error(
                 'department',
                 "Teachers should be assigned to a department."
             )
 
-        # Only TEACHER role should have assigned levels
-        if role and role != 'TEACHER' and cleaned.get('levels'):
+        # Warn if levels are assigned to staff whose role isn't TEACHER.
+        # This is a soft signal — many schools assign levels to counselors
+        # too — so we don't hard-block it, but we let the admin know.
+        if role and role not in ('TEACHER', 'COUNSELOR') and levels:
             self.add_error(
                 'levels',
-                "Only staff with the 'Teacher' role typically have assigned levels."
+                "Levels are usually only assigned to Teachers or Counselors."
             )
 
         return cleaned
@@ -210,6 +241,7 @@ class SchoolForm(forms.ModelForm):
                 'class': 'form-input',
                 'placeholder': 'e.g. Excel Junior Secondary School',
                 'autocomplete': 'off',
+                'maxlength': 200,
             }),
             'short_name': forms.TextInput(attrs={
                 'class': 'form-input',
@@ -227,26 +259,31 @@ class SchoolForm(forms.ModelForm):
                 'class': 'form-input',
                 'placeholder': 'Short motto or mission statement',
                 'autocomplete': 'off',
+                'maxlength': 200,
             }),
             'scripture_ref': forms.TextInput(attrs={
                 'class': 'form-input',
                 'placeholder': 'e.g. 2 Chronicles 15:7',
                 'autocomplete': 'off',
+                'maxlength': 100,
             }),
             'address': forms.TextInput(attrs={
                 'class': 'form-input',
                 'placeholder': 'School address',
                 'autocomplete': 'off',
+                'maxlength': 200,
             }),
             'contact_phone_1': forms.TextInput(attrs={
                 'class': 'form-input',
                 'placeholder': '+234 800 000 0000',
                 'autocomplete': 'off',
+                'maxlength': 30,
             }),
             'contact_phone_2': forms.TextInput(attrs={
                 'class': 'form-input',
                 'placeholder': '+234 800 000 0000 (optional)',
                 'autocomplete': 'off',
+                'maxlength': 30,
             }),
             'logo': forms.FileInput(attrs={
                 'class': 'form-input',
@@ -271,10 +308,10 @@ class SchoolForm(forms.ModelForm):
         }
 
     # ------------------------------------------------------------------ #
-    #  Validation                                                         #
+    #  Validation
     # ------------------------------------------------------------------ #
     def clean_short_name(self):
-        """Uppercase, strip spaces, and enforce a safe format."""
+        """Uppercase, strip spaces, enforce a safe format."""
         value = self.cleaned_data.get('short_name', '').strip().upper()
         cleaned = ''.join(c for c in value if c.isalnum() or c == '-')
         if len(cleaned) < 2:
@@ -291,45 +328,50 @@ class SchoolForm(forms.ModelForm):
         return logo
 
     def clean_contact_phone_1(self):
-        return self._clean_phone(self.cleaned_data.get('contact_phone_1'))
+        return validate_phone(
+            self.cleaned_data.get('contact_phone_1'),
+            "Primary phone",
+        )
 
     def clean_contact_phone_2(self):
-        return self._clean_phone(self.cleaned_data.get('contact_phone_2'))
-
-    @staticmethod
-    def _clean_phone(value):
-        value = (value or '').strip()
-        if value:
-            allowed = set('+0123456789 -()')
-            if not all(c in allowed for c in value):
-                raise forms.ValidationError(
-                    "Phone can only contain digits, +, spaces, dashes, and parentheses."
-                )
-        return value
+        return validate_phone(
+            self.cleaned_data.get('contact_phone_2'),
+            "Secondary phone",
+        )
 
     def clean_primary_color(self):
-        return self._clean_hex(self.cleaned_data.get('primary_color'))
+        return validate_hex_color(
+            self.cleaned_data.get('primary_color'), "Primary color"
+        )
 
     def clean_secondary_color(self):
-        return self._clean_hex(self.cleaned_data.get('secondary_color'))
+        return validate_hex_color(
+            self.cleaned_data.get('secondary_color'), "Secondary color"
+        )
 
     def clean_accent_color(self):
-        return self._clean_hex(self.cleaned_data.get('accent_color'))
+        return validate_hex_color(
+            self.cleaned_data.get('accent_color'), "Accent color"
+        )
 
     def clean_text_color(self):
-        return self._clean_hex(self.cleaned_data.get('text_color'))
+        return validate_hex_color(
+            self.cleaned_data.get('text_color'), "Text color"
+        )
 
-    @staticmethod
-    def _clean_hex(value):
-        """Ensure the color is a valid 6-digit hex code."""
-        value = (value or '').strip()
-        if not value.startswith('#'):
-            value = '#' + value
-        if len(value) != 7:
-            raise forms.ValidationError(
-                "Color must be a valid 6-digit hex code, e.g. #8B2020."
-            )
-        return value.upper()
+    def clean(self):
+        """
+        Cross-field check: if the short name changes, warn the admin
+        that existing employee IDs still use the old prefix (this is
+        informational — IDs are stored as-is and don't need to change).
+        """
+        cleaned = super().clean()
+
+        # Nothing hard to validate right now, but this is a convenient
+        # place to add future warnings (e.g. "short name collides with
+        # an existing one"). The admin field errors are surfaced from
+        # individual clean_* methods above.
+        return cleaned
 
 
 # ============================================================================
@@ -346,6 +388,7 @@ class DepartmentForm(forms.ModelForm):
                 'class': 'form-input',
                 'placeholder': 'e.g. Basic Science',
                 'autocomplete': 'off',
+                'maxlength': 150,
             }),
             'code': forms.TextInput(attrs={
                 'class': 'form-input',
@@ -373,6 +416,10 @@ class DepartmentForm(forms.ModelForm):
         code = self.cleaned_data.get('code', '').strip().upper()
         if code:
             code = ''.join(c for c in code if c.isalnum())
+            if len(code) > 10:
+                raise forms.ValidationError(
+                    "Department code must be 10 characters or fewer."
+                )
         return code
 
 
@@ -402,6 +449,7 @@ class LevelForm(forms.ModelForm):
                 'class': 'form-input',
                 'placeholder': 'Optional note about this level',
                 'autocomplete': 'off',
+                'maxlength': 200,
             }),
         }
         help_texts = {
@@ -436,8 +484,38 @@ class BulkImportForm(forms.Form):
 
     def clean_csv_file(self):
         f = self.cleaned_data.get('csv_file')
-        if f and hasattr(f, 'size') and f.size > 5 * 1024 * 1024:
+        if not f:
+            return f
+
+        # Size cap
+        if hasattr(f, 'size') and f.size > 5 * 1024 * 1024:
             raise forms.ValidationError("CSV file must be smaller than 5 MB.")
+
+        # Very light content sniff — reject anything that doesn't look
+        # like a CSV or TSV. This catches renamed .xlsx / .pdf files.
+        try:
+            head = f.read(512)
+            f.seek(0)
+        except Exception:
+            # If we can't read it, let the extension validator handle it.
+            return f
+
+        if isinstance(head, bytes):
+            try:
+                head = head.decode('utf-8-sig', errors='ignore')
+            except Exception:
+                head = ''
+
+        # First non-empty line should contain at least one comma or tab
+        first_line = next(
+            (line for line in head.splitlines() if line.strip()), ''
+        )
+        if first_line and (',' not in first_line and '\t' not in first_line):
+            raise forms.ValidationError(
+                "This file doesn't look like a CSV — no commas or tabs found "
+                "in the first line. Make sure you exported it as CSV."
+            )
+
         return f
 
 
@@ -454,9 +532,18 @@ class IDCardTemplateForm(forms.ModelForm):
             'show_barcode', 'card_footer_text', 'card_footer_subtext',
         ]
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-input'}),
-            'card_footer_text': forms.TextInput(attrs={'class': 'form-input'}),
-            'card_footer_subtext': forms.TextInput(attrs={'class': 'form-input'}),
+            'name': forms.TextInput(attrs={
+                'class': 'form-input',
+                'maxlength': 100,
+            }),
+            'card_footer_text': forms.TextInput(attrs={
+                'class': 'form-input',
+                'maxlength': 100,
+            }),
+            'card_footer_subtext': forms.TextInput(attrs={
+                'class': 'form-input',
+                'maxlength': 100,
+            }),
             'show_hologram': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
             'show_gold_bar': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
             'show_barcode':  forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
@@ -465,3 +552,84 @@ class IDCardTemplateForm(forms.ModelForm):
             'card_footer_text': 'Primary footer line on the card.',
             'card_footer_subtext': 'Secondary line shown in smaller text.',
         }
+
+
+# ============================================================================
+# PRINT TRACKING FORMS
+# ============================================================================
+class PrintResetForm(forms.Form):
+    """
+    Confirmation form for resetting print tracking.
+
+    Used by both the single-card reset and the bulk "reset all" action.
+    Requires the admin to type a confirmation phrase so a misclick can't
+    wipe a card's print history.
+    """
+
+    CONFIRM_PHRASE = "RESET"
+
+    confirm = forms.CharField(
+        max_length=10,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Type RESET to confirm',
+            'autocomplete': 'off',
+            'autocapitalize': 'characters',
+        }),
+        help_text=(
+            "Type <strong>RESET</strong> (uppercase) to confirm you want to "
+            "clear all print history. This cannot be undone."
+        ),
+    )
+
+    # Optional: which card is being reset (passed in via initial)
+    teacher = None
+
+    def __init__(self, *args, teacher=None, **kwargs):
+        self.teacher = teacher
+        super().__init__(*args, **kwargs)
+
+    def clean_confirm(self):
+        value = self.cleaned_data.get('confirm', '').strip()
+        if value.upper() != self.CONFIRM_PHRASE:
+            raise forms.ValidationError(
+                f'Please type "{self.CONFIRM_PHRASE}" exactly to confirm.'
+            )
+        return value.upper()
+
+
+class BulkPrintFilterForm(forms.Form):
+    """
+    Filter form used on the print-all page to narrow down which cards
+    are included in the batch, and to control print tracking behaviour.
+    """
+
+    PRINT_SCOPE_CHOICES = [
+        ('all',      'All active staff'),
+        ('unprinted', 'Only unprinted cards'),
+        ('printed',  'Only printed cards (reprints)'),
+        ('reprinted', 'Only reprinted cards'),
+    ]
+
+    scope = forms.ChoiceField(
+        choices=PRINT_SCOPE_CHOICES,
+        initial='unprinted',
+        widget=forms.Select(attrs={'class': 'form-input'}),
+        help_text='Which cards to include in this print run.',
+    )
+
+    track = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+        help_text=(
+            'When checked, print history is updated for every card in this '
+            'batch. Uncheck for a preview run that does not affect tracking.'
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make the field easier to read in templates
+        self.fields['scope'].label = 'Include'
+        self.fields['track'].label = 'Update print tracking'

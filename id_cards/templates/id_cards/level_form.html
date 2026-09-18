@@ -1,0 +1,171 @@
+{% extends "id_cards/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-layout-single {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 8px 0 40px;
+  }
+  .form-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px;
+    box-shadow: 0 8px 32px rgba(60, 30, 20, 0.08);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+  }
+  .form-card h1 {
+    font-family: 'Cinzel', serif;
+    color: var(--primary);
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .form-card .subtitle {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 26px;
+    line-height: 1.5;
+  }
+  .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
+  .form-group label {
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--primary);
+    margin-bottom: 6px;
+  }
+  .form-group label .required { color: #dc2626; margin-left: 2px; }
+  .form-group input[type="text"],
+  .form-group input[type="number"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-family: 'Inter', sans-serif;
+    background: #fdfcf9;
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 3px rgba(200, 122, 44, 0.15);
+    background: #fff;
+  }
+  .form-group .helptext {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .field-error {
+    color: #dc2626;
+    font-size: 0.78rem;
+    margin-top: 5px;
+    font-weight: 500;
+  }
+  .form-group.has-error input,
+  .form-group.has-error select { border-color: #f87171; background: #fef2f2; }
+  .form-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    color: #991b1b;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 22px;
+    font-size: 0.88rem;
+  }
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 22px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.12);
+    margin-top: 8px;
+  }
+  @media (max-width: 600px) {
+    .form-card { padding: 24px 20px; }
+    .form-row-2 { grid-template-columns: 1fr; gap: 0; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-layout-single">
+  <div class="form-card">
+    <h1>{{ title }}</h1>
+    <p class="subtitle">
+      {% if level %}
+        Update this level's name, type, or display order.
+      {% else %}
+        Add a new class level. The order number controls how it appears in lists.
+      {% endif %}
+    </p>
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <strong><i class="fas fa-triangle-exclamation"></i> Please fix:</strong>
+        <ul style="margin: 6px 0 0; padding-left: 20px;">
+          {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-row-2">
+        <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+          <label for="{{ form.name.id_for_label }}">
+            Level Name <span class="required">*</span>
+          </label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="field-error">{{ form.name.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="form-group {% if form.level_type.errors %}has-error{% endif %}">
+          <label for="{{ form.level_type.id_for_label }}">Level Type</label>
+          {{ form.level_type }}
+          {% if form.level_type.errors %}<div class="field-error">{{ form.level_type.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group {% if form.order.errors %}has-error{% endif %}">
+        <label for="{{ form.order.id_for_label }}">Display Order</label>
+        {{ form.order }}
+        {% if form.order.help_text %}<span class="helptext">{{ form.order.help_text }}</span>{% endif %}
+        {% if form.order.errors %}<div class="field-error">{{ form.order.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-group {% if form.description.errors %}has-error{% endif %}">
+        <label for="{{ form.description.id_for_label }}">Description</label>
+        {{ form.description }}
+        {% if form.description.help_text %}<span class="helptext">{{ form.description.help_text }}</span>{% endif %}
+        {% if form.description.errors %}<div class="field-error">{{ form.description.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i>
+          {% if level %}Save Changes{% else %}Create Level{% endif %}
+        </button>
+        <a href="{% url 'level_list' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

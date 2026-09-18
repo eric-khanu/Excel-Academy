@@ -97,44 +97,190 @@
   }
 
   /* ============================================================
-     TEACHER CARD — ENHANCED
+     SECTION HEADERS (Unprinted / Printed / Reprinted)
      ============================================================ */
-  .teacher-card {
+  .section-header {
     display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-
-  .teacher-card .badge-row {
-    display: flex;
-    gap: 5px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 32px 0 12px 0;
     flex-wrap: wrap;
-    margin-top: 6px;
+  }
+  .section-header:first-of-type {
+    margin-top: 0;
   }
 
-  .teacher-card .meta {
-    flex: 1;
+  .section-header .section-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
-  .teacher-card .meta a {
-    color: inherit;
+  .section-header .section-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+  .section-header.unprinted .section-icon {
+    background: #fef3c7;
+    color: #b45309;
+  }
+  .section-header.printed .section-icon {
+    background: #d1fae5;
+    color: #047857;
+  }
+  .section-header.reprinted .section-icon {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  .section-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin: 0;
+    letter-spacing: 0.3px;
+  }
+
+  .section-header .count-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.4px;
+  }
+  .section-header.unprinted .count-badge {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+  }
+  .section-header.printed .count-badge {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+  .section-header.reprinted .count-badge {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+  }
+
+  .section-header .section-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* ============================================================
+     ROW LIST
+     ============================================================ */
+  .staff-list {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(60, 30, 20, 0.06);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .staff-row {
+    display: grid;
+    grid-template-columns:
+      44px               /* avatar */
+      minmax(150px, 2fr) /* name + role */
+      minmax(90px, 1fr)  /* employee id */
+      minmax(110px, 1.2fr)/* department */
+      minmax(90px, 0.9fr) /* levels / blood */
+      minmax(80px, 0.7fr) /* print status */
+      minmax(140px, auto);/* actions */
+    gap: 14px;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(139, 32, 32, 0.06);
+    transition: background 0.12s;
+  }
+
+  .staff-row:last-child { border-bottom: none; }
+  .staff-row:hover { background: #fdfaf4; }
+
+  /* Avatar */
+  .staff-row .avatar-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 1.5px solid var(--secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 0.82rem;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+  .staff-row .avatar-sm img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+
+  /* Name + role */
+  .staff-row .name-cell { min-width: 0; }
+  .staff-row .name-cell .name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text);
     text-decoration: none;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .teacher-card .meta a:hover {
+  .staff-row .name-cell .name:hover {
     color: var(--primary);
     text-decoration: underline;
   }
+  .staff-row .name-cell .role-sub {
+    font-size: 0.74rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-  /* Level mini-tags inside the meta */
-  .meta-levels {
+  /* Generic cell */
+  .staff-row .cell {
+    font-size: 0.82rem;
+    color: var(--text);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .staff-row .cell .cell-label { display: none; }
+
+  .staff-row .cell .mono {
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  /* Level / blood chips */
+  .chip-row {
     display: flex;
     gap: 4px;
     flex-wrap: wrap;
-    margin-top: 4px;
-    padding-left: 22px;
   }
   .meta-level-tag {
-    font-size: 0.66rem;
+    font-size: 0.64rem;
     font-weight: 700;
     padding: 2px 7px;
     border-radius: 10px;
@@ -142,88 +288,120 @@
     border: 1px solid rgba(200, 122, 44, 0.3);
     color: var(--primary);
     letter-spacing: 0.3px;
+    white-space: nowrap;
   }
-
-  /* Blood group chip on card */
   .meta-blood {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 2px 8px;
+    gap: 4px;
+    padding: 2px 7px;
     border-radius: 10px;
     background: #fee2e2;
     border: 1px solid #fecaca;
     color: #991b1b;
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     font-weight: 800;
     letter-spacing: 0.4px;
-    margin-top: 4px;
-    margin-left: 22px;
+    white-space: nowrap;
   }
-  .meta-blood i {
-    color: #dc2626;
-    font-size: 0.6rem;
-    width: auto;
+  .meta-blood i { color: #dc2626; font-size: 0.58rem; }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  .badge-active   { background: #d1fae5; color: #065f46; }
+  .badge-inactive { background: #e5e7eb; color: #374151; }
+  .badge-expired  { background: #fee2e2; color: #991b1b; }
+  .badge-role     { background: var(--accent); color: var(--primary); border: 1px solid rgba(200,122,44,0.3); }
+
+  /* ============================================================
+     PRINT STATUS BADGES
+     ============================================================ */
+  .badge-print {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    line-height: 1.4;
+    border: 1px solid transparent;
+  }
+  .badge-print i { font-size: 0.6rem; }
+
+  .badge-print-unprinted {
+    background: var(--print-unprinted-bg, #fef3c7);
+    color: var(--print-unprinted-fg, #92400e);
+    border-color: var(--print-unprinted-br, #fde68a);
+  }
+  .badge-print-printed {
+    background: var(--print-printed-bg, #d1fae5);
+    color: var(--print-printed-fg, #065f46);
+    border-color: var(--print-printed-br, #a7f3d0);
+  }
+  .badge-print-reprinted {
+    background: var(--print-reprinted-bg, #dbeafe);
+    color: var(--print-reprinted-fg, #1e40af);
+    border-color: var(--print-reprinted-br, #bfdbfe);
   }
 
-  /* Grouped actions */
-  .teacher-card .actions {
+  /* Print date caption */
+  .print-date {
+    font-size: 0.66rem;
+    color: var(--muted);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Actions cell */
+  .staff-row .row-actions {
     display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: flex-end;
     align-items: center;
   }
-  .teacher-card .actions .spacer {
-    flex: 1;
+  .staff-row .row-actions .btn {
+    padding: 5px 9px;
+    font-size: 0.74rem;
   }
-  .teacher-card .actions .icon-btn {
-    width: 34px;
-    height: 34px;
+  .staff-row .row-actions .icon-btn {
+    width: 30px;
+    height: 30px;
     padding: 0;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 7px;
+    font-size: 0.72rem;
   }
 
   /* ============================================================
-     EMPTY STATE
+     EMPTY STATES
      ============================================================ */
-  .empty-state {
-    grid-column: 1 / -1;
+  .empty-row {
     text-align: center;
-    padding: 70px 24px;
-    background: #fff;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(60, 30, 20, 0.06);
-    border: 1px dashed rgba(139, 32, 32, 0.18);
-  }
-  .empty-state i {
-    font-size: 4rem;
-    opacity: 0.25;
-    color: var(--primary);
-  }
-  .empty-state h2 {
-    margin-top: 20px;
-    font-family: 'Cinzel', serif;
-    font-size: 1.4rem;
-    color: var(--primary);
-    font-weight: 800;
-  }
-  .empty-state p {
-    margin-top: 8px;
+    padding: 34px 20px;
     color: var(--muted);
-    font-size: 0.92rem;
-    max-width: 420px;
-    margin-left: auto;
-    margin-right: auto;
-    line-height: 1.5;
+    font-size: 0.88rem;
   }
-  .empty-state .empty-actions {
-    margin-top: 24px;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
+  .empty-row i {
+    font-size: 1.6rem;
+    opacity: 0.3;
+    color: var(--primary);
+    display: block;
+    margin-bottom: 8px;
   }
+  .empty-row.compact { padding: 26px 20px; }
 
   /* ============================================================
      RESULTS COUNT STRIP
@@ -251,6 +429,44 @@
   /* ============================================================
      RESPONSIVE
      ============================================================ */
+  @media (max-width: 900px) {
+    .staff-row {
+      grid-template-columns: 44px 1fr auto;
+      grid-template-areas:
+        "avatar name    actions"
+        ".      meta    meta";
+      gap: 6px 12px;
+      padding: 12px 16px;
+      align-items: center;
+    }
+    .staff-row .avatar-sm  { grid-area: avatar; }
+    .staff-row .name-cell  { grid-area: name; }
+    .staff-row .row-actions { grid-area: actions; }
+
+    .staff-row .cell,
+    .staff-row .chip-row {
+      grid-area: meta;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-right: 12px;
+      font-size: 0.76rem;
+    }
+
+    .staff-row .cell .cell-label {
+      display: inline;
+      font-size: 0.66rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--muted);
+      margin-right: 3px;
+    }
+
+    .staff-row .cell.employee-cell::before { content: "ID:"; }
+    .staff-row .cell.dept-cell::before     { content: "Dept:"; }
+  }
+
   @media (max-width: 700px) {
     .filter-bar .filter-group {
       min-width: 100%;
@@ -262,6 +478,10 @@
     .filter-bar .filter-actions .btn {
       flex: 1;
       justify-content: center;
+    }
+    .section-header {
+      flex-direction: column;
+      align-items: flex-start;
     }
   }
 </style>
@@ -308,13 +528,17 @@
     <div class="num">{{ stats.active|default:0 }}</div>
     <div class="lbl">Active</div>
   </div>
-  <div class="stat-card">
-    <div class="num">{{ stats.teachers|default:0 }}</div>
-    <div class="lbl">Teachers</div>
+  <div class="stat-card stat-unprinted">
+    <div class="num">{{ stats.unprinted|default:0 }}</div>
+    <div class="lbl">Not Printed</div>
   </div>
-  <div class="stat-card">
-    <div class="num">{{ stats.departments|default:0 }}</div>
-    <div class="lbl">Departments</div>
+  <div class="stat-card stat-printed">
+    <div class="num">{{ stats.printed|default:0 }}</div>
+    <div class="lbl">Printed</div>
+  </div>
+  <div class="stat-card stat-reprinted">
+    <div class="num">{{ stats.reprinted|default:0 }}</div>
+    <div class="lbl">Reprinted</div>
   </div>
 </div>
 
@@ -364,6 +588,17 @@
     </select>
   </div>
 
+  <div class="filter-group">
+    <label for="printed">Print status</label>
+    <select name="printed" id="printed">
+      <option value="">All</option>
+      <option value="no"        {% if current_filters.printed == 'no' %}selected{% endif %}>Not printed</option>
+      <option value="yes"       {% if current_filters.printed == 'yes' %}selected{% endif %}>Printed (any)</option>
+      <option value="once"      {% if current_filters.printed == 'once' %}selected{% endif %}>Printed once</option>
+      <option value="reprinted" {% if current_filters.printed == 'reprinted' %}selected{% endif %}>Reprinted</option>
+    </select>
+  </div>
+
   <div class="filter-actions">
     <button type="submit" class="btn btn-primary btn-sm">
       <i class="fas fa-filter"></i> Filter
@@ -377,35 +612,47 @@
 <!-- ============================================================
      ACTIVE FILTER CHIPS
      ============================================================ -->
-{% if current_filters.q or current_filters.role or current_filters.dept or current_filters.status %}
+{% if current_filters.q or current_filters.role or current_filters.dept or current_filters.status or current_filters.printed %}
   <div class="active-filters no-print">
     <span class="label">Active filters:</span>
 
     {% if current_filters.q %}
-      <a href="?{% if current_filters.role %}role={{ current_filters.role }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}{% endif %}"
+      <a href="?{% if current_filters.role %}role={{ current_filters.role }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed }}{% endif %}"
          class="filter-chip">
         <i class="fas fa-magnifying-glass"></i> "{{ current_filters.q }}" <i class="fas fa-xmark"></i>
       </a>
     {% endif %}
 
     {% if current_filters.role %}
-      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}{% endif %}"
+      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed }}{% endif %}"
          class="filter-chip">
         <i class="fas fa-briefcase"></i> {{ current_filters.role }} <i class="fas fa-xmark"></i>
       </a>
     {% endif %}
 
     {% if current_filters.dept %}
-      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.role %}role={{ current_filters.role }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}{% endif %}"
+      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.role %}role={{ current_filters.role }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed }}{% endif %}"
          class="filter-chip">
         <i class="fas fa-building"></i> Dept #{{ current_filters.dept }} <i class="fas fa-xmark"></i>
       </a>
     {% endif %}
 
     {% if current_filters.status %}
-      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.role %}role={{ current_filters.role }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept }}{% endif %}"
+      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.role %}role={{ current_filters.role }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed }}{% endif %}"
          class="filter-chip">
         <i class="fas fa-circle"></i> {{ current_filters.status|title }} <i class="fas fa-xmark"></i>
+      </a>
+    {% endif %}
+
+    {% if current_filters.printed %}
+      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.role %}role={{ current_filters.role }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}{% endif %}"
+         class="filter-chip">
+        <i class="fas fa-print"></i>
+        {% if current_filters.printed == 'no' %}Not printed
+        {% elif current_filters.printed == 'once' %}Printed once
+        {% elif current_filters.printed == 'reprinted' %}Reprinted
+        {% else %}Printed (any){% endif %}
+        <i class="fas fa-xmark"></i>
       </a>
     {% endif %}
 
@@ -430,113 +677,134 @@
   </div>
 {% endif %}
 
-<!-- ============================================================
-     CARD GRID
-     ============================================================ -->
-<div class="teachers-grid">
-  {% for teacher in teachers %}
-    <div class="teacher-card">
+{% comment %}
+================================================================================
+  THREE LISTS: UNPRINTED → PRINTED → REPRINTED
 
-      <!-- Header: avatar + name + badges -->
-      <div class="header">
-        <div class="avatar">
-          {% if teacher.photo %}
-            <img src="{{ teacher.photo.url }}" alt="{{ teacher.full_name }}">
-          {% else %}
-            {{ teacher.initials }}
-          {% endif %}
-        </div>
-        <div style="flex:1; min-width:0;">
-          <h3>
-            <a href="{% url 'card_detail' teacher.pk %}"
-               style="color:inherit; text-decoration:none;">
-              {{ teacher.full_name }}
-            </a>
-          </h3>
-          <div class="role">{{ teacher.designation }}</div>
-          <div class="badge-row">
-            <span class="badge badge-{{ teacher.status }}">{{ teacher.get_status_display }}</span>
-            <span class="badge badge-role">{{ teacher.get_role_display }}</span>
-          </div>
-        </div>
-      </div>
+  The view passes three pre-partitioned lists:
+    unprinted_teachers  → print_count == 0
+    printed_teachers    → print_count == 1
+    reprinted_teachers  → print_count > 1
 
-      <!-- Meta info -->
-      <div class="meta">
-        <div><i class="fas fa-id-badge"></i> {{ teacher.employee_id }}</div>
-        <div><i class="fas fa-building"></i> {{ teacher.department_display }}</div>
+  Each section header reflects the count that matches that partition.
+================================================================================
+{% endcomment %}
 
-        {% if teacher.valid_thru %}
-          <div>
-            <i class="fas fa-calendar-check"></i>
-            Valid thru: {{ teacher.valid_thru|date:"M Y" }}
-          </div>
-        {% endif %}
+{% if teachers %}
 
-        {% if teacher.levels_display %}
-          <div class="meta-levels">
-            {% for level in teacher.levels.all %}
-              <span class="meta-level-tag">{{ level.name }}</span>
-            {% endfor %}
-          </div>
-        {% endif %}
-
-        {% if teacher.blood_group %}
-          <div class="meta-blood">
-            <i class="fas fa-droplet"></i> {{ teacher.blood_group }}
-          </div>
-        {% endif %}
-      </div>
-
-      <!-- Actions -->
-      <div class="actions">
-        <a href="{% url 'card_detail' teacher.pk %}" class="btn btn-outline btn-sm">
-          <i class="fas fa-eye"></i> View
-        </a>
-        <a href="{% url 'card_edit' teacher.pk %}" class="btn btn-outline btn-sm">
-          <i class="fas fa-pen"></i>
-        </a>
-        <div class="spacer"></div>
-        <a href="{% url 'card_print' teacher.pk %}"
-           class="btn btn-secondary btn-sm icon-btn"
-           title="Print">
-          <i class="fas fa-print"></i>
-        </a>
-        <a href="{% url 'card_pdf' teacher.pk %}"
-           class="btn btn-primary btn-sm icon-btn"
-           title="Download PDF">
-          <i class="fas fa-file-pdf"></i>
-        </a>
-      </div>
+  <!-- ---------- UNPRINTED SECTION ---------- -->
+  <div class="section-header unprinted">
+    <div class="section-title-wrap">
+      <div class="section-icon"><i class="fas fa-circle-exclamation"></i></div>
+      <h2>Not Printed</h2>
+      <span class="count-badge">{{ unprinted_count }} card{{ unprinted_count|pluralize }}</span>
     </div>
-  {% empty %}
-    <div class="empty-state">
-      <i class="fas fa-id-card"></i>
-      {% if current_filters.q or current_filters.role or current_filters.dept or current_filters.status %}
-        <h2>No results match your filters</h2>
-        <p>Try widening your search or clearing some filters to see more staff.</p>
-        <div class="empty-actions">
-          <a href="{% url 'card_list' %}" class="btn btn-outline">
-            <i class="fas fa-xmark"></i> Clear Filters
-          </a>
-        </div>
-      {% else %}
-        <h2>No staff records yet</h2>
-        <p>
-          Get started by adding your first staff member or importing a list of
-          staff from a CSV file.
-        </p>
-        <div class="empty-actions">
-          <a href="{% url 'card_create' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Add First Staff
-          </a>
-          <a href="{% url 'bulk_import' %}" class="btn btn-outline">
-            <i class="fas fa-file-csv"></i> Bulk Import
-          </a>
-        </div>
+    <div class="section-actions">
+      {% if unprinted_count %}
+        <a href="{% url 'card_print_all' %}?printed=no" class="btn btn-secondary btn-sm">
+          <i class="fas fa-print"></i> Print All Unprinted
+        </a>
       {% endif %}
     </div>
-  {% endfor %}
-</div>
+  </div>
+
+  <div class="staff-list">
+    {% for teacher in unprinted_teachers %}
+      {% include "id_cards/partials/staff_row.html" with teacher=teacher print_state="unprinted" %}
+    {% empty %}
+      <div class="empty-row compact">
+        <i class="fas fa-circle-check" style="color:#047857; opacity:0.6;"></i>
+        All cards have been printed at least once.
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- ---------- PRINTED SECTION (exactly once) ---------- -->
+  <div class="section-header printed">
+    <div class="section-title-wrap">
+      <div class="section-icon"><i class="fas fa-circle-check"></i></div>
+      <h2>Printed</h2>
+      <span class="count-badge">{{ printed_count }} card{{ printed_count|pluralize }}</span>
+    </div>
+    <div class="section-actions">
+      {% if printed_count %}
+        <a href="{% url 'card_print_all' %}?printed=once" class="btn btn-outline btn-sm">
+          <i class="fas fa-print"></i> Print All (Once)
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="staff-list">
+    {% for teacher in printed_teachers %}
+      {% include "id_cards/partials/staff_row.html" with teacher=teacher print_state="printed" %}
+    {% empty %}
+      <div class="empty-row compact">
+        <i class="fas fa-print" style="opacity:0.3;"></i>
+        No cards have been printed exactly once yet.
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- ---------- REPRINTED SECTION ---------- -->
+  <div class="section-header reprinted">
+    <div class="section-title-wrap">
+      <div class="section-icon"><i class="fas fa-rotate-right"></i></div>
+      <h2>Reprinted</h2>
+      <span class="count-badge">{{ reprinted_count }} card{{ reprinted_count|pluralize }}</span>
+    </div>
+    <div class="section-actions">
+      {% if reprinted_count %}
+        <a href="{% url 'card_print_all' %}?printed=reprinted" class="btn btn-outline btn-sm">
+          <i class="fas fa-print"></i> Reprint All
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="staff-list">
+    {% for teacher in reprinted_teachers %}
+      {% include "id_cards/partials/staff_row.html" with teacher=teacher print_state="reprinted" %}
+    {% empty %}
+      <div class="empty-row compact">
+        <i class="fas fa-rotate-right" style="opacity:0.3;"></i>
+        No cards have been reprinted yet.
+      </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+
+  <!-- ============================================================
+       GLOBAL EMPTY STATE
+       ============================================================ -->
+  <div class="empty-state">
+    <i class="fas fa-id-card"></i>
+    {% if current_filters.q or current_filters.role or current_filters.dept or current_filters.status or current_filters.printed %}
+      <h2>No results match your filters</h2>
+      <p>Try widening your search or clearing some filters to see more staff.</p>
+      <div class="empty-actions">
+        <a href="{% url 'card_list' %}" class="btn btn-outline">
+          <i class="fas fa-xmark"></i> Clear Filters
+        </a>
+      </div>
+    {% else %}
+      <h2>No staff records yet</h2>
+      <p>
+        Get started by adding your first staff member or importing a list of
+        staff from a CSV file.
+      </p>
+      <div class="empty-actions">
+        <a href="{% url 'card_create' %}" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Add First Staff
+        </a>
+        <a href="{% url 'bulk_import' %}" class="btn btn-outline">
+          <i class="fas fa-file-csv"></i> Bulk Import
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+{% endif %}
 
 {% endblock %}

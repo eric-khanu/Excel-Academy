@@ -77,7 +77,7 @@
     background: #fdfcf9;
     border: 1.5px dashed rgba(220, 38, 38, 0.25);
     border-radius: 14px;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
     text-align: left;
     justify-content: center;
   }
@@ -137,6 +137,73 @@
     margin-top: 6px;
   }
 
+  /* ============================================================
+     PRINT HISTORY PANEL
+     ============================================================ */
+  .print-history {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 22px;
+    text-align: left;
+    border: 1px solid transparent;
+    flex-wrap: wrap;
+  }
+
+  .print-history .ph-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    background: rgba(255, 255, 255, 0.55);
+    flex-shrink: 0;
+  }
+
+  .print-history .ph-text {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .print-history .ph-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    line-height: 1.15;
+    margin-bottom: 3px;
+  }
+
+  .print-history .ph-sub {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    opacity: 0.92;
+  }
+
+  .print-history .ph-sub strong { font-weight: 700; }
+
+  /* Colour variants — reuse base.html print-status palette */
+  .print-history.ph-unprinted {
+    background: var(--print-unprinted-bg, #fef3c7);
+    border-color: var(--print-unprinted-br, #fde68a);
+    color: var(--print-unprinted-fg, #92400e);
+  }
+  .print-history.ph-printed {
+    background: var(--print-printed-bg, #d1fae5);
+    border-color: var(--print-printed-br, #a7f3d0);
+    color: var(--print-printed-fg, #065f46);
+  }
+  .print-history.ph-reprinted {
+    background: var(--print-reprinted-bg, #dbeafe);
+    border-color: var(--print-reprinted-br, #bfdbfe);
+    color: var(--print-reprinted-fg, #1e40af);
+  }
+
   /* ---------- Warning list ---------- */
   .warning-box {
     background: #fef2f2;
@@ -183,6 +250,80 @@
     flex-shrink: 0;
   }
 
+  /* ============================================================
+     TYPED CONFIRMATION (new)
+     Admin must type the employee ID to enable the delete button.
+     ============================================================ */
+  .confirm-zone {
+    margin-bottom: 22px;
+    padding: 16px 18px;
+    background: #fdfcf9;
+    border: 1.5px dashed rgba(220, 38, 38, 0.3);
+    border-radius: 12px;
+    text-align: left;
+  }
+  .confirm-zone .cz-label {
+    font-size: 0.8rem;
+    color: #7f1d1d;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .confirm-zone .cz-label strong {
+    font-weight: 700;
+    color: #991b1b;
+  }
+  .confirm-zone .cz-input-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .confirm-zone input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+    padding: 10px 14px;
+    border: 1.5px solid #fecaca;
+    border-radius: 9px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: #fff;
+    color: #991b1b;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .confirm-zone input[type="text"]:focus {
+    outline: none;
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  }
+  .confirm-zone input[type="text"]::placeholder {
+    color: #fca5a5;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 500;
+  }
+  .confirm-zone input[type="text"].is-match {
+    border-color: #16a34a;
+    background: #f0fdf4;
+    color: #166534;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  }
+  .confirm-zone .cz-hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .confirm-zone .cz-hint i {
+    color: var(--secondary);
+  }
+
   /* ---------- Actions ---------- */
   .delete-actions {
     display: flex;
@@ -217,9 +358,30 @@
     padding: 13px 26px;
     font-size: 0.95rem;
   }
-  .delete-actions .btn-delete:hover {
+  .delete-actions .btn-delete:hover:not(:disabled) {
     background: #dc2626;
     color: #fff;
+  }
+
+  /* Delete button is disabled until the confirmation input matches */
+  .delete-actions .btn-delete:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: transparent;
+  }
+  .delete-actions .btn-delete:disabled:hover {
+    background: transparent;
+    color: #dc2626;
+  }
+
+  /* Extra warning when card has been printed — bigger, more emphatic */
+  .delete-actions .btn-delete.btn-delete-printed:not(:disabled) {
+    background: #dc2626;
+    color: #fff;
+    font-weight: 700;
+  }
+  .delete-actions .btn-delete.btn-delete-printed:not(:disabled):hover {
+    background: #b91c1c;
   }
 
   /* Keyboard hint */
@@ -287,6 +449,48 @@
       </div>
     </div>
 
+    <!-- ============================================================
+         PRINT HISTORY PANEL
+         ============================================================ -->
+    {% if teacher.print_count == 0 %}
+      <div class="print-history ph-unprinted">
+        <div class="ph-icon"><i class="fas fa-circle-exclamation"></i></div>
+        <div class="ph-text">
+          <div class="ph-title">Never Printed</div>
+          <div class="ph-sub">
+            This card has no print history. Safe to delete — no physical
+            copies exist that could be confused with future records.
+          </div>
+        </div>
+      </div>
+    {% elif teacher.print_count == 1 %}
+      <div class="print-history ph-printed">
+        <div class="ph-icon"><i class="fas fa-circle-check"></i></div>
+        <div class="ph-text">
+          <div class="ph-title">Printed Once</div>
+          <div class="ph-sub">
+            A physical copy exists in the wild — first printed on
+            <strong>{{ teacher.first_printed_at|date:"M j, Y" }}</strong>.
+            Deleting this record will <strong>not</strong> invalidate that
+            physical card; it will simply remove the digital trace.
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="print-history ph-reprinted">
+        <div class="ph-icon"><i class="fas fa-rotate-right"></i></div>
+        <div class="ph-text">
+          <div class="ph-title">Reprinted ×{{ teacher.print_count }}</div>
+          <div class="ph-sub">
+            <strong>{{ teacher.print_count }} physical copies</strong> may exist —
+            first printed <strong>{{ teacher.first_printed_at|date:"M j, Y" }}</strong>,
+            most recently <strong>{{ teacher.last_printed_at|date:"M j, Y" }}</strong>.
+            Deleting this record will remove the print history entirely.
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
     <!-- What will be lost -->
     <div class="warning-box">
       <div class="warning-title">
@@ -308,14 +512,48 @@
         </li>
         <li>
           <i class="fas fa-xmark"></i>
-          <span>Any printed ID cards become invalid and cannot be re-issued with the same ID</span>
+          <span>
+            {% if teacher.print_count > 0 %}
+              The print history (<strong>{{ teacher.print_count }} print{{ teacher.print_count|pluralize }}</strong>) — this record will no longer appear in print reports
+            {% else %}
+              Any printed ID cards become invalid and cannot be re-issued with the same ID
+            {% endif %}
+          </span>
         </li>
       </ul>
     </div>
 
-    <!-- Actions -->
-    <form method="post" id="deleteForm">
+    <!-- ============================================================
+         TYPED CONFIRMATION ZONE
+         Admin must type the employee ID exactly to enable the
+         delete button. This is a hard gate that cannot be dismissed
+         by pressing Enter, unlike a window.confirm() dialog.
+         ============================================================ -->
+    <form method="post" id="deleteForm" autocomplete="off">
       {% csrf_token %}
+
+      <div class="confirm-zone">
+        <label class="cz-label" for="confirmInput">
+          To confirm, type the employee ID
+          <strong>{{ teacher.employee_id }}</strong>
+          in the box below:
+        </label>
+        <div class="cz-input-wrap">
+          <input type="text"
+                 id="confirmInput"
+                 name="confirm"
+                 placeholder="{{ teacher.employee_id }}"
+                 autocomplete="off"
+                 autocapitalize="characters"
+                 spellcheck="false"
+                 required>
+        </div>
+        <div class="cz-hint">
+          <i class="fas fa-circle-info"></i>
+          The delete button unlocks only when the ID matches exactly.
+        </div>
+      </div>
+
       <div class="delete-actions">
 
         <!-- Cancel = primary (safer default) -->
@@ -323,9 +561,13 @@
           <i class="fas fa-arrow-left"></i> Cancel &amp; Go Back
         </a>
 
-        <!-- Delete = secondary, danger-styled -->
-        <button type="submit" class="btn btn-delete" id="deleteBtn">
-          <i class="fas fa-trash"></i> Yes, Delete Permanently
+        <!-- Delete = disabled until the input matches -->
+        <button type="submit"
+                class="btn btn-delete {% if teacher.print_count > 0 %}btn-delete-printed{% endif %}"
+                id="deleteBtn"
+                disabled>
+          <i class="fas fa-trash"></i>
+          Yes, Delete Permanently
         </button>
 
       </div>
@@ -333,7 +575,8 @@
 
     <!-- Keyboard hint -->
     <div class="keyboard-hint">
-      Tip: press <kbd>Esc</kbd> to cancel, or <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to confirm.
+      Tip: press <kbd>Esc</kbd> to cancel.
+      The delete button unlocks once you type the ID exactly.
     </div>
 
   </div>
@@ -344,44 +587,61 @@
 {% block extra_js %}
 <script>
   /* ============================================================
-     Safety: require a confirm() dialog before the form submits
+     TYPED-CONFIRMATION GATE
+     The delete button stays disabled until the admin types the
+     employee ID exactly. This is a hard gate — it cannot be
+     dismissed with Enter or a stray click.
      ============================================================ */
   (function () {
-    const form = document.getElementById('deleteForm');
-    const deleteBtn = document.getElementById('deleteBtn');
-    if (!form || !deleteBtn) return;
+    const input  = document.getElementById('confirmInput');
+    const button = document.getElementById('deleteBtn');
+    const form   = document.getElementById('deleteForm');
+    if (!input || !button || !form) return;
 
-    deleteBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      const confirmed = window.confirm(
-        "Are you ABSOLUTELY sure?\n\n" +
-        "This will permanently delete {{ teacher.full_name|escapejs }} " +
-        "({{ teacher.employee_id|escapejs }}) and cannot be undone."
-      );
-      if (confirmed) {
-        form.submit();
+    // Expected value — from the server, safely escaped for JS context.
+    const EXPECTED = "{{ teacher.employee_id|escapejs }}".toUpperCase();
+
+    function normalize(s) {
+      return (s || '').trim().toUpperCase();
+    }
+
+    function sync() {
+      const value = normalize(input.value);
+      const match = value === EXPECTED;
+
+      button.disabled = !match;
+      input.classList.toggle('is-match', match);
+    }
+
+    // Uppercase as the user types for a friendlier UX
+    input.addEventListener('input', function () {
+      const upper = input.value.toUpperCase();
+      if (input.value !== upper) input.value = upper;
+      sync();
+    });
+
+    // Prevent accidental submit via Enter until match is achieved
+    form.addEventListener('submit', function (e) {
+      if (button.disabled) {
+        e.preventDefault();
+        input.focus();
+        return false;
       }
     });
+
+    // Initialise (in case of browser autofill)
+    sync();
   })();
 
   /* ============================================================
      Keyboard shortcuts
-     - Escape        → cancel (go back)
-     - Ctrl/Cmd+Enter → confirm delete
+     - Escape → cancel (go back)
      ============================================================ */
   (function () {
     document.addEventListener('keydown', function (e) {
-      // Escape → back
       if (e.key === 'Escape') {
         e.preventDefault();
         window.location.href = "{% url 'card_detail' teacher.pk %}";
-      }
-
-      // Ctrl/Cmd + Enter → confirm
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        const btn = document.getElementById('deleteBtn');
-        if (btn) btn.click();
       }
     });
   })();

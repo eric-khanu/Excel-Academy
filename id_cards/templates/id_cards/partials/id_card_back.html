@@ -5,18 +5,15 @@
      ============================================================ -->
 <div class="id-card-back-wrapper">
   <div class="id-card-back" style="
-    --primary: {{ school.primary_color|default:'#8B2020' }};
+    --primary:   {{ school.primary_color|default:'#8B2020' }};
     --secondary: {{ school.secondary_color|default:'#C87A2C' }};
-    --accent: {{ school.accent_color|default:'#FBF6EC' }};
-    --text: {{ school.text_color|default:'#2A1810' }};
+    --accent:    {{ school.accent_color|default:'#FBF6EC' }};
+    --text:      {{ school.text_color|default:'#2A1810' }};
   ">
 
     <!-- Decorative diagonal accents -->
     <div class="back-diagonal-1"></div>
     <div class="back-diagonal-2"></div>
-
-    <!-- Top black strip -->
-    <div class="back-top-strip"></div>
 
     <!-- Main info panel -->
     <div class="back-panel">
@@ -59,10 +56,12 @@
 
     <!-- Bottom school info -->
     <div class="back-footer">
-      <div class="back-footer-school">{{ school.name|default:"School Name" }}</div>
+      <div class="back-footer-school">
+        {{ school.name|default:"School Name"|upper|truncatechars:36 }}
+      </div>
 
       {% if school.address %}
-        <div class="back-footer-line back-footer-address">{{ school.address }}</div>
+        <div class="back-footer-line back-footer-address">{{ school.address|truncatechars:44 }}</div>
       {% endif %}
 
       {% if school.contact_phone_1 %}
@@ -187,7 +186,7 @@
 
   .back-section-title {
     font-family: 'Cinzel', serif;
-    font-size: 6.5px;
+    font-size: 6px;
     font-weight: 800;
     letter-spacing: 0.9px;
     color: #F5C87A;
@@ -255,19 +254,29 @@
 
   .back-footer-school {
     font-family: 'Cinzel', serif;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 800;
     color: #FFFFFF;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
     margin-bottom: 3px;
+    line-height: 1.2;
+    padding: 0 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .back-footer-line {
     font-family: 'Inter', sans-serif;
-    font-size: 8px;
+    font-size: 10px;
     color: #C8D2E0;
     letter-spacing: 0.3px;
-    line-height: 1.35;
+    line-height: 1.4;
+    padding: 0 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .back-footer-address {

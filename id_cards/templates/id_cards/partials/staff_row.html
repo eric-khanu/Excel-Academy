@@ -1,0 +1,88 @@
+{% comment %}
+================================================================================
+  STAFF ROW PARTIAL
+================================================================================
+  Renders one row of the staff list table.
+
+  Expects:
+    - teacher      → Teacher instance
+    - print_state  → "unprinted" | "printed" | "reprinted"
+                     (drives the badge + optional date caption)
+================================================================================
+{% endcomment %}
+
+<div class="staff-row">
+
+  <div class="avatar-sm">
+    {% if teacher.photo %}
+      <img src="{{ teacher.photo.url }}" alt="{{ teacher.full_name }}">
+    {% else %}
+      {{ teacher.initials }}
+    {% endif %}
+  </div>
+
+  <div class="name-cell">
+    <a href="{% url 'card_detail' teacher.pk %}" class="name">{{ teacher.full_name }}</a>
+    <div class="role-sub">{{ teacher.designation }}</div>
+  </div>
+
+  <div class="cell employee-cell">
+    <span class="cell-label">ID</span>
+    <span class="mono">{{ teacher.employee_id }}</span>
+  </div>
+
+  <div class="cell dept-cell">
+    <span class="cell-label">Dept</span>
+    {{ teacher.department_display }}
+  </div>
+
+  <div class="cell">
+    <div class="chip-row">
+      {% if teacher.blood_group %}
+        <span class="meta-blood"><i class="fas fa-droplet"></i> {{ teacher.blood_group }}</span>
+      {% endif %}
+      {% for level in teacher.levels.all %}
+        <span class="meta-level-tag">{{ level.name }}</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="cell">
+    {% if print_state == "unprinted" %}
+      <span class="badge-print badge-print-unprinted">
+        <i class="fas fa-circle-exclamation"></i> Not Printed
+      </span>
+
+    {% elif print_state == "printed" %}
+      <span class="badge-print badge-print-printed">
+        <i class="fas fa-circle-check"></i> Printed
+      </span>
+      {% if teacher.last_printed_at %}
+        <div class="print-date">{{ teacher.last_printed_at|date:"M j, Y" }}</div>
+      {% endif %}
+
+    {% elif print_state == "reprinted" %}
+      <span class="badge-print badge-print-reprinted">
+        <i class="fas fa-rotate-right"></i> ×{{ teacher.print_count }}
+      </span>
+      {% if teacher.last_printed_at %}
+        <div class="print-date">Last: {{ teacher.last_printed_at|date:"M j, Y" }}</div>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="row-actions">
+    <a href="{% url 'card_detail' teacher.pk %}" class="btn btn-outline btn-sm" title="View">
+      <i class="fas fa-eye"></i>
+    </a>
+    <a href="{% url 'card_edit' teacher.pk %}" class="btn btn-outline btn-sm" title="Edit">
+      <i class="fas fa-pen"></i>
+    </a>
+    <a href="{% url 'card_print' teacher.pk %}" class="btn btn-secondary btn-sm icon-btn" title="{% if print_state == 'unprinted' %}Print{% else %}Reprint{% endif %}">
+      <i class="fas fa-print"></i>
+    </a>
+    <a href="{% url 'card_pdf' teacher.pk %}" class="btn btn-primary btn-sm icon-btn" title="Download PDF">
+      <i class="fas fa-file-pdf"></i>
+    </a>
+  </div>
+</div>

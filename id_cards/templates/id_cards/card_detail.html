@@ -86,7 +86,6 @@
     cursor: zoom-out;
   }
 
-  /* Small caption under each card */
   .preview-zoom-hint {
     font-size: 0.65rem;
     color: var(--muted);
@@ -103,7 +102,7 @@
     padding: 28px;
     box-shadow: 0 8px 32px rgba(60, 30, 20, 0.08);
     border: 1px solid rgba(139, 32, 32, 0.06);
-    min-width: 0; /* allow text truncation inside grid item */
+    min-width: 0;
   }
 
   .info-panel .panel-header {
@@ -268,6 +267,105 @@
     letter-spacing: 0.3px;
   }
 
+  /* ============================================================
+     PRINT TRACKING PANEL
+     ============================================================ */
+  .print-panel {
+    margin-top: 20px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: #fbfaf6;
+  }
+  .print-panel.print-panel-unprinted {
+    background: var(--print-unprinted-bg, #fef3c7);
+    border-color: var(--print-unprinted-br, #fde68a);
+  }
+  .print-panel.print-panel-printed {
+    background: var(--print-printed-bg, #d1fae5);
+    border-color: var(--print-printed-br, #a7f3d0);
+  }
+  .print-panel.print-panel-reprinted {
+    background: var(--print-reprinted-bg, #dbeafe);
+    border-color: var(--print-reprinted-br, #bfdbfe);
+  }
+
+  .print-panel .pp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .print-panel .pp-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .print-panel .pp-title i { font-size: 0.85rem; }
+
+  .print-panel.print-panel-unprinted .pp-title { color: var(--print-unprinted-fg, #92400e); }
+  .print-panel.print-panel-printed   .pp-title { color: var(--print-printed-fg, #065f46); }
+  .print-panel.print-panel-reprinted .pp-title { color: var(--print-reprinted-fg, #1e40af); }
+
+  .print-panel .pp-count {
+    font-family: 'Cinzel', serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .print-panel.print-panel-unprinted .pp-count { color: var(--print-unprinted-fg, #92400e); }
+  .print-panel.print-panel-printed   .pp-count { color: var(--print-printed-fg, #065f46); }
+  .print-panel.print-panel-reprinted .pp-count { color: var(--print-reprinted-fg, #1e40af); }
+
+  .print-panel .pp-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    font-size: 0.78rem;
+  }
+  .print-panel .pp-meta .pp-meta-item {
+    display: flex;
+    flex-direction: column;
+  }
+  .print-panel .pp-meta .pp-meta-item .lbl {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    opacity: 0.75;
+    margin-bottom: 2px;
+  }
+  .print-panel .pp-meta .pp-meta-item .val {
+    font-weight: 700;
+    font-size: 0.82rem;
+  }
+  .print-panel .pp-meta .pp-meta-item .val.empty {
+    font-weight: 400;
+    font-style: italic;
+    opacity: 0.65;
+  }
+
+  .print-panel .pp-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(0, 0, 0, 0.08);
+  }
+  .print-panel .pp-actions .btn {
+    padding: 6px 11px;
+    font-size: 0.74rem;
+    border-radius: 7px;
+  }
+
   /* --- Actions --- */
   .panel-actions {
     display: flex;
@@ -309,31 +407,24 @@
 
   /* ============================================================
      RESPONSIVE
-     On smaller screens, the three columns collapse progressively
      ============================================================ */
-
-  /* Tablet: side-by-side cards, info below */
   @media (max-width: 1200px) {
     .detail-layout {
       grid-template-columns: 1fr 1fr;
       gap: 24px;
     }
     .info-panel {
-      grid-column: 1 / -1;   /* span both columns, full width */
+      grid-column: 1 / -1;
     }
     .preview-zoom:hover .preview-zoom-inner {
       transform: scale(1.35);
     }
   }
 
-  /* Small tablet / large phone: stack everything */
   @media (max-width: 800px) {
     .detail-layout {
       grid-template-columns: 1fr;
       gap: 24px;
-    }
-    .card-previews-col {
-      /* still center each card */
     }
     .info-grid {
       grid-template-columns: 1fr;
@@ -341,26 +432,21 @@
     .preview-zoom:hover .preview-zoom-inner {
       transform: scale(1.2);
     }
+    .print-panel .pp-meta {
+      grid-template-columns: 1fr;
+    }
   }
 
-  /* Phone: reduce padding further */
   @media (max-width: 500px) {
-    .preview-zoom {
-      padding: 8px;
-    }
-    .info-panel {
-      padding: 20px 16px;
-    }
+    .preview-zoom { padding: 8px; }
+    .info-panel { padding: 20px 16px; }
     .preview-zoom:hover .preview-zoom-inner {
       transform: scale(1.1);
     }
   }
 
-  /* --- Accessibility --- */
   @media (prefers-reduced-motion: reduce) {
-    .preview-zoom .preview-zoom-inner {
-      transition: none;
-    }
+    .preview-zoom .preview-zoom-inner { transition: none; }
     .preview-zoom:hover .preview-zoom-inner {
       transform: none;
       filter: drop-shadow(0 20px 40px rgba(60, 30, 20, 0.25));
@@ -394,7 +480,7 @@
 </div>
 
 <!-- ==================================================================
-     MAIN LAYOUT — FRONT | BACK | INFO  (all on one line)
+     MAIN LAYOUT — FRONT | BACK | INFO
      ================================================================== -->
 <div class="detail-layout">
 
@@ -431,7 +517,7 @@
   <!-- ============ COLUMN 3: INFO PANEL ============ -->
   <div class="info-panel">
 
-    <!-- Header: avatar, name, badges -->
+    <!-- Header -->
     <div class="panel-header">
       <div class="panel-avatar">
         {% if teacher.photo %}
@@ -446,8 +532,90 @@
         <div class="badge-row">
           <span class="badge badge-{{ teacher.status }}">{{ teacher.get_status_display }}</span>
           <span class="badge badge-role">{{ teacher.get_role_display }}</span>
+
+          {% if teacher.print_count == 0 %}
+            <span class="badge-print badge-print-unprinted">
+              <i class="fas fa-circle-exclamation"></i> Not Printed
+            </span>
+          {% elif teacher.print_count == 1 %}
+            <span class="badge-print badge-print-printed">
+              <i class="fas fa-circle-check"></i> Printed
+            </span>
+          {% else %}
+            <span class="badge-print badge-print-reprinted">
+              <i class="fas fa-rotate-right"></i> Reprinted ×{{ teacher.print_count }}
+            </span>
+          {% endif %}
         </div>
       </div>
+    </div>
+
+    <!-- ============ PRINT TRACKING ============ -->
+    <div class="section-label">
+      <i class="fas fa-print" style="color:var(--secondary);"></i> Print Tracking
+    </div>
+
+    <div class="print-panel
+      {% if teacher.print_count == 0 %}print-panel-unprinted
+      {% elif teacher.print_count == 1 %}print-panel-printed
+      {% else %}print-panel-reprinted{% endif %}">
+
+      <div class="pp-head">
+        <div class="pp-title">
+          {% if teacher.print_count == 0 %}
+            <i class="fas fa-circle-exclamation"></i> Not Printed
+          {% elif teacher.print_count == 1 %}
+            <i class="fas fa-circle-check"></i> Printed
+          {% else %}
+            <i class="fas fa-rotate-right"></i> Reprinted
+          {% endif %}
+        </div>
+        <div class="pp-count">
+          {% if teacher.print_count == 0 %}
+            —
+          {% else %}
+            ×{{ teacher.print_count }}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="pp-meta">
+        <div class="pp-meta-item">
+          <span class="lbl">First Printed</span>
+          <span class="val {% if not teacher.first_printed_at %}empty{% endif %}">
+            {% if teacher.first_printed_at %}
+              {{ teacher.first_printed_at|date:"M j, Y · H:i" }}
+            {% else %}
+              Never
+            {% endif %}
+          </span>
+        </div>
+        <div class="pp-meta-item">
+          <span class="lbl">Last Printed</span>
+          <span class="val {% if not teacher.last_printed_at %}empty{% endif %}">
+            {% if teacher.last_printed_at %}
+              {{ teacher.last_printed_at|date:"M j, Y · H:i" }}
+            {% else %}
+              Never
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      {% if teacher.print_count > 0 %}
+        <div class="pp-actions">
+          <form method="post"
+            action="{% url 'card_print_reset' teacher.pk %}"
+            onsubmit="return confirm('Reset all print tracking for {{ teacher.full_name|escapejs }}? This cannot be undone.');"
+            style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="confirm" value="RESET">
+        <button type="submit" class="btn btn-outline">
+            <i class="fas fa-eraser"></i> Reset Tracking
+        </button>
+        </form>
+        </div>
+      {% endif %}
     </div>
 
     <!-- ============ EMPLOYMENT ============ -->
@@ -590,10 +758,12 @@
     <!-- ============ ACTIONS ============ -->
     <div class="panel-actions">
       <a href="{% url 'card_print' teacher.pk %}" class="btn btn-secondary">
-        <i class="fas fa-print"></i> Print
+        <i class="fas fa-print"></i>
+        {% if teacher.print_count == 0 %}Print{% else %}Reprint{% endif %}
       </a>
       <a href="{% url 'card_pdf' teacher.pk %}" class="btn btn-primary">
-        <i class="fas fa-file-pdf"></i> PDF
+        <i class="fas fa-file-pdf"></i>
+        {% if teacher.print_count == 0 %}PDF{% else %}PDF again{% endif %}
       </a>
       <a href="{% url 'card_print' teacher.pk %}?autoprint=1" class="btn btn-outline">
         <i class="fas fa-bolt"></i> Quick
