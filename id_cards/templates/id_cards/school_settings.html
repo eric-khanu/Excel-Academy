@@ -1,4 +1,5 @@
 {% extends "id_cards/base.html" %}
+{% load humanize %}
 {% block title %}School Branding & Settings{% endblock %}
 
 {% block extra_head %}
@@ -12,7 +13,6 @@
     padding: 8px 0 40px;
   }
 
-  /* ---------- Form card ---------- */
   .settings-card {
     background: #fff;
     border-radius: 20px;
@@ -36,6 +36,34 @@
     margin-bottom: 28px;
     line-height: 1.5;
   }
+
+  /* ---------- Live preview hint (dismissible) ---------- */
+  .preview-hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-left: 4px solid #2563eb;
+    color: #1e40af;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+  .preview-hint i { flex-shrink: 0; }
+  .preview-hint .ph-text { flex: 1; }
+  .preview-hint button {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 5px;
+    opacity: 0.7;
+  }
+  .preview-hint button:hover { opacity: 1; background: rgba(37, 99, 235, 0.1); }
 
   /* ---------- Sections ---------- */
   .form-section {
@@ -232,7 +260,6 @@
      PRINT TRACKING DASHBOARD
      ============================================================ */
   #print-tracking {
-    /* Ensures the anchor jump accounts for the sticky topbar */
     scroll-margin-top: 90px;
   }
 
@@ -450,9 +477,6 @@
 
 <div class="settings-layout">
 
-  <!-- ============================================================
-       Form card (full width, no preview)
-       ============================================================ -->
   <div class="settings-card">
     <h1>School Branding &amp; Settings</h1>
     <p class="subtitle">
@@ -460,9 +484,22 @@
       ID cards, the dashboard, and print layouts.
     </p>
 
+    {# Live-preview notice: color changes below affect this whole page #}
+    <div class="preview-hint" id="previewHint">
+      <i class="fas fa-eye" aria-hidden="true"></i>
+      <div class="ph-text">
+        <strong>Live preview</strong> — brand colors update this page as you
+        edit them. Click <strong>Save Branding</strong> to make them permanent.
+      </div>
+      <button type="button" aria-label="Dismiss"
+              onclick="document.getElementById('previewHint').remove();">
+        <i class="fas fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+
     {% if form.non_field_errors %}
       <div class="form-errors">
-        <strong><i class="fas fa-triangle-exclamation"></i> Please fix the following:</strong>
+        <strong><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Please fix the following:</strong>
         <ul>
           {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
         </ul>
@@ -475,7 +512,7 @@
       <!-- ========== SECTION 1: Identity ========== -->
       <div class="form-section">
         <div class="section-title">
-          <i class="fas fa-school"></i> Identity
+          <i class="fas fa-school" aria-hidden="true"></i> Identity
         </div>
 
         <div class="form-grid">
@@ -528,7 +565,7 @@
       <!-- ========== SECTION 2: Contact ========== -->
       <div class="form-section">
         <div class="section-title">
-          <i class="fas fa-phone"></i> Contact
+          <i class="fas fa-phone" aria-hidden="true"></i> Contact
         </div>
 
         <div class="form-grid">
@@ -551,7 +588,7 @@
       <!-- ========== SECTION 3: Logo ========== -->
       <div class="form-section">
         <div class="section-title">
-          <i class="fas fa-image"></i> Logo
+          <i class="fas fa-image" aria-hidden="true"></i> Logo
         </div>
 
         <div class="form-group full {% if form.logo.errors %}has-error{% endif %}">
@@ -560,7 +597,7 @@
               {% if form.instance.logo %}
                 <img src="{{ form.instance.logo.url }}" alt="Current logo">
               {% else %}
-                <i class="fas fa-graduation-cap" style="opacity:0.4;"></i>
+                <i class="fas fa-graduation-cap" style="opacity:0.4;" aria-hidden="true"></i>
               {% endif %}
             </div>
             <div class="logo-input-wrap">
@@ -568,11 +605,12 @@
               {{ form.logo }}
               <span class="helptext">
                 Recommended: PNG with transparent background, at least 400×400px.
-                Shown inside a circular frame on the ID card.
+                Shown inside a circular frame on the ID card. SVG not accepted.
               </span>
               {% if form.instance.logo %}
                 <span class="helptext">
-                  Current: <a href="{{ form.instance.logo.url }}" target="_blank">view file</a>
+                  Current:
+                  <a href="{{ form.instance.logo.url }}" target="_blank" rel="noopener">view file</a>
                 </span>
               {% endif %}
             </div>
@@ -584,7 +622,7 @@
       <!-- ========== SECTION 4: Colors ========== -->
       <div class="form-section">
         <div class="section-title">
-          <i class="fas fa-palette"></i> Brand Colors
+          <i class="fas fa-palette" aria-hidden="true"></i> Brand Colors
         </div>
 
         <div class="color-grid">
@@ -631,25 +669,32 @@
       <!-- ========== Actions ========== -->
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">
-          <i class="fas fa-save"></i> Save Branding
+          <i class="fas fa-save" aria-hidden="true"></i> Save Branding
         </button>
-        <a href="{% url 'card_list' %}" class="btn btn-outline">
+
+        <a href="{% url 'id_cards:card_list' %}" class="btn btn-outline">
           Cancel
         </a>
-        <a href="/admin/id_cards/school/1/change/" target="_blank" class="btn btn-outline">
-          <i class="fas fa-shield-halved"></i> Advanced (Admin)
-        </a>
+
+        {# Django admin edit link — resolved via URL reverse, not hardcoded #}
+        {% if request.user.is_staff %}
+          <a href="{% url 'admin:id_cards_school_change' school.pk %}"
+             target="_blank" rel="noopener"
+             class="btn btn-outline">
+            <i class="fas fa-shield-halved" aria-hidden="true"></i> Advanced (Admin)
+          </a>
+        {% endif %}
       </div>
     </form>
   </div>
 
   <!-- ============================================================
-       PRINT TRACKING PANEL (separate card, not part of the form)
+       PRINT TRACKING PANEL
        ============================================================ -->
   {% if print_stats %}
     <div class="settings-card" id="print-tracking" style="margin-top: 24px;">
       <h1 style="font-size:1.25rem;">
-        <i class="fas fa-print" style="color:var(--secondary);"></i>
+        <i class="fas fa-print" style="color:var(--secondary);" aria-hidden="true"></i>
         Print Tracking
       </h1>
       <p class="subtitle">
@@ -657,57 +702,57 @@
         you reissue cards or need to start a fresh cycle.
       </p>
 
-      <!-- Stat grid -->
       <div class="print-stats">
         <div class="print-stat ps-unprinted">
-          <div class="ps-num">{{ print_stats.unprinted }}</div>
+          <div class="ps-num">{{ print_stats.unprinted|intcomma }}</div>
           <div class="ps-lbl">Not Printed</div>
         </div>
         <div class="print-stat ps-printed">
-          <div class="ps-num">{{ print_stats.printed }}</div>
+          <div class="ps-num">{{ print_stats.printed|intcomma }}</div>
           <div class="ps-lbl">Printed Once</div>
         </div>
         <div class="print-stat ps-reprinted">
-          <div class="ps-num">{{ print_stats.reprinted }}</div>
+          <div class="ps-num">{{ print_stats.reprinted|intcomma }}</div>
           <div class="ps-lbl">Reprinted</div>
         </div>
       </div>
 
-      <!-- Info + quick links -->
       <div class="print-tools">
         <div class="pt-info">
-          <strong>{{ print_stats.total }}</strong> card{{ print_stats.total|pluralize }} total
-          · <strong>{{ print_stats.total_prints }}</strong> print{{ print_stats.total_prints|pluralize }} recorded
+          <strong>{{ print_stats.total|intcomma }}</strong> card{{ print_stats.total|pluralize }} total
+          · <strong>{{ print_stats.total_prints|intcomma }}</strong> print{{ print_stats.total_prints|pluralize }} recorded
           {% if print_stats.last_print %}
             · last on <strong>{{ print_stats.last_print|date:"M j, Y H:i" }}</strong>
           {% endif %}
         </div>
         <div class="pt-actions">
-          <a href="{% url 'card_list' %}?printed=no" class="btn btn-outline btn-sm">
-            <i class="fas fa-list"></i> View Unprinted
+          <a href="{% url 'id_cards:card_list' %}?printed=no" class="btn btn-outline btn-sm">
+            <i class="fas fa-list" aria-hidden="true"></i> View Unprinted
           </a>
-          <a href="{% url 'card_list' %}?printed=reprinted" class="btn btn-outline btn-sm">
-            <i class="fas fa-list"></i> View Reprinted
+          <a href="{% url 'id_cards:card_list' %}?printed=reprinted" class="btn btn-outline btn-sm">
+            <i class="fas fa-list" aria-hidden="true"></i> View Reprinted
           </a>
         </div>
       </div>
 
-      <!-- ============================================================
-           DANGER ZONE — reset all print counters
-           Requires typing "RESET" to confirm, mirroring the single-card
-           reset flow and preventing accidental wipes.
-           ============================================================ -->
+      {# ---------- DANGER ZONE — reset all print counters ---------- #}
       {% if print_stats.total_prints %}
         <div class="print-reset-zone">
           <div class="prz-text">
-            <strong><i class="fas fa-triangle-exclamation"></i> Danger zone</strong>
+            <strong><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Danger zone</strong>
             Resetting clears the print count, first-printed date, and
-            last-printed date for <strong>all {{ print_stats.total }} staff</strong>.
+            last-printed date for <strong>all {{ print_stats.total|intcomma }} staff</strong>.
             This cannot be undone.
           </div>
 
+          {#
+            The submit button starts enabled so the form works without
+            JavaScript. The script below disables it until the user types
+            the confirmation phrase — a progressive enhancement, not a
+            hard requirement.
+          #}
           <form method="post"
-                action="{% url 'reset_all_print_counts' %}"
+                action="{% url 'id_cards:reset_all_print_counts' %}"
                 class="prz-form"
                 id="resetAllForm"
                 autocomplete="off">
@@ -721,8 +766,8 @@
                    autocomplete="off"
                    spellcheck="false"
                    required>
-            <button type="submit" id="resetAllBtn" disabled>
-              <i class="fas fa-eraser"></i> Reset All
+            <button type="submit" id="resetAllBtn">
+              <i class="fas fa-eraser" aria-hidden="true"></i> Reset All
             </button>
           </form>
         </div>
@@ -737,7 +782,7 @@
 {% block extra_js %}
 <script>
   /* ============================================================
-     LIVE COLOR PREVIEW (updates CSS variables)
+     LIVE COLOR PREVIEW — updates page-wide CSS variables
      ============================================================ */
   (function () {
     const root = document.documentElement;
@@ -761,10 +806,11 @@
       const hexLabel = document.getElementById(hexLabels[name]);
       if (!input) return;
 
-      if (hexLabel) hexLabel.textContent = input.value.toUpperCase();
+      if (hexLabel) hexLabel.textContent = (input.value || '').toUpperCase();
 
       function update() {
         const val = input.value;
+        // <input type="color"> always emits a valid 7-char hex string
         root.style.setProperty(colorMap[name], val);
         if (hexLabel) hexLabel.textContent = val.toUpperCase();
       }
@@ -788,7 +834,12 @@
 
       const reader = new FileReader();
       reader.onload = function (ev) {
-        previewBox.innerHTML = '<img src="' + ev.target.result + '" alt="Logo preview">';
+        // Use DOM APIs, not innerHTML — safer against file-name injection
+        previewBox.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = ev.target.result;
+        img.alt = 'Logo preview';
+        previewBox.appendChild(img);
       };
       reader.readAsDataURL(file);
     });
@@ -803,13 +854,21 @@
     form.addEventListener('keydown', function (e) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        form.submit();
+        if (typeof form.requestSubmit === 'function') {
+          form.requestSubmit();
+        } else {
+          form.submit();
+        }
       }
     });
   })();
 
   /* ============================================================
      Reset-all confirmation — require typing "RESET"
+
+     The button starts enabled (see the template) so the flow works
+     without JS. This script progressively disables it until the
+     phrase matches, then re-enables it.
      ============================================================ */
   (function () {
     const form    = document.getElementById('resetAllForm');
@@ -824,14 +883,16 @@
       button.disabled = value !== REQUIRED;
     }
 
-    // Enforce uppercase as the user types (nicer UX than CSS alone)
+    // Disable immediately — before this runs, the button is enabled
+    // but the user hasn't typed anything yet. From now on, JS controls it.
+    button.disabled = true;
+
     input.addEventListener('input', function () {
       const upper = input.value.toUpperCase();
       if (input.value !== upper) input.value = upper;
       syncButton();
     });
 
-    // Final safety net on submit
     form.addEventListener('submit', function (e) {
       const value = (input.value || '').trim().toUpperCase();
       if (value !== REQUIRED) {
@@ -841,7 +902,6 @@
       }
     });
 
-    // Initialise in case of browser autofill
     syncButton();
   })();
 </script>

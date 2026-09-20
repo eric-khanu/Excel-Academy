@@ -1,0 +1,266 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>
+  {% if print_all %}
+    Print All Student ID Cards — {{ school.name|default:"Staff ID" }}
+  {% else %}
+    Print — {{ student.full_name }} — {{ school.name|default:"Staff ID" }}
+  {% endif %}
+</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root {
+    --primary:   {{ school.primary_color|default:"#8B2020" }};
+    --secondary: {{ school.secondary_color|default:"#C87A2C" }};
+    --accent:    {{ school.accent_color|default:"#FBF6EC" }};
+    --text:      {{ school.text_color|default:"#2A1810" }};
+    --primary-dark: #5A1414;
+    --print-unprinted-bg: #fef3c7; --print-unprinted-fg: #92400e; --print-unprinted-br: #fde68a;
+    --print-printed-bg: #d1fae5;   --print-printed-fg: #065f46;   --print-printed-br: #a7f3d0;
+    --print-reprinted-bg: #dbeafe; --print-reprinted-fg: #1e40af; --print-reprinted-br: #bfdbfe;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #eef1f5;
+    padding: 32px 20px 100px;
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .print-header {
+    max-width: 1100px; margin: 0 auto 28px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 16px; flex-wrap: wrap;
+  }
+  .print-header h1 {
+    font-family: 'Cinzel', serif; font-size: 1.35rem; font-weight: 800;
+    color: var(--primary); line-height: 1.2;
+  }
+  .print-header p { color: #7a6a5a; font-size: 0.85rem; margin-top: 4px; }
+  .print-header .count-badge {
+    display: inline-block; background: var(--accent); color: var(--primary);
+    padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.4px; margin-left: 8px;
+    border: 1px solid rgba(200, 122, 44, 0.3);
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--primary); text-decoration: none;
+    font-size: 0.85rem; font-weight: 600;
+    padding: 8px 14px; border-radius: 8px;
+  }
+  .back-link:hover { background: rgba(139, 32, 32, 0.08); }
+
+  .print-grid {
+    display: flex; flex-wrap: wrap; gap: 24px;
+    justify-content: center; align-items: flex-start;
+    max-width: 1100px; margin: 0 auto; padding: 8px;
+  }
+  .card-pair {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 12px; padding-top: 32px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px dashed rgba(139, 32, 32, 0.25);
+    border-radius: 14px;
+    page-break-inside: avoid; break-inside: avoid;
+    position: relative;
+  }
+  .card-pair .pair-label {
+    position: absolute; top: 8px; left: 14px; right: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--muted); flex-wrap: wrap;
+  }
+  .card-pair .pair-label .pl-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .card-pair .pair-label .pl-name {
+    color: var(--primary); font-family: 'Cinzel', serif; font-weight: 800;
+    font-size: 0.72rem; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; max-width: 220px;
+  }
+  .card-pair .pair-label .pl-id {
+    font-family: 'Menlo', 'Consolas', monospace; font-weight: 600;
+    color: var(--muted); font-size: 0.64rem;
+  }
+  .pair-label .pl-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 20px;
+    font-size: 0.62rem; font-weight: 800;
+    letter-spacing: 0.4px; text-transform: uppercase;
+    border: 1px solid transparent; white-space: nowrap; flex-shrink: 0;
+  }
+  .pair-label .pl-pill.pill-unprinted {
+    background: var(--print-unprinted-bg); color: var(--print-unprinted-fg);
+    border-color: var(--print-unprinted-br);
+  }
+  .pair-label .pl-pill.pill-printed {
+    background: var(--print-printed-bg); color: var(--print-printed-fg);
+    border-color: var(--print-printed-br);
+  }
+  .pair-label .pl-pill.pill-reprinted {
+    background: var(--print-reprinted-bg); color: var(--print-reprinted-fg);
+    border-color: var(--print-reprinted-br);
+  }
+  .card-pair .pair-divider {
+    width: 1px; align-self: stretch;
+    background: repeating-linear-gradient(to bottom,
+      rgba(139, 32, 32, 0.35) 0px, rgba(139, 32, 32, 0.35) 6px,
+      transparent 6px, transparent 12px);
+    margin: 0 4px;
+  }
+
+  .no-print-bar {
+    position: fixed; bottom: 24px; right: 24px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #fff; padding: 14px 16px 14px 22px; border-radius: 60px;
+    box-shadow: 0 20px 40px -10px rgba(90, 20, 20, 0.45), 0 8px 20px -6px rgba(0, 0, 0, 0.2);
+    display: flex; gap: 16px; align-items: center; z-index: 100;
+  }
+  .no-print-bar .bar-text {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.85rem; font-weight: 600;
+  }
+  .no-print-bar .bar-text i { color: var(--secondary); font-size: 1rem; }
+  .no-print-bar .bar-buttons { display: flex; gap: 8px; }
+  .no-print-bar button, .no-print-bar a {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--secondary); color: #fff;
+    border: none; padding: 10px 18px; border-radius: 50px;
+    font-weight: 700; cursor: pointer; font-size: 0.82rem;
+    text-decoration: none; font-family: 'Inter', sans-serif;
+  }
+  .no-print-bar button:hover, .no-print-bar a:hover { background: #a8621f; }
+  .no-print-bar .btn-ghost { background: rgba(255, 255, 255, 0.12); }
+  .no-print-bar .btn-ghost:hover { background: rgba(255, 255, 255, 0.22); }
+
+  @media print {
+    body { background: #fff; padding: 0; margin: 0; }
+    .print-header, .no-print-bar, .card-pair .pair-label { display: none !important; }
+    .print-grid { gap: 0; max-width: none; padding: 0; justify-content: flex-start; display: block; }
+    .card-pair { display: flex; gap: 4px; padding: 0; background: none; border: none; border-radius: 0; margin: 0 0 4mm 0; }
+    .card-pair .pair-divider { display: none; }
+    @page { size: auto; margin: 8mm; }
+  }
+
+  @media (max-width: 700px) {
+    body { padding: 20px 12px 120px; }
+    .no-print-bar { left: 12px; right: 12px; bottom: 12px; padding: 12px 14px; border-radius: 16px; justify-content: space-between; flex-wrap: wrap; }
+    .card-pair { flex-direction: column; align-items: center; }
+    .card-pair .pair-divider {
+      width: 80%; height: 1px; align-self: center;
+      background: repeating-linear-gradient(to right,
+        rgba(139, 32, 32, 0.35) 0px, rgba(139, 32, 32, 0.35) 6px,
+        transparent 6px, transparent 12px);
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-header no-print">
+  <div>
+    <h1>
+      {% if print_all %}Print All Student ID Cards{% else %}Print Student ID Card{% endif %}
+    </h1>
+    <p>
+      {% if print_all %}
+        {{ students|length }} student record{{ students|length|pluralize }} ready
+        <span class="count-badge">{{ school.short_name|default:"ID" }}</span>
+      {% else %}
+        {{ student.full_name }} · {{ student.admission_number }}
+      {% endif %}
+    </p>
+  </div>
+  <a href="{% if print_all %}{% url 'student:student_list' %}{% else %}{% url 'student:student_detail' student.pk %}{% endif %}" class="back-link">
+    <i class="fas fa-arrow-left"></i> Back
+  </a>
+</div>
+
+<div class="print-grid">
+  {% if print_all %}
+    {% for student in students %}
+      <div class="card-pair">
+        <div class="pair-label" aria-hidden="true">
+          <div class="pl-left">
+            <span class="pl-name">{{ student.full_name }}</span>
+            <span class="pl-id">{{ student.admission_number }}</span>
+          </div>
+          {% if student.print_count == 0 %}
+            <span class="pl-pill pill-unprinted"><i class="fas fa-circle-exclamation"></i> Not Printed</span>
+          {% elif student.print_count == 1 %}
+            <span class="pl-pill pill-printed"><i class="fas fa-circle-check"></i> Printed</span>
+          {% else %}
+            <span class="pl-pill pill-reprinted"><i class="fas fa-rotate-right"></i> Reprinted ×{{ student.print_count }}</span>
+          {% endif %}
+        </div>
+
+        {% include "student/partials/student_card.html" with student=student school=school side="front" %}
+        <div class="pair-divider" aria-hidden="true"></div>
+        {% include "student/partials/student_card.html" with student=student school=school side="back" %}
+      </div>
+    {% empty %}
+      <div style="padding:40px; text-align:center; color:#7a6a5a;">
+        <i class="fas fa-user-graduate" style="font-size:3rem; opacity:0.3;"></i>
+        <h2 style="margin-top:16px; font-family:'Cinzel',serif;">No active student cards to print</h2>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="card-pair">
+      <div class="pair-label" aria-hidden="true">
+        <div class="pl-left">
+          <span class="pl-name">{{ student.full_name }}</span>
+          <span class="pl-id">{{ student.admission_number }}</span>
+        </div>
+        {% if student.print_count == 0 %}
+          <span class="pl-pill pill-unprinted"><i class="fas fa-circle-exclamation"></i> Not Printed</span>
+        {% elif student.print_count == 1 %}
+          <span class="pl-pill pill-printed"><i class="fas fa-circle-check"></i> Printed</span>
+        {% else %}
+          <span class="pl-pill pill-reprinted"><i class="fas fa-rotate-right"></i> Reprinted ×{{ student.print_count }}</span>
+        {% endif %}
+      </div>
+
+      {% include "student/partials/student_card.html" with student=student school=school side="front" %}
+      <div class="pair-divider" aria-hidden="true"></div>
+      {% include "student/partials/student_card.html" with student=student school=school side="back" %}
+    </div>
+  {% endif %}
+</div>
+
+<div class="no-print-bar no-print">
+  <div class="bar-text">
+    <i class="fas fa-print"></i>
+    <span>
+      {% if print_all %}{{ students|length }} record{{ students|length|pluralize }} ready
+      {% else %}Ready to print{% endif %}
+    </span>
+  </div>
+  <div class="bar-buttons">
+    <button onclick="window.print()"><i class="fas fa-print"></i> Print Now</button>
+    <a href="{% if print_all %}{% url 'student:student_pdf_all' %}{% else %}{% url 'student:student_pdf' student.pk %}{% endif %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" class="btn-ghost">
+      <i class="fas fa-file-pdf"></i> PDF
+    </a>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('autoprint') === '1') {
+      window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 500); });
+    }
+  })();
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.history.back();
+  });
+</script>
+
+</body>
+</html>

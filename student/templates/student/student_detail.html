@@ -1,0 +1,619 @@
+{% extends "id_cards/base.html" %}
+{% block title %}{{ student.full_name }} — Student ID{% endblock %}
+
+{% block extra_head %}
+<style>
+  .detail-layout {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+    padding: 12px 0 40px;
+    max-width: 1500px;
+    margin: 0 auto;
+  }
+
+  .card-previews-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-preview .preview-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-preview .preview-label .label-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--accent);
+    border: 1px solid rgba(200, 122, 44, 0.35);
+    color: var(--primary);
+    font-weight: 800;
+  }
+
+  .preview-zoom {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    cursor: zoom-in;
+    border-radius: 20px;
+  }
+  .preview-zoom .preview-zoom-inner {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
+    transform-origin: center center;
+    will-change: transform;
+  }
+  .preview-zoom:hover .preview-zoom-inner {
+    transform: scale(1.55);
+    filter: drop-shadow(0 30px 60px rgba(60, 30, 20, 0.4));
+    z-index: 100;
+    position: relative;
+  }
+  .preview-zoom:hover { cursor: zoom-out; }
+  .preview-zoom-hint {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  .info-panel {
+    background: #fff;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 8px 32px rgba(60, 30, 20, 0.08);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+    min-width: 0;
+  }
+  .info-panel .panel-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding-bottom: 18px;
+    border-bottom: 1px dashed rgba(139, 32, 32, 0.15);
+    margin-bottom: 16px;
+  }
+  .info-panel .panel-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--secondary);
+    background: var(--accent);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--primary);
+  }
+  .info-panel .panel-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .info-panel .panel-header-text { flex: 1; min-width: 0; }
+  .info-panel .panel-header-text h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    color: var(--primary);
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 3px;
+  }
+  .info-panel .panel-header-text .sub {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .badge-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 20px 0 10px 0;
+  }
+  .section-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(200,122,44,0.3), transparent);
+  }
+  .section-label:first-of-type { margin-top: 0; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 20px;
+    margin-bottom: 6px;
+  }
+  .info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+  }
+  .info-item .info-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--secondary);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .info-item .info-text { display: flex; flex-direction: column; min-width: 0; }
+  .info-item .info-label {
+    font-size: 0.66rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .info-item .info-value {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.3;
+  }
+  .info-item .info-value.empty {
+    color: #b0a090;
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  .blood-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    border: 1px solid #fecaca;
+  }
+
+  .print-panel {
+    margin-top: 20px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: #fbfaf6;
+  }
+  .print-panel.print-panel-unprinted {
+    background: var(--print-unprinted-bg, #fef3c7);
+    border-color: var(--print-unprinted-br, #fde68a);
+  }
+  .print-panel.print-panel-printed {
+    background: var(--print-printed-bg, #d1fae5);
+    border-color: var(--print-printed-br, #a7f3d0);
+  }
+  .print-panel.print-panel-reprinted {
+    background: var(--print-reprinted-bg, #dbeafe);
+    border-color: var(--print-reprinted-br, #bfdbfe);
+  }
+  .print-panel .pp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .print-panel .pp-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .print-panel.print-panel-unprinted .pp-title { color: var(--print-unprinted-fg, #92400e); }
+  .print-panel.print-panel-printed   .pp-title { color: var(--print-printed-fg, #065f46); }
+  .print-panel.print-panel-reprinted .pp-title { color: var(--print-reprinted-fg, #1e40af); }
+  .print-panel .pp-count {
+    font-family: 'Cinzel', serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .print-panel .pp-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    font-size: 0.78rem;
+  }
+  .print-panel .pp-meta .pp-meta-item { display: flex; flex-direction: column; }
+  .print-panel .pp-meta .pp-meta-item .lbl {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    opacity: 0.75;
+    margin-bottom: 2px;
+  }
+  .print-panel .pp-meta .pp-meta-item .val { font-weight: 700; font-size: 0.82rem; }
+  .print-panel .pp-meta .pp-meta-item .val.empty {
+    font-weight: 400;
+    font-style: italic;
+    opacity: 0.65;
+  }
+  .print-panel .pp-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(0, 0, 0, 0.08);
+  }
+  .print-panel .pp-actions .btn {
+    padding: 6px 11px;
+    font-size: 0.74rem;
+    border-radius: 7px;
+  }
+
+  .panel-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 18px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.15);
+    margin-top: 18px;
+  }
+  .panel-actions .btn { padding: 9px 14px; font-size: 0.82rem; }
+
+  .danger-zone {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .danger-zone .danger-text {
+    font-size: 0.78rem;
+    color: #991b1b;
+    flex: 1;
+    min-width: 0;
+  }
+  .danger-zone .danger-text strong {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  @media (max-width: 1200px) {
+    .detail-layout { grid-template-columns: 1fr 1fr; gap: 24px; }
+    .info-panel { grid-column: 1 / -1; }
+    .preview-zoom:hover .preview-zoom-inner { transform: scale(1.35); }
+  }
+  @media (max-width: 800px) {
+    .detail-layout { grid-template-columns: 1fr; gap: 24px; }
+    .info-grid { grid-template-columns: 1fr; }
+    .preview-zoom:hover .preview-zoom-inner { transform: scale(1.2); }
+    .print-panel .pp-meta { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 500px) {
+    .preview-zoom { padding: 8px; }
+    .info-panel { padding: 20px 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .preview-zoom .preview-zoom-inner { transition: none; }
+    .preview-zoom:hover .preview-zoom-inner {
+      transform: none;
+      filter: drop-shadow(0 20px 40px rgba(60, 30, 20, 0.25));
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>{{ student.full_name }}</h1>
+    <p>
+      {{ student.level_display }}
+      <span style="margin: 0 6px; opacity: 0.4;">·</span>
+      <span style="font-family: monospace; font-weight: 600;">{{ student.admission_number }}</span>
+    </p>
+  </div>
+  <div class="actions">
+    <a href="{% url 'student:student_list' %}" class="btn btn-outline">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <a href="{% url 'student:student_edit' student.pk %}" class="btn btn-secondary">
+      <i class="fas fa-pen"></i> Edit
+    </a>
+  </div>
+</div>
+
+<div class="detail-layout">
+
+  <div class="card-previews-col">
+    <div class="card-preview">
+      <div class="preview-label"><span class="label-tag">FRONT</span></div>
+      <div class="preview-zoom" title="Hover to zoom in">
+        <div class="preview-zoom-inner">
+          {% include "student/partials/student_card_front.html" with student=student school=school %}
+        </div>
+      </div>
+      <div class="preview-zoom-hint">Hover to zoom</div>
+    </div>
+  </div>
+
+  <div class="card-previews-col">
+    <div class="card-preview">
+      <div class="preview-label"><span class="label-tag">BACK</span></div>
+      <div class="preview-zoom" title="Hover to zoom in">
+        <div class="preview-zoom-inner">
+          {% include "student/partials/student_card_back.html" with student=student school=school %}
+        </div>
+      </div>
+      <div class="preview-zoom-hint">CR80 · 2.125" × 3.375"</div>
+    </div>
+  </div>
+
+  <div class="info-panel">
+
+    <div class="panel-header">
+      <div class="panel-avatar">
+        {% if student.photo %}
+          <img src="{{ student.photo.url }}" alt="{{ student.full_name }}">
+        {% else %}
+          {{ student.initials }}
+        {% endif %}
+      </div>
+      <div class="panel-header-text">
+        <h2>{{ student.full_name }}</h2>
+        <div class="sub">{{ student.level_display }}{% if student.department %} · {{ student.department_display }}{% endif %}</div>
+        <div class="badge-row">
+          <span class="badge badge-{{ student.status }}">{{ student.get_status_display }}</span>
+          <span class="badge badge-role">{{ student.get_gender_display }}</span>
+
+          {% if student.print_count == 0 %}
+            <span class="badge-print badge-print-unprinted"><i class="fas fa-circle-exclamation"></i> Not Printed</span>
+          {% elif student.print_count == 1 %}
+            <span class="badge-print badge-print-printed"><i class="fas fa-circle-check"></i> Printed</span>
+          {% else %}
+            <span class="badge-print badge-print-reprinted"><i class="fas fa-rotate-right"></i> Reprinted ×{{ student.print_count }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">
+      <i class="fas fa-print" style="color:var(--secondary);"></i> Print Tracking
+    </div>
+
+    <div class="print-panel
+      {% if student.print_count == 0 %}print-panel-unprinted
+      {% elif student.print_count == 1 %}print-panel-printed
+      {% else %}print-panel-reprinted{% endif %}">
+      <div class="pp-head">
+        <div class="pp-title">
+          {% if student.print_count == 0 %}<i class="fas fa-circle-exclamation"></i> Not Printed
+          {% elif student.print_count == 1 %}<i class="fas fa-circle-check"></i> Printed
+          {% else %}<i class="fas fa-rotate-right"></i> Reprinted{% endif %}
+        </div>
+        <div class="pp-count">
+          {% if student.print_count == 0 %}—{% else %}×{{ student.print_count }}{% endif %}
+        </div>
+      </div>
+      <div class="pp-meta">
+        <div class="pp-meta-item">
+          <span class="lbl">First Printed</span>
+          <span class="val {% if not student.first_printed_at %}empty{% endif %}">
+            {% if student.first_printed_at %}{{ student.first_printed_at|date:"M j, Y · H:i" }}{% else %}Never{% endif %}
+          </span>
+        </div>
+        <div class="pp-meta-item">
+          <span class="lbl">Last Printed</span>
+          <span class="val {% if not student.last_printed_at %}empty{% endif %}">
+            {% if student.last_printed_at %}{{ student.last_printed_at|date:"M j, Y · H:i" }}{% else %}Never{% endif %}
+          </span>
+        </div>
+      </div>
+      {% if student.print_count > 0 %}
+        <div class="pp-actions">
+          <form method="post"
+                action="{% url 'student:student_print_reset' student.pk %}"
+                onsubmit="return confirm('Reset all print tracking for {{ student.full_name|escapejs }}? This cannot be undone.');"
+                style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline">
+              <i class="fas fa-eraser"></i> Reset Tracking
+            </button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="section-label">
+      <i class="fas fa-graduation-cap" style="color:var(--secondary);"></i> Academic
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-id-badge"></i></div>
+        <div class="info-text">
+          <span class="info-label">Admission Number</span>
+          <span class="info-value">{{ student.admission_number }}</span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-layer-group"></i></div>
+        <div class="info-text">
+          <span class="info-label">Level</span>
+          <span class="info-value {% if not student.level %}empty{% endif %}">{{ student.level_display }}</span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-building"></i></div>
+        <div class="info-text">
+          <span class="info-label">Department / House</span>
+          <span class="info-value {% if not student.department %}empty{% endif %}">{{ student.department_display }}</span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-calendar-check"></i></div>
+        <div class="info-text">
+          <span class="info-label">Valid Thru</span>
+          <span class="info-value {% if not student.valid_thru %}empty{% endif %}">
+            {% if student.valid_thru %}{{ student.valid_thru|date:"F Y" }}{% else %}Not set{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">
+      <i class="fas fa-user" style="color:var(--secondary);"></i> Personal
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-venus-mars"></i></div>
+        <div class="info-text">
+          <span class="info-label">Gender</span>
+          <span class="info-value">{{ student.get_gender_display }}</span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-cake-candles"></i></div>
+        <div class="info-text">
+          <span class="info-label">Date of Birth</span>
+          <span class="info-value {% if not student.date_of_birth %}empty{% endif %}">
+            {% if student.date_of_birth %}
+              {{ student.date_of_birth|date:"M j, Y" }}
+              {% if student.age %} · {{ student.age }} yrs{% endif %}
+            {% else %}Not provided{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">
+      <i class="fas fa-address-book" style="color:var(--secondary);"></i> Contact
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-envelope"></i></div>
+        <div class="info-text">
+          <span class="info-label">Email</span>
+          <span class="info-value {% if not student.email %}empty{% endif %}">
+            {% if student.email %}<a href="mailto:{{ student.email }}" style="color:inherit; text-decoration:none;">{{ student.email }}</a>{% else %}Not provided{% endif %}
+          </span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-phone"></i></div>
+        <div class="info-text">
+          <span class="info-label">Phone</span>
+          <span class="info-value {% if not student.phone %}empty{% endif %}">
+            {% if student.phone %}<a href="tel:{{ student.phone }}" style="color:inherit; text-decoration:none;">{{ student.phone }}</a>{% else %}Not provided{% endif %}
+          </span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-user-shield"></i></div>
+        <div class="info-text">
+          <span class="info-label">Guardian</span>
+          <span class="info-value {% if not student.guardian_name %}empty{% endif %}">{{ student.guardian_name|default:"Not provided" }}</span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-phone-volume"></i></div>
+        <div class="info-text">
+          <span class="info-label">Guardian Phone</span>
+          <span class="info-value {% if not student.guardian_phone %}empty{% endif %}">
+            {% if student.guardian_phone %}<a href="tel:{{ student.guardian_phone }}" style="color:inherit; text-decoration:none;">{{ student.guardian_phone }}</a>{% else %}Not provided{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">
+      <i class="fas fa-credit-card" style="color:var(--secondary);"></i> Back of Card
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-droplet"></i></div>
+        <div class="info-text">
+          <span class="info-label">Blood Group</span>
+          <span class="info-value {% if not student.blood_group %}empty{% endif %}">
+            {% if student.blood_group %}<span class="blood-badge">{{ student.blood_group }}</span>{% else %}Not provided{% endif %}
+          </span>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-phone-volume"></i></div>
+        <div class="info-text">
+          <span class="info-label">Emergency Contact</span>
+          <span class="info-value {% if not student.emergency_contact_phone %}empty{% endif %}">
+            {% if student.emergency_contact_phone %}<a href="tel:{{ student.emergency_contact_phone }}" style="color:inherit; text-decoration:none;">{{ student.emergency_contact_phone }}</a>{% else %}Not provided{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-actions">
+      <a href="{% url 'student:student_print' student.pk %}" class="btn btn-secondary">
+        <i class="fas fa-print"></i>
+        {% if student.print_count == 0 %}Print{% else %}Reprint{% endif %}
+      </a>
+      <a href="{% url 'student:student_pdf' student.pk %}" class="btn btn-primary">
+        <i class="fas fa-file-pdf"></i>
+        {% if student.print_count == 0 %}PDF{% else %}PDF again{% endif %}
+      </a>
+    </div>
+
+    <div class="danger-zone">
+      <div class="danger-text">
+        <strong><i class="fas fa-triangle-exclamation"></i> Danger zone</strong>
+        Permanently delete this student record and its ID card.
+      </div>
+      <a href="{% url 'student:student_delete' student.pk %}" class="btn btn-danger btn-sm">
+        <i class="fas fa-trash"></i> Delete
+      </a>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

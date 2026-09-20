@@ -3,10 +3,6 @@
 
 {% block extra_head %}
 <style>
-  /* ============================================================
-     MAIN LAYOUT
-     Three columns on one line: [FRONT] [BACK] [INFO]
-     ============================================================ */
   .detail-layout {
     display: grid;
     grid-template-columns: auto auto minmax(0, 1fr);
@@ -17,9 +13,6 @@
     margin: 0 auto;
   }
 
-  /* ============================================================
-     COLUMN 1 & 2: card previews (front + back)
-     ============================================================ */
   .card-previews-col {
     display: flex;
     flex-direction: column;
@@ -54,9 +47,6 @@
     font-weight: 800;
   }
 
-  /* ============================================================
-     HOVER-TO-ZOOM WRAPPER
-     ============================================================ */
   .preview-zoom {
     position: relative;
     display: flex;
@@ -68,6 +58,8 @@
   }
 
   .preview-zoom .preview-zoom-inner {
+    position: relative;
+    z-index: 1;
     transition:
       transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
       filter 0.35s ease;
@@ -79,7 +71,6 @@
     transform: scale(1.55);
     filter: drop-shadow(0 30px 60px rgba(60, 30, 20, 0.4));
     z-index: 100;
-    position: relative;
   }
 
   .preview-zoom:hover {
@@ -93,9 +84,6 @@
     letter-spacing: 0.5px;
   }
 
-  /* ============================================================
-     COLUMN 3: info panel
-     ============================================================ */
   .info-panel {
     background: #fff;
     border-radius: 20px;
@@ -157,7 +145,6 @@
     flex-wrap: wrap;
   }
 
-  /* --- Section titles --- */
   .section-label {
     display: flex;
     align-items: center;
@@ -178,7 +165,6 @@
   }
   .section-label:first-of-type { margin-top: 0; }
 
-  /* --- Info grid --- */
   .info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -235,20 +221,6 @@
     font-style: italic;
   }
 
-  /* --- Blood group badge --- */
-  .blood-badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    background: #fee2e2;
-    color: #991b1b;
-    font-size: 0.78rem;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    border: 1px solid #fecaca;
-  }
-
-  /* --- Level tags --- */
   .level-tags {
     display: flex;
     flex-wrap: wrap;
@@ -267,9 +239,18 @@
     letter-spacing: 0.3px;
   }
 
-  /* ============================================================
-     PRINT TRACKING PANEL
-     ============================================================ */
+  .terms-block {
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.55;
+    padding: 10px 14px;
+    background: #fbfaf6;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
   .print-panel {
     margin-top: 20px;
     padding: 16px 18px;
@@ -366,7 +347,6 @@
     border-radius: 7px;
   }
 
-  /* --- Actions --- */
   .panel-actions {
     display: flex;
     gap: 8px;
@@ -380,7 +360,6 @@
     font-size: 0.82rem;
   }
 
-  /* --- Danger zone --- */
   .danger-zone {
     margin-top: 16px;
     padding: 14px 16px;
@@ -405,9 +384,6 @@
     margin-bottom: 2px;
   }
 
-  /* ============================================================
-     RESPONSIVE
-     ============================================================ */
   @media (max-width: 1200px) {
     .detail-layout {
       grid-template-columns: 1fr 1fr;
@@ -457,9 +433,6 @@
 
 {% block content %}
 
-<!-- ==================================================================
-     PAGE HEADER
-     ================================================================== -->
 <div class="page-header">
   <div>
     <h1>{{ teacher.full_name }}</h1>
@@ -470,21 +443,17 @@
     </p>
   </div>
   <div class="actions">
-    <a href="{% url 'card_list' %}" class="btn btn-outline">
-      <i class="fas fa-arrow-left"></i> Back
+    <a href="{% url 'id_cards:card_list' %}" class="btn btn-outline">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i> Back
     </a>
-    <a href="{% url 'card_edit' teacher.pk %}" class="btn btn-secondary">
-      <i class="fas fa-pen"></i> Edit
+    <a href="{% url 'id_cards:card_edit' teacher.pk %}" class="btn btn-secondary">
+      <i class="fas fa-pen" aria-hidden="true"></i> Edit
     </a>
   </div>
 </div>
 
-<!-- ==================================================================
-     MAIN LAYOUT — FRONT | BACK | INFO
-     ================================================================== -->
 <div class="detail-layout">
 
-  <!-- ============ COLUMN 1: FRONT ============ -->
   <div class="card-previews-col">
     <div class="card-preview">
       <div class="preview-label">
@@ -499,7 +468,6 @@
     </div>
   </div>
 
-  <!-- ============ COLUMN 2: BACK ============ -->
   <div class="card-previews-col">
     <div class="card-preview">
       <div class="preview-label">
@@ -514,14 +482,15 @@
     </div>
   </div>
 
-  <!-- ============ COLUMN 3: INFO PANEL ============ -->
   <div class="info-panel">
 
-    <!-- Header -->
     <div class="panel-header">
       <div class="panel-avatar">
         {% if teacher.photo %}
-          <img src="{{ teacher.photo.url }}" alt="{{ teacher.full_name }}">
+          <img src="{{ teacher.photo.url }}"
+               alt="{{ teacher.full_name }}"
+               loading="lazy"
+               decoding="async">
         {% else %}
           {{ teacher.initials }}
         {% endif %}
@@ -535,24 +504,23 @@
 
           {% if teacher.print_count == 0 %}
             <span class="badge-print badge-print-unprinted">
-              <i class="fas fa-circle-exclamation"></i> Not Printed
+              <i class="fas fa-circle-exclamation" aria-hidden="true"></i> Not Printed
             </span>
           {% elif teacher.print_count == 1 %}
             <span class="badge-print badge-print-printed">
-              <i class="fas fa-circle-check"></i> Printed
+              <i class="fas fa-circle-check" aria-hidden="true"></i> Printed
             </span>
           {% else %}
             <span class="badge-print badge-print-reprinted">
-              <i class="fas fa-rotate-right"></i> Reprinted ×{{ teacher.print_count }}
+              <i class="fas fa-rotate-right" aria-hidden="true"></i> Reprinted ×{{ teacher.print_count }}
             </span>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- ============ PRINT TRACKING ============ -->
     <div class="section-label">
-      <i class="fas fa-print" style="color:var(--secondary);"></i> Print Tracking
+      <i class="fas fa-print" style="color:var(--secondary);" aria-hidden="true"></i> Print Tracking
     </div>
 
     <div class="print-panel
@@ -563,11 +531,11 @@
       <div class="pp-head">
         <div class="pp-title">
           {% if teacher.print_count == 0 %}
-            <i class="fas fa-circle-exclamation"></i> Not Printed
+            <i class="fas fa-circle-exclamation" aria-hidden="true"></i> Not Printed
           {% elif teacher.print_count == 1 %}
-            <i class="fas fa-circle-check"></i> Printed
+            <i class="fas fa-circle-check" aria-hidden="true"></i> Printed
           {% else %}
-            <i class="fas fa-rotate-right"></i> Reprinted
+            <i class="fas fa-rotate-right" aria-hidden="true"></i> Reprinted
           {% endif %}
         </div>
         <div class="pp-count">
@@ -605,28 +573,27 @@
       {% if teacher.print_count > 0 %}
         <div class="pp-actions">
           <form method="post"
-            action="{% url 'card_print_reset' teacher.pk %}"
-            onsubmit="return confirm('Reset all print tracking for {{ teacher.full_name|escapejs }}? This cannot be undone.');"
-            style="display:inline;">
-        {% csrf_token %}
-        <input type="hidden" name="confirm" value="RESET">
-        <button type="submit" class="btn btn-outline">
-            <i class="fas fa-eraser"></i> Reset Tracking
-        </button>
-        </form>
+                action="{% url 'id_cards:card_print_reset' teacher.pk %}"
+                class="js-confirm-reset"
+                data-confirm="Reset all print tracking for {{ teacher.full_name }}? This cannot be undone.">
+            {% csrf_token %}
+            <input type="hidden" name="confirm" value="RESET">
+            <button type="submit" class="btn btn-outline">
+              <i class="fas fa-eraser" aria-hidden="true"></i> Reset Tracking
+            </button>
+          </form>
         </div>
       {% endif %}
     </div>
 
-    <!-- ============ EMPLOYMENT ============ -->
     <div class="section-label">
-      <i class="fas fa-briefcase" style="color:var(--secondary);"></i> Employment
+      <i class="fas fa-briefcase" style="color:var(--secondary);" aria-hidden="true"></i> Employment
     </div>
 
     <div class="info-grid">
 
       <div class="info-item">
-        <div class="info-icon"><i class="fas fa-id-badge"></i></div>
+        <div class="info-icon"><i class="fas fa-id-badge" aria-hidden="true"></i></div>
         <div class="info-text">
           <span class="info-label">Employee ID</span>
           <span class="info-value">{{ teacher.employee_id }}</span>
@@ -634,7 +601,7 @@
       </div>
 
       <div class="info-item">
-        <div class="info-icon"><i class="fas fa-user-tag"></i></div>
+        <div class="info-icon"><i class="fas fa-user-tag" aria-hidden="true"></i></div>
         <div class="info-text">
           <span class="info-label">Role</span>
           <span class="info-value">{{ teacher.get_role_display }}</span>
@@ -642,7 +609,7 @@
       </div>
 
       <div class="info-item">
-        <div class="info-icon"><i class="fas fa-building"></i></div>
+        <div class="info-icon"><i class="fas fa-building" aria-hidden="true"></i></div>
         <div class="info-text">
           <span class="info-label">Department</span>
           <span class="info-value {% if not teacher.department %}empty{% endif %}">
@@ -652,7 +619,7 @@
       </div>
 
       <div class="info-item">
-        <div class="info-icon"><i class="fas fa-calendar-check"></i></div>
+        <div class="info-icon"><i class="fas fa-calendar-check" aria-hidden="true"></i></div>
         <div class="info-text">
           <span class="info-label">Valid Thru</span>
           <span class="info-value {% if not teacher.valid_thru %}empty{% endif %}">
@@ -665,31 +632,32 @@
         </div>
       </div>
 
-      {% if teacher.levels.all %}
-      <div class="info-item" style="grid-column: 1 / -1;">
-        <div class="info-icon"><i class="fas fa-layer-group"></i></div>
-        <div class="info-text" style="flex: 1;">
-          <span class="info-label">Levels Handled</span>
-          <div class="level-tags">
-            {% for level in teacher.levels.all %}
-              <span class="level-tag">{{ level.name }}</span>
-            {% endfor %}
+      {% with levels=teacher.levels.all %}
+        {% if levels %}
+          <div class="info-item" style="grid-column: 1 / -1;">
+            <div class="info-icon"><i class="fas fa-layer-group" aria-hidden="true"></i></div>
+            <div class="info-text" style="flex: 1;">
+              <span class="info-label">Levels Handled</span>
+              <div class="level-tags">
+                {% for level in levels %}
+                  <span class="level-tag">{{ level.name }}</span>
+                {% endfor %}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      {% endif %}
+        {% endif %}
+      {% endwith %}
 
     </div>
 
-    <!-- ============ CONTACT ============ -->
     <div class="section-label">
-      <i class="fas fa-address-book" style="color:var(--secondary);"></i> Contact
+      <i class="fas fa-address-book" style="color:var(--secondary);" aria-hidden="true"></i> Contact
     </div>
 
     <div class="info-grid">
 
       <div class="info-item">
-        <div class="info-icon"><i class="fas fa-envelope"></i></div>
+        <div class="info-icon"><i class="fas fa-envelope" aria-hidden="true"></i></div>
         <div class="info-text">
           <span class="info-label">Email</span>
           <span class="info-value {% if not teacher.email %}empty{% endif %}">
@@ -703,7 +671,7 @@
       </div>
 
       <div class="info-item">
-        <div class="info-icon"><i class="fas fa-phone"></i></div>
+        <div class="info-icon"><i class="fas fa-phone" aria-hidden="true"></i></div>
         <div class="info-text">
           <span class="info-label">Phone</span>
           <span class="info-value {% if not teacher.phone %}empty{% endif %}">
@@ -718,29 +686,14 @@
 
     </div>
 
-    <!-- ============ BACK OF CARD ============ -->
     <div class="section-label">
-      <i class="fas fa-credit-card" style="color:var(--secondary);"></i> Back of Card
+      <i class="fas fa-credit-card" style="color:var(--secondary);" aria-hidden="true"></i> Back of Card
     </div>
 
     <div class="info-grid">
 
       <div class="info-item">
-        <div class="info-icon"><i class="fas fa-droplet"></i></div>
-        <div class="info-text">
-          <span class="info-label">Blood Group</span>
-          <span class="info-value {% if not teacher.blood_group %}empty{% endif %}">
-            {% if teacher.blood_group %}
-              <span class="blood-badge">{{ teacher.blood_group }}</span>
-            {% else %}
-              Not provided
-            {% endif %}
-          </span>
-        </div>
-      </div>
-
-      <div class="info-item">
-        <div class="info-icon"><i class="fas fa-phone-volume"></i></div>
+        <div class="info-icon"><i class="fas fa-phone-volume" aria-hidden="true"></i></div>
         <div class="info-text">
           <span class="info-label">Emergency Contact</span>
           <span class="info-value {% if not teacher.emergency_contact_phone %}empty{% endif %}">
@@ -753,31 +706,123 @@
         </div>
       </div>
 
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-calendar-plus" aria-hidden="true"></i></div>
+        <div class="info-text">
+          <span class="info-label">Issue Date</span>
+          <span class="info-value {% if not teacher.issue_date %}empty{% endif %}">
+            {% if teacher.issue_date %}
+              {{ teacher.issue_date|date:"M j, Y" }}
+            {% else %}
+              Auto (creation date)
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-calendar-xmark" aria-hidden="true"></i></div>
+        <div class="info-text">
+          <span class="info-label">Expiry Date</span>
+          <span class="info-value {% if not teacher.expiry_date and not teacher.valid_thru %}empty{% endif %}">
+            {% if teacher.expiry_date %}
+              {{ teacher.expiry_date|date:"M j, Y" }}
+            {% elif teacher.valid_thru %}
+              {{ teacher.valid_thru|date:"M j, Y" }}
+            {% else %}
+              Not set
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="info-item">
+        <div class="info-icon"><i class="fas fa-shield-halved" aria-hidden="true"></i></div>
+        <div class="info-text">
+          <span class="info-label">Authorized Use</span>
+          <span class="info-value {% if not teacher.resolved_authorized_use %}empty{% endif %}">
+            {% if teacher.resolved_authorized_use %}
+              {{ teacher.resolved_authorized_use }}
+            {% else %}
+              Not provided
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="info-item full" style="grid-column: 1 / -1;">
+        <div class="info-icon"><i class="fas fa-circle-info" aria-hidden="true"></i></div>
+        <div class="info-text" style="flex: 1;">
+          <span class="info-label">Security Notice</span>
+          <span class="info-value {% if not teacher.resolved_security %}empty{% endif %}">
+            {% if teacher.resolved_security %}
+              {{ teacher.resolved_security }}
+            {% else %}
+              Not provided
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="info-item full" style="grid-column: 1 / -1;">
+        <div class="info-icon"><i class="fas fa-file-contract" aria-hidden="true"></i></div>
+        <div class="info-text" style="flex: 1;">
+          <span class="info-label">Terms of Use</span>
+          {% if teacher.resolved_terms %}
+            <div class="terms-block">{{ teacher.resolved_terms }}</div>
+          {% else %}
+            <span class="info-value empty">Not provided</span>
+          {% endif %}
+        </div>
+      </div>
+
     </div>
 
-    <!-- ============ ACTIONS ============ -->
     <div class="panel-actions">
-      <a href="{% url 'card_print' teacher.pk %}" class="btn btn-secondary">
-        <i class="fas fa-print"></i>
-        {% if teacher.print_count == 0 %}Print{% else %}Reprint{% endif %}
-      </a>
-      <a href="{% url 'card_pdf' teacher.pk %}" class="btn btn-primary">
-        <i class="fas fa-file-pdf"></i>
-        {% if teacher.print_count == 0 %}PDF{% else %}PDF again{% endif %}
-      </a>
-      <a href="{% url 'card_print' teacher.pk %}?autoprint=1" class="btn btn-outline">
-        <i class="fas fa-bolt"></i> Quick
-      </a>
+
+      <form method="post" action="{% url 'id_cards:card_print' teacher.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="track" value="1">
+        <button type="submit" class="btn btn-secondary">
+          <i class="fas fa-print" aria-hidden="true"></i>
+          {% if teacher.print_count == 0 %}Print{% else %}Reprint{% endif %}
+        </button>
+      </form>
+
+      <form method="post"
+            action="{% url 'id_cards:card_pdf' teacher.pk %}"
+            target="_blank"
+            rel="noopener"
+            style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="track" value="1">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-file-pdf" aria-hidden="true"></i>
+          {% if teacher.print_count == 0 %}PDF{% else %}PDF again{% endif %}
+        </button>
+      </form>
+
+      <form method="post"
+            action="{% url 'id_cards:card_pdf' teacher.pk %}"
+            target="_blank"
+            rel="noopener"
+            style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="track" value="0">
+        <button type="submit" class="btn btn-outline" title="Download PDF without updating print tracking">
+          <i class="fas fa-eye" aria-hidden="true"></i> Preview PDF
+        </button>
+      </form>
+
     </div>
 
-    <!-- ============ DANGER ZONE ============ -->
     <div class="danger-zone">
       <div class="danger-text">
-        <strong><i class="fas fa-triangle-exclamation"></i> Danger zone</strong>
+        <strong><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Danger zone</strong>
         Permanently delete this staff record and its ID card.
       </div>
-      <a href="{% url 'card_delete' teacher.pk %}" class="btn btn-danger btn-sm">
-        <i class="fas fa-trash"></i> Delete
+      <a href="{% url 'id_cards:card_delete' teacher.pk %}" class="btn btn-danger btn-sm">
+        <i class="fas fa-trash" aria-hidden="true"></i> Delete
       </a>
     </div>
 
@@ -785,4 +830,18 @@
 
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        if (!window.confirm(form.dataset.confirm)) {
+          e.preventDefault();
+        }
+      });
+    });
+  })();
+</script>
 {% endblock %}

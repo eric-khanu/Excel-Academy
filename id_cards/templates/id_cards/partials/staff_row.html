@@ -5,57 +5,71 @@
   Renders one row of the staff list table.
 
   Expects:
-    - teacher      → Teacher instance
+    - teacher      → Teacher instance (ideally with .levels prefetched)
     - print_state  → "unprinted" | "printed" | "reprinted"
                      (drives the badge + optional date caption)
+
+  Parent template must define the CSS classes used here — see card_list.html.
 ================================================================================
 {% endcomment %}
 
 <div class="staff-row">
 
+  {# ---------- AVATAR ---------- #}
   <div class="avatar-sm">
     {% if teacher.photo %}
-      <img src="{{ teacher.photo.url }}" alt="{{ teacher.full_name }}">
+      <img src="{{ teacher.photo.url }}"
+           alt="{{ teacher.full_name }}"
+           loading="lazy"
+           decoding="async">
     {% else %}
       {{ teacher.initials }}
     {% endif %}
   </div>
 
+  {# ---------- NAME + DESIGNATION ---------- #}
   <div class="name-cell">
-    <a href="{% url 'card_detail' teacher.pk %}" class="name">{{ teacher.full_name }}</a>
+    <a href="{% url 'id_cards:card_detail' teacher.pk %}" class="name">
+      {{ teacher.full_name }}
+    </a>
     <div class="role-sub">{{ teacher.designation }}</div>
   </div>
 
+  {# ---------- EMPLOYEE ID ---------- #}
   <div class="cell employee-cell">
     <span class="cell-label">ID</span>
     <span class="mono">{{ teacher.employee_id }}</span>
   </div>
 
+  {# ---------- DEPARTMENT ---------- #}
   <div class="cell dept-cell">
     <span class="cell-label">Dept</span>
     {{ teacher.department_display }}
   </div>
 
+  {# ---------- LEVELS ----------
+     `teacher.levels` is prefetched by card_list's view.
+     If this partial is ever reused from a view that doesn't prefetch,
+     add `.prefetch_related('levels')` to avoid N+1.
+  #}
   <div class="cell">
     <div class="chip-row">
-      {% if teacher.blood_group %}
-        <span class="meta-blood"><i class="fas fa-droplet"></i> {{ teacher.blood_group }}</span>
-      {% endif %}
       {% for level in teacher.levels.all %}
         <span class="meta-level-tag">{{ level.name }}</span>
       {% endfor %}
     </div>
   </div>
 
+  {# ---------- PRINT STATUS BADGE ---------- #}
   <div class="cell">
     {% if print_state == "unprinted" %}
       <span class="badge-print badge-print-unprinted">
-        <i class="fas fa-circle-exclamation"></i> Not Printed
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i> Not Printed
       </span>
 
     {% elif print_state == "printed" %}
       <span class="badge-print badge-print-printed">
-        <i class="fas fa-circle-check"></i> Printed
+        <i class="fas fa-circle-check" aria-hidden="true"></i> Printed
       </span>
       {% if teacher.last_printed_at %}
         <div class="print-date">{{ teacher.last_printed_at|date:"M j, Y" }}</div>
@@ -63,7 +77,7 @@
 
     {% elif print_state == "reprinted" %}
       <span class="badge-print badge-print-reprinted">
-        <i class="fas fa-rotate-right"></i> ×{{ teacher.print_count }}
+        <i class="fas fa-rotate-right" aria-hidden="true"></i> ×{{ teacher.print_count }}
       </span>
       {% if teacher.last_printed_at %}
         <div class="print-date">Last: {{ teacher.last_printed_at|date:"M j, Y" }}</div>
@@ -71,18 +85,52 @@
     {% endif %}
   </div>
 
+  {# ---------- ROW ACTIONS ---------- #}
   <div class="row-actions">
-    <a href="{% url 'card_detail' teacher.pk %}" class="btn btn-outline btn-sm" title="View">
-      <i class="fas fa-eye"></i>
+
+    {# View (GET) #}
+    <a href="{% url 'id_cards:card_detail' teacher.pk %}"
+       class="btn btn-outline btn-sm icon-btn"
+       title="View details"
+       aria-label="View {{ teacher.full_name }}">
+      <i class="fas fa-eye" aria-hidden="true"></i>
     </a>
-    <a href="{% url 'card_edit' teacher.pk %}" class="btn btn-outline btn-sm" title="Edit">
-      <i class="fas fa-pen"></i>
+
+    {# Edit (GET) #}
+    <a href="{% url 'id_cards:card_edit' teacher.pk %}"
+       class="btn btn-outline btn-sm icon-btn"
+       title="Edit record"
+       aria-label="Edit {{ teacher.full_name }}">
+      <i class="fas fa-pen" aria-hidden="true"></i>
     </a>
-    <a href="{% url 'card_print' teacher.pk %}" class="btn btn-secondary btn-sm icon-btn" title="{% if print_state == 'unprinted' %}Print{% else %}Reprint{% endif %}">
-      <i class="fas fa-print"></i>
-    </a>
-    <a href="{% url 'card_pdf' teacher.pk %}" class="btn btn-primary btn-sm icon-btn" title="Download PDF">
-      <i class="fas fa-file-pdf"></i>
-    </a>
+
+    {# Print (POST — records a print event) #}
+    <form method="post"
+          action="{% url 'id_cards:card_print' teacher.pk %}"
+          style="display:inline-flex; margin:0;">
+      {% csrf_token %}
+      <input type="hidden" name="track" value="1">
+      <button type="submit"
+              class="btn btn-secondary btn-sm icon-btn"
+              title="{% if print_state == 'unprinted' %}Print{% else %}Reprint{% endif %}"
+              aria-label="{% if print_state == 'unprinted' %}Print{% else %}Reprint{% endif %} ID card for {{ teacher.full_name }}">
+        <i class="fas fa-print" aria-hidden="true"></i>
+      </button>
+    </form>
+
+    {# PDF (POST — records a print event) #}
+    <form method="post"
+          action="{% url 'id_cards:card_pdf' teacher.pk %}"
+          style="display:inline-flex; margin:0;">
+      {% csrf_token %}
+      <input type="hidden" name="track" value="1">
+      <button type="submit"
+              class="btn btn-primary btn-sm icon-btn"
+              title="Download PDF"
+              aria-label="Download PDF for {{ teacher.full_name }}">
+        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+      </button>
+    </form>
+
   </div>
 </div>

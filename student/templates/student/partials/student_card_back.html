@@ -1,0 +1,152 @@
+{% load static %}
+
+<!-- ============================================================
+     STUDENT CARD — BACK
+     Background: #F5C97A + circuit-board texture
+     QR code centered.
+     ============================================================ -->
+<div class="sc-back-wrap">
+  <div class="sc-back" style="
+    --primary:   {{ school.primary_color|default:'#0B2545' }};
+    --secondary: {{ school.secondary_color|default:'#3B82C4' }};
+    --accent:    {{ school.accent_color|default:'#F5F7FA' }};
+    --text:      {{ school.text_color|default:'#0B2545' }};
+  ">
+
+    <!-- Circuit-board background -->
+    <div class="sb-bg-circuit" aria-hidden="true">
+      <svg viewBox="0 0 240 380" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern id="sb-circuit" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path d="M0 30 H20 L30 20 H60" fill="none" stroke="rgba(15,43,84,0.30)" stroke-width="0.5"/>
+            <path d="M10 0 V15 L20 25 V60" fill="none" stroke="rgba(15,43,84,0.26)" stroke-width="0.5"/>
+            <path d="M60 10 H40 L30 20" fill="none" stroke="rgba(15,43,84,0.22)" stroke-width="0.5"/>
+            <circle cx="30" cy="20" r="1.5" fill="rgba(15,43,84,0.50)"/>
+            <circle cx="10" cy="15" r="1.2" fill="rgba(15,43,84,0.40)"/>
+            <circle cx="40" cy="10" r="1.1" fill="rgba(15,43,84,0.40)"/>
+          </pattern>
+          <radialGradient id="sb-glow1" cx="20%" cy="30%" r="60%">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.35)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+          </radialGradient>
+          <radialGradient id="sb-glow2" cx="80%" cy="70%" r="60%">
+            <stop offset="0%" stop-color="rgba(180,120,40,0.25)"/>
+            <stop offset="100%" stop-color="rgba(180,120,40,0)"/>
+          </radialGradient>
+        </defs>
+        <rect width="240" height="380" fill="url(#sb-glow1)"/>
+        <rect width="240" height="380" fill="url(#sb-circuit)"/>
+        <rect width="240" height="380" fill="url(#sb-glow2)"/>
+        <path d="M-10 300 Q60 280 120 305 T250 290" fill="none" stroke="rgba(15,43,84,0.24)" stroke-width="0.6"/>
+        <path d="M-10 320 Q60 300 120 325 T250 310" fill="none" stroke="rgba(15,43,84,0.18)" stroke-width="0.6"/>
+      </svg>
+    </div>
+
+    <!-- Navy gradient bar — TOP -->
+    <div class="sb-bar sb-bar-top"></div>
+
+    <!-- QR CODE — centered -->
+    <div class="sb-qr-block">
+      <div class="sb-qr-image">
+        <img src="{% url 'student:student_qr_svg' student.admission_number %}"
+             alt="Student QR">
+      </div>
+    </div>
+
+    <!-- Navy gradient bar — BOTTOM -->
+    <div class="sb-bar sb-bar-bottom"></div>
+
+  </div>
+</div>
+
+<style>
+  /* ============================================================
+     STUDENT CARD — BACK
+     Background: #F5C97A + circuit texture
+     Bars: navy gradient (#0F2B54 → #061428)
+     QR: centered
+     ============================================================ */
+
+  .sc-back-wrap {
+    display: inline-block;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35));
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 20px 45px -15px rgba(10, 30, 60, 0.45);
+  }
+
+  .sc-back {
+    width: 2.125in;
+    height: 3.375in;
+    background: #F5C97A;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(10, 30, 60, 0.35);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-family: 'Inter', sans-serif;
+    color: #0F2B54;
+  }
+
+  /* ---------- Circuit-board background ---------- */
+  .sb-bg-circuit {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .sb-bg-circuit svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ---------- QR block (centered) ---------- */
+  .sb-qr-block {
+    position: relative;
+    z-index: 3;
+    padding: 6px;
+    background: #FFFFFF;
+    border: 1px solid rgba(15, 43, 84, 0.45);
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(10, 30, 60, 0.30);
+  }
+
+  .sb-qr-image {
+    width: 1.15in;
+    height: 1.15in;
+    display: block;
+  }
+  .sb-qr-image img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ---------- Navy gradient bars (top + bottom) ---------- */
+  .sb-bar {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    background: linear-gradient(160deg, #0F2B54 0%, #0A1E3D 55%, #061428 100%);
+    box-shadow: inset 0 1px 1px rgba(140, 180, 220, 0.25),
+                inset 0 -1px 1px rgba(0, 0, 0, 0.35);
+    z-index: 5;
+  }
+
+  .sb-bar-top {
+    top: 0;
+  }
+
+  .sb-bar-bottom {
+    bottom: 0;
+    box-shadow: inset 0 -1px 1px rgba(140, 180, 220, 0.25),
+                inset 0 1px 1px rgba(0, 0, 0, 0.35);
+  }
+</style>

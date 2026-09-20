@@ -1,5 +1,8 @@
-from django.urls import path
+from django.urls import path, re_path
 from . import views
+
+
+app_name = 'id_cards'
 
 
 urlpatterns = [
@@ -11,22 +14,22 @@ urlpatterns = [
     # ============================================================
     # Teacher / Staff CRUD
     # ============================================================
-    path('cards/new/',                  views.card_create,  name='card_create'),
-    path('cards/<int:pk>/',             views.card_detail,  name='card_detail'),
-    path('cards/<int:pk>/edit/',        views.card_edit,    name='card_edit'),
-    path('cards/<int:pk>/delete/',      views.card_delete,  name='card_delete'),
+    path('cards/new/',              views.card_create, name='card_create'),
+    path('cards/<int:pk>/',         views.card_detail, name='card_detail'),
+    path('cards/<int:pk>/edit/',    views.card_edit,   name='card_edit'),
+    path('cards/<int:pk>/delete/',  views.card_delete, name='card_delete'),
 
     # ============================================================
     # Print — single card
     # ============================================================
-    path('cards/<int:pk>/print/',       views.card_print,   name='card_print'),
-    path('cards/<int:pk>/pdf/',         views.card_pdf,     name='card_pdf'),
+    path('cards/<int:pk>/print/', views.card_print, name='card_print'),
+    path('cards/<int:pk>/pdf/',   views.card_pdf,   name='card_pdf'),
 
     # ============================================================
     # Print — bulk
     # ============================================================
-    path('print-all/',                  views.card_print_all, name='card_print_all'),
-    path('pdf-all/',                    views.card_pdf_all,   name='card_pdf_all'),
+    path('print-all/', views.card_print_all, name='card_print_all'),
+    path('pdf-all/',   views.card_pdf_all,   name='card_pdf_all'),
 
     # ============================================================
     # Print tracking
@@ -45,27 +48,43 @@ urlpatterns = [
     # ============================================================
     # School Settings
     # ============================================================
-    path('settings/',                   views.school_settings, name='school_settings'),
+    path('settings/', views.school_settings, name='school_settings'),
+
+    # ============================================================
+    # ID Card Templates
+    # ============================================================
+    path('templates/',              views.template_list,   name='template_list'),
+    path('templates/new/',          views.template_create, name='template_create'),
+    path('templates/<int:pk>/edit/',   views.template_edit,   name='template_edit'),
+    path('templates/<int:pk>/delete/', views.template_delete, name='template_delete'),
 
     # ============================================================
     # Departments
     # ============================================================
-    path('departments/',                views.department_list,   name='department_list'),
-    path('departments/new/',            views.department_create, name='department_create'),
-    path('departments/<int:pk>/edit/',  views.department_edit,   name='department_edit'),
+    path('departments/',                 views.department_list,   name='department_list'),
+    path('departments/new/',             views.department_create, name='department_create'),
+    path('departments/<int:pk>/edit/',   views.department_edit,   name='department_edit'),
     path('departments/<int:pk>/delete/', views.department_delete, name='department_delete'),
 
     # ============================================================
     # Levels
     # ============================================================
-    path('levels/',                     views.level_list,   name='level_list'),
-    path('levels/new/',                 views.level_create, name='level_create'),
-    path('levels/<int:pk>/edit/',       views.level_edit,   name='level_edit'),
-    path('levels/<int:pk>/delete/',     views.level_delete, name='level_delete'),
+    path('levels/',                 views.level_list,   name='level_list'),
+    path('levels/new/',             views.level_create, name='level_create'),
+    path('levels/<int:pk>/edit/',   views.level_edit,   name='level_edit'),
+    path('levels/<int:pk>/delete/', views.level_delete, name='level_delete'),
 
     # ============================================================
-    # Bulk tools & QR
+    # Bulk tools
     # ============================================================
-    path('import/',                     views.bulk_import,      name='bulk_import'),
-    path('qr/<str:employee_id>.svg',    views.qr_employee_svg,  name='qr_employee_svg'),
+    path('import/', views.bulk_import, name='bulk_import'),
+
+    # ============================================================
+    # QR code (constrained employee_id — letters, digits, dash only)
+    # ============================================================
+    re_path(
+        r'^qr/(?P<employee_id>[A-Za-z0-9\-]{1,50})\.svg$',
+        views.qr_employee_svg,
+        name='qr_employee_svg',
+    ),
 ]

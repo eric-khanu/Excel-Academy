@@ -36,6 +36,8 @@
     font-weight: 800;
     color: var(--primary);
     margin: 0;
+    min-width: 0;
+    word-break: break-word;
   }
   .level-card .lv-order {
     font-family: 'Menlo', 'Consolas', monospace;
@@ -45,6 +47,7 @@
     padding: 2px 8px;
     background: #f0ebe3;
     border-radius: 20px;
+    flex-shrink: 0;
   }
   .level-card .lv-type {
     display: inline-block;
@@ -74,7 +77,13 @@
     border-radius: 8px;
     border: 1px dashed rgba(139, 32, 32, 0.1);
   }
-  .level-card .lv-count i { color: var(--secondary); margin-right: 4px; }
+  .level-card .lv-count i {
+    color: var(--secondary);
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+    margin-right: 4px;
+  }
   .level-card .lv-actions {
     display: flex;
     gap: 6px;
@@ -85,6 +94,16 @@
   .level-card .lv-actions .btn {
     padding: 6px 10px;
     font-size: 0.74rem;
+  }
+  .level-card .btn-outline-danger {
+    background: transparent;
+    color: #dc2626;
+    border: 1.5px solid #dc2626;
+    transition: background 0.15s, color 0.15s;
+  }
+  .level-card .btn-outline-danger:hover {
+    background: #dc2626;
+    color: #fff;
   }
   @media (max-width: 600px) {
     .level-grid { grid-template-columns: 1fr; }
@@ -100,11 +119,11 @@
     <p>{{ levels|length }} level{{ levels|length|pluralize }} on file</p>
   </div>
   <div class="actions">
-    <a href="{% url 'card_list' %}" class="btn btn-outline">
-      <i class="fas fa-arrow-left"></i> Back
+    <a href="{% url 'id_cards:card_list' %}" class="btn btn-outline">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i> Back
     </a>
-    <a href="{% url 'level_create' %}" class="btn btn-primary">
-      <i class="fas fa-plus"></i> Add Level
+    <a href="{% url 'id_cards:level_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus" aria-hidden="true"></i> Add Level
     </a>
   </div>
 </div>
@@ -120,21 +139,22 @@
 
         <span class="lv-type">{{ level.get_level_type_display }}</span>
 
-        {% if level.description %}
-          <div class="lv-desc">{{ level.description }}</div>
-        {% endif %}
+        <div class="lv-desc">
+          {% if level.description %}{{ level.description }}{% else %}—{% endif %}
+        </div>
 
         <div class="lv-count">
-          <i class="fas fa-users"></i>
-          {{ level.teachers.count }} staff member{{ level.teachers.count|pluralize }}
+          <i class="fas fa-users" aria-hidden="true"></i>
+          {{ level.teacher_count }} staff member{{ level.teacher_count|pluralize }}
         </div>
 
         <div class="lv-actions">
-          <a href="{% url 'level_edit' level.pk %}" class="btn btn-outline">
-            <i class="fas fa-pen"></i> Edit
+          <a href="{% url 'id_cards:level_edit' level.pk %}" class="btn btn-outline">
+            <i class="fas fa-pen" aria-hidden="true"></i> Edit
           </a>
-          <a href="{% url 'level_delete' level.pk %}" class="btn btn-outline" style="color:#dc2626; border-color:#dc2626;">
-            <i class="fas fa-trash"></i> Delete
+          <a href="{% url 'id_cards:level_delete' level.pk %}"
+             class="btn btn-outline-danger">
+            <i class="fas fa-trash" aria-hidden="true"></i> Delete
           </a>
         </div>
       </div>
@@ -142,12 +162,12 @@
   </div>
 {% else %}
   <div class="empty-state">
-    <i class="fas fa-layer-group"></i>
+    <i class="fas fa-layer-group" aria-hidden="true"></i>
     <h2>No levels yet</h2>
     <p>Levels describe the classes or year groups a staff member is assigned to (JSS1, SSS2, etc.).</p>
     <div class="empty-actions">
-      <a href="{% url 'level_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Add First Level
+      <a href="{% url 'id_cards:level_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus" aria-hidden="true"></i> Add First Level
       </a>
     </div>
   </div>

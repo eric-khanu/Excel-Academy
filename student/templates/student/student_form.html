@@ -1,0 +1,748 @@
+{% extends "id_cards/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 40px;
+    align-items: start;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 8px 0 40px;
+  }
+  @media (max-width: 1000px) {
+    .form-layout { grid-template-columns: 1fr; gap: 28px; }
+  }
+
+  .form-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px;
+    box-shadow: 0 8px 32px rgba(60, 30, 20, 0.08);
+    border: 1px solid rgba(139, 32, 32, 0.06);
+  }
+  .form-card h1 {
+    font-family: 'Cinzel', serif;
+    color: var(--primary);
+    font-size: 1.55rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+  .form-card .subtitle {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  .edit-print-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 22px;
+    border: 1px solid var(--border);
+    background: #fbfaf6;
+    font-size: 0.84rem;
+  }
+  .edit-print-banner.print-banner-unprinted {
+    background: var(--print-unprinted-bg, #fef3c7);
+    border-color: var(--print-unprinted-br, #fde68a);
+    color: var(--print-unprinted-fg, #92400e);
+  }
+  .edit-print-banner.print-banner-printed {
+    background: var(--print-printed-bg, #d1fae5);
+    border-color: var(--print-printed-br, #a7f3d0);
+    color: var(--print-printed-fg, #065f46);
+  }
+  .edit-print-banner.print-banner-reprinted {
+    background: var(--print-reprinted-bg, #dbeafe);
+    border-color: var(--print-reprinted-br, #bfdbfe);
+    color: var(--print-reprinted-fg, #1e40af);
+  }
+
+  .form-section {
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px dashed rgba(139, 32, 32, 0.12);
+  }
+  .form-section:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .section-title i { color: var(--secondary); font-size: 0.95rem; }
+  .section-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(200,122,44,0.35), transparent);
+    margin-left: 8px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 22px;
+  }
+  .form-group { display: flex; flex-direction: column; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  .form-group label {
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--primary);
+    margin-bottom: 6px;
+  }
+  .form-group label .required { color: #dc2626; margin-left: 2px; }
+
+  .form-group input[type="text"],
+  .form-group input[type="email"],
+  .form-group input[type="tel"],
+  .form-group input[type="date"],
+  .form-group input[type="file"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fdfcf9;
+    color: var(--text);
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 3px rgba(200, 122, 44, 0.15);
+    background: #fff;
+  }
+  .form-group .helptext {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .field-error { color: #dc2626; font-size: 0.78rem; margin-top: 5px; font-weight: 500; }
+  .form-group.has-error input,
+  .form-group.has-error select,
+  .form-group.has-error textarea { border-color: #f87171; background: #fef2f2; }
+
+  .photo-field { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .photo-preview {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--secondary);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--primary);
+  }
+  .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-input { flex: 1; min-width: 200px; }
+
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 24px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.12);
+  }
+
+  .preview-panel {
+    position: sticky;
+    top: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .preview-panel .preview-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+  }
+  .preview-panel .preview-hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+    max-width: 280px;
+  }
+
+  .preview-print-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+  }
+  .preview-print-pill.pill-unprinted {
+    background: var(--print-unprinted-bg, #fef3c7);
+    color: var(--print-unprinted-fg, #92400e);
+    border-color: var(--print-unprinted-br, #fde68a);
+  }
+  .preview-print-pill.pill-printed {
+    background: var(--print-printed-bg, #d1fae5);
+    color: var(--print-printed-fg, #065f46);
+    border-color: var(--print-printed-br, #a7f3d0);
+  }
+  .preview-print-pill.pill-reprinted {
+    background: var(--print-reprinted-bg, #dbeafe);
+    color: var(--print-reprinted-fg, #1e40af);
+    border-color: var(--print-reprinted-br, #bfdbfe);
+  }
+
+  .form-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
+    color: #991b1b;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 22px;
+    font-size: 0.88rem;
+  }
+  .form-errors strong { display: block; margin-bottom: 6px; }
+  .form-errors ul { margin: 0; padding-left: 20px; }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-card { padding: 24px 20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="form-layout">
+
+  <div class="form-card">
+    <h1>{{ title }}</h1>
+    <p class="subtitle">
+      {% if student %}
+        Update {{ student.full_name }}'s record and ID card details.
+      {% else %}
+        Fill in the details below. The Admission Number will be generated automatically on save.
+      {% endif %}
+    </p>
+
+    {% if student %}
+      <div class="edit-print-banner
+        {% if student.print_count == 0 %}print-banner-unprinted
+        {% elif student.print_count == 1 %}print-banner-printed
+        {% else %}print-banner-reprinted{% endif %}">
+        <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+          <div style="width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.55); flex-shrink:0;">
+            {% if student.print_count == 0 %}<i class="fas fa-circle-exclamation"></i>
+            {% elif student.print_count == 1 %}<i class="fas fa-circle-check"></i>
+            {% else %}<i class="fas fa-rotate-right"></i>{% endif %}
+          </div>
+          <div>
+            <div style="font-family:'Cinzel',serif; font-weight:800; font-size:0.78rem; letter-spacing:0.5px; text-transform:uppercase; line-height:1.15;">
+              {% if student.print_count == 0 %}Not Printed
+              {% elif student.print_count == 1 %}Printed Once
+              {% else %}Reprinted ×{{ student.print_count }}{% endif %}
+            </div>
+            <div style="font-size:0.74rem; opacity:0.85; margin-top:2px;">
+              {% if student.print_count == 0 %}This card has never been printed.
+              {% else %}First: <strong>{{ student.first_printed_at|date:"M j, Y" }}</strong>
+              · Last: <strong>{{ student.last_printed_at|date:"M j, Y H:i" }}</strong>{% endif %}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          {% if student.print_count > 0 %}
+            <form method="post" action="{% url 'student:student_print_reset' student.pk %}"
+                  onsubmit="return confirm('Reset all print tracking for {{ student.full_name|escapejs }}?');"
+                  style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline" style="padding:6px 11px; font-size:0.74rem; border-color:currentColor; color:inherit;">
+                <i class="fas fa-eraser"></i> Reset
+              </button>
+            </form>
+          {% endif %}
+          <a href="{% url 'student:student_print' student.pk %}" class="btn btn-outline" style="padding:6px 11px; font-size:0.74rem; border-color:currentColor; color:inherit;">
+            <i class="fas fa-print"></i> {% if student.print_count == 0 %}Print{% else %}Reprint{% endif %}
+          </a>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <strong><i class="fas fa-triangle-exclamation"></i> Please fix the following:</strong>
+        <ul>
+          {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="studentForm" novalidate>
+      {% csrf_token %}
+
+      <div class="form-section">
+        <div class="section-title"><i class="fas fa-user"></i> Identity</div>
+        <div class="form-grid">
+          <div class="form-group full {% if form.full_name.errors %}has-error{% endif %}">
+            <label for="{{ form.full_name.id_for_label }}">Full Name <span class="required">*</span></label>
+            {{ form.full_name }}
+            {% if form.full_name.errors %}<div class="field-error">{{ form.full_name.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group {% if form.gender.errors %}has-error{% endif %}">
+            <label for="{{ form.gender.id_for_label }}">Gender</label>
+            {{ form.gender }}
+            {% if form.gender.errors %}<div class="field-error">{{ form.gender.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group {% if form.date_of_birth.errors %}has-error{% endif %}">
+            <label for="{{ form.date_of_birth.id_for_label }}">Date of Birth</label>
+            {{ form.date_of_birth }}
+            {% if form.date_of_birth.errors %}<div class="field-error">{{ form.date_of_birth.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group full {% if form.photo.errors %}has-error{% endif %}">
+            <label for="{{ form.photo.id_for_label }}">Photo</label>
+            <div class="photo-field">
+              <div class="photo-preview" id="photoPreview">
+                {% if form.instance.photo %}
+                  <img src="{{ form.instance.photo.url }}" alt="Current photo">
+                {% else %}
+                  <i class="fas fa-user" style="font-size:1.6rem; opacity:0.35;"></i>
+                {% endif %}
+              </div>
+              <div class="photo-input">
+                {{ form.photo }}
+                <span class="helptext">Recommended: square image, 400×400px or larger. JPG or PNG.</span>
+              </div>
+            </div>
+            {% if form.photo.errors %}<div class="field-error">{{ form.photo.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-title"><i class="fas fa-graduation-cap"></i> Academic</div>
+        <div class="form-grid">
+          <div class="form-group {% if form.level.errors %}has-error{% endif %}">
+            <label for="{{ form.level.id_for_label }}">Level / Class</label>
+            {{ form.level }}
+            {% if form.level.errors %}<div class="field-error">{{ form.level.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group {% if form.department.errors %}has-error{% endif %}">
+            <label for="{{ form.department.id_for_label }}">Department / House</label>
+            {{ form.department }}
+            {% if form.department.errors %}<div class="field-error">{{ form.department.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group {% if form.guardian_name.errors %}has-error{% endif %}">
+            <label for="{{ form.guardian_name.id_for_label }}">Guardian Name</label>
+            {{ form.guardian_name }}
+            {% if form.guardian_name.errors %}<div class="field-error">{{ form.guardian_name.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group {% if form.guardian_phone.errors %}has-error{% endif %}">
+            <label for="{{ form.guardian_phone.id_for_label }}">Guardian Phone</label>
+            {{ form.guardian_phone }}
+            {% if form.guardian_phone.errors %}<div class="field-error">{{ form.guardian_phone.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group {% if form.valid_thru.errors %}has-error{% endif %}">
+            <label for="{{ form.valid_thru.id_for_label }}">Valid Thru</label>
+            {{ form.valid_thru }}
+            <span class="helptext">Last day this card is valid.</span>
+            {% if form.valid_thru.errors %}<div class="field-error">{{ form.valid_thru.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group {% if form.status.errors %}has-error{% endif %}">
+            <label for="{{ form.status.id_for_label }}">Status</label>
+            {{ form.status }}
+            {% if form.status.errors %}<div class="field-error">{{ form.status.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="form-group full {% if form.template.errors %}has-error{% endif %}">
+            <label for="{{ form.template.id_for_label }}">Card Template</label>
+            {{ form.template }}
+            {% if form.template.errors %}<div class="field-error">{{ form.template.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-title"><i class="fas fa-address-book"></i> Contact</div>
+        <div class="form-grid">
+          <div class="form-group {% if form.email.errors %}has-error{% endif %}">
+            <label for="{{ form.email.id_for_label }}">Email</label>
+            {{ form.email }}
+            {% if form.email.errors %}<div class="field-error">{{ form.email.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group {% if form.phone.errors %}has-error{% endif %}">
+            <label for="{{ form.phone.id_for_label }}">Phone</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}<div class="field-error">{{ form.phone.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group full {% if form.address.errors %}has-error{% endif %}">
+            <label for="{{ form.address.id_for_label }}">Address</label>
+            {{ form.address }}
+            {% if form.address.errors %}<div class="field-error">{{ form.address.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-title"><i class="fas fa-credit-card"></i> Back of Card</div>
+        <div class="form-grid">
+          <div class="form-group {% if form.blood_group.errors %}has-error{% endif %}">
+            <label for="{{ form.blood_group.id_for_label }}">Blood Group</label>
+            {{ form.blood_group }}
+            {% if form.blood_group.errors %}<div class="field-error">{{ form.blood_group.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group {% if form.emergency_contact_phone.errors %}has-error{% endif %}">
+            <label for="{{ form.emergency_contact_phone.id_for_label }}">Emergency Contact Phone</label>
+            {{ form.emergency_contact_phone }}
+            {% if form.emergency_contact_phone.errors %}<div class="field-error">{{ form.emergency_contact_phone.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> {% if student %}Save Changes{% else %}Create Card{% endif %}
+        </button>
+        <a href="{% if student %}{% url 'student:student_detail' student.pk %}{% else %}{% url 'student:student_list' %}{% endif %}" class="btn btn-outline">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <div class="preview-panel no-print">
+    <div class="preview-label">Live Preview</div>
+    <div id="liveCard" class="id-card-wrapper">
+      <div class="id-card" style="
+        --primary: {{ school.primary_color|default:'#8B2020' }};
+        --secondary: {{ school.secondary_color|default:'#C87A2C' }};
+        --accent: {{ school.accent_color|default:'#FBF6EC' }};
+        --text: {{ school.text_color|default:'#2A1810' }};
+      ">
+        <div class="card-header">
+          <div class="header-top">
+            <div class="header-logo">
+              {% if school.logo %}
+                <img src="{{ school.logo.url }}" alt="{{ school.name }}" style="width:100%; height:100%; object-fit:contain;">
+              {% else %}
+                <i class="fas fa-graduation-cap" style="font-size:0.85rem; color:var(--primary);"></i>
+              {% endif %}
+            </div>
+            <div class="header-text">
+              <div class="header-school-line1">{{ school.name|default:"School Name"|upper|truncatechars:44 }}</div>
+            </div>
+          </div>
+          <div class="gold-divider"></div>
+        </div>
+
+        <div class="role-above-photo" id="pvRole">
+          {% if student %}{{ student.level_display|upper }}{% else %}STUDENT{% endif %}
+        </div>
+
+        <div class="photo-section">
+          <div class="photo-ring">
+            <div class="photo-placeholder" id="pvPhoto">
+              {% if form.instance.photo %}
+                <img src="{{ form.instance.photo.url }}" alt="" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+              {% else %}
+                <span id="pvInitials">?</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="info">
+          <div class="teacher-name" id="pvName">{% if student %}{{ student.full_name|upper }}{% else %}—{% endif %}</div>
+          <div class="designation" id="pvLevel">{% if student %}{{ student.level_display|upper }}{% else %}—{% endif %}</div>
+
+          <div class="details-panel">
+            <div class="details">
+              <div>
+                <span class="label">Admission :</span>
+                <span class="value" id="pvAdmission">{% if student %}{{ student.admission_number }}{% else %}auto{% endif %}</span>
+              </div>
+              <div>
+                <span class="label">Level :</span>
+                <span class="value" id="pvDepartment">—</span>
+              </div>
+              <div id="pvValidRow" style="display:none;">
+                <span class="label">Valid Till :</span>
+                <span class="value" id="pvValid">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div class="staff-info">STUDENT IDENTIFICATION</div>
+        </div>
+
+        <div class="holo-sticker">
+          <div class="short-name">{{ school.short_name|default:"ID"|upper|slice:":5" }}</div>
+          <div class="authentic">AUTHENTIC</div>
+        </div>
+
+        <div class="gold-bar"></div>
+      </div>
+    </div>
+
+    {% if student %}
+      <div class="preview-print-pill
+        {% if student.print_count == 0 %}pill-unprinted
+        {% elif student.print_count == 1 %}pill-printed
+        {% else %}pill-reprinted{% endif %}">
+        {% if student.print_count == 0 %}<i class="fas fa-circle-exclamation"></i> Not Printed
+        {% elif student.print_count == 1 %}<i class="fas fa-circle-check"></i> Printed
+        {% else %}<i class="fas fa-rotate-right"></i> Reprinted ×{{ student.print_count }}{% endif %}
+      </div>
+    {% endif %}
+
+    <div class="preview-hint">Updates in real time. Admission number is generated on save.</div>
+  </div>
+
+</div>
+
+<style>
+  .id-card-wrapper {
+    display: inline-block;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35));
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 20px 45px -15px rgba(60,30,20,0.35);
+  }
+  .id-card {
+    width: 2.125in; height: 3.375in;
+    background: var(--accent);
+    border-radius: 10px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+    box-shadow: 0 4px 10px rgba(60,30,20,0.25);
+    font-family: 'Inter', sans-serif; color: var(--text);
+  }
+  .card-header {
+    background: linear-gradient(160deg, var(--primary) 0%, #5A1414 100%);
+    padding: 10px 8px 6px 8px;
+    border-bottom: 2px solid var(--secondary);
+  }
+  .header-top { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; }
+  .header-logo {
+    width: 0.45in; height: 0.45in; border-radius: 50%;
+    background: #FBF6EC; border: 1.5px solid var(--secondary);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; padding: 2px; flex-shrink: 0;
+  }
+  .header-text { flex: 1; min-width: 0; text-align: left; }
+  .header-school-line1 {
+    font-family: 'Cinzel', serif; font-size: 8.5px; font-weight: 800;
+    letter-spacing: 0.5px; color: #F5C87A; text-transform: uppercase;
+    line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .gold-divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+    margin: 2px auto 0 auto; opacity: 0.85;
+  }
+  .role-above-photo {
+    text-align: center; font-family: 'Cinzel', serif; font-size: 6.5px;
+    font-weight: 800; letter-spacing: 1.2px; color: var(--primary);
+    background: linear-gradient(180deg, rgba(200,122,44,0.14) 0%, rgba(200,122,44,0.04) 100%);
+    border-top: 0.5px solid rgba(200,122,44,0.35);
+    border-bottom: 0.5px solid rgba(200,122,44,0.35);
+    padding: 3px 8px; text-transform: uppercase;
+  }
+  .photo-section { display: flex; justify-content: center; margin-top: 8px; position: relative; z-index: 5; }
+  .photo-ring {
+    width: 1.05in; height: 1.05in; border-radius: 50%;
+    background: var(--accent); padding: 4px;
+    border: 2px solid var(--secondary);
+    box-shadow: 0 6px 16px -2px rgba(60,30,20,0.45);
+    overflow: hidden;
+  }
+  .photo-ring img { width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
+  .photo-placeholder {
+    width: 100%; height: 100%; border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-weight: 800; font-size: 1.5rem; color: var(--primary);
+  }
+  .info { text-align: center; padding: 8px 8px 0 8px; position: relative; z-index: 3; }
+  .teacher-name {
+    font-family: 'Cinzel', serif; font-size: 9.5px; font-weight: 800;
+    letter-spacing: 0.4px; color: var(--primary); line-height: 1.2;
+  }
+  .designation {
+    font-family: 'Inter', sans-serif; font-size: 4.8px; font-weight: 700;
+    color: var(--primary); letter-spacing: 0.5px; margin-top: 3px;
+    text-transform: uppercase; display: inline-block;
+    background: rgba(200,122,44,0.15); padding: 1.5px 8px; border-radius: 20px;
+    border: 0.4px solid rgba(200,122,44,0.4);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .details-panel {
+    margin: 6px 8px 0 8px; padding: 5px 6px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAF4E8 100%);
+    border: 0.6px solid rgba(140,60,30,0.18); border-radius: 5px;
+  }
+  .details {
+    font-family: 'Inter', sans-serif; font-size: 5px;
+    line-height: 1.65; color: var(--text); text-align: center;
+  }
+  .details div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .details .label { color: #8A6A50; font-weight: 500; }
+  .details .value { color: var(--primary); font-weight: 700; }
+  .footer { margin-top: auto; text-align: center; padding: 3px 8px 4px 8px; }
+  .footer .staff-info {
+    font-family: 'Cinzel', serif; font-size: 5px; font-weight: 700;
+    color: var(--primary); letter-spacing: 1.1px;
+  }
+  .holo-sticker {
+    position: absolute; bottom: 7px; right: 7px;
+    width: 30px; height: 22px; border-radius: 3px;
+    background: conic-gradient(from 210deg at 50% 50%,
+      #F5EDE0 0deg, #D8B890 60deg, #FFF8EC 120deg,
+      #B89878 180deg, #F0E0C8 240deg, #D0B090 300deg, #F5EDE0 360deg);
+    border: 0.7px solid rgba(255,255,255,0.95);
+    box-shadow: 0 2px 5px rgba(60,30,20,0.35);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--primary); text-align: center; line-height: 1.05;
+  }
+  .holo-sticker .short-name { font-size: 4.4px; font-weight: 800; }
+  .holo-sticker .authentic { font-size: 3.2px; font-weight: 700; margin-top: 0.4px; }
+  .gold-bar {
+    height: 5px; width: 100%; margin-top: auto;
+    background: linear-gradient(90deg, #8B5A1E 0%, var(--secondary) 25%, #E8B860 50%, var(--secondary) 75%, #8B5A1E 100%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
+  }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const form = document.getElementById('studentForm');
+    if (!form) return;
+
+    const nameInput       = form.querySelector('input[name="full_name"]');
+    const levelSelect     = form.querySelector('select[name="level"]');
+    const validThruInput  = form.querySelector('input[name="valid_thru"]');
+    const photoInput      = form.querySelector('input[type="file"][name="photo"]');
+
+    const pvName       = document.getElementById('pvName');
+    const pvLevel      = document.getElementById('pvLevel');
+    const pvRole       = document.getElementById('pvRole');
+    const pvPhoto      = document.getElementById('pvPhoto');
+    const pvInitials   = document.getElementById('pvInitials');
+    const pvValid      = document.getElementById('pvValid');
+    const pvValidRow   = document.getElementById('pvValidRow');
+
+    if (nameInput && pvName) {
+      nameInput.addEventListener('input', function () {
+        const v = (nameInput.value || '').trim();
+        pvName.textContent = v ? v.toUpperCase() : '—';
+        updateInitials(v);
+      });
+      if (nameInput.value) updateInitials(nameInput.value.trim());
+    }
+
+    if (levelSelect && pvLevel && pvRole) {
+      levelSelect.addEventListener('change', function () {
+        const text = levelSelect.options[levelSelect.selectedIndex]?.text || 'STUDENT';
+        pvLevel.textContent = text.toUpperCase();
+        pvRole.textContent = text.toUpperCase();
+      });
+    }
+
+    if (validThruInput && pvValid && pvValidRow) {
+      validThruInput.addEventListener('change', function () {
+        const v = validThruInput.value;
+        if (!v) { pvValidRow.style.display = 'none'; return; }
+        const parts = v.split('-');
+        if (parts.length === 3) pvValid.textContent = parts[1] + '/' + parts[0];
+        else pvValid.textContent = v;
+        pvValidRow.style.display = '';
+      });
+    }
+
+    if (photoInput && pvPhoto) {
+      photoInput.addEventListener('change', function (e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          pvPhoto.innerHTML = '<img src="' + ev.target.result + '" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">';
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function updateInitials(fullName) {
+      const parts = fullName.split(/\s+/).filter(Boolean);
+      const initials = parts.slice(0, 2).map(p => p[0].toUpperCase()).join('');
+      if (pvPhoto && !pvPhoto.querySelector('img') && pvInitials) {
+        pvInitials.textContent = initials || '?';
+      }
+    }
+
+    form.addEventListener('submit', function () {
+      form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]')
+        .forEach(function (el) { el.value = el.value.trim(); });
+    });
+
+    form.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        form.submit();
+      }
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,11 +1,9 @@
 {% extends "id_cards/base.html" %}
+{% load id_cards_extras %}
 {% block title %}{{ title }}{% endblock %}
 
 {% block extra_head %}
 <style>
-  /* ============================================================
-     FORM LAYOUT — two columns: form + live preview
-     ============================================================ */
   .form-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
@@ -21,9 +19,12 @@
       grid-template-columns: 1fr;
       gap: 28px;
     }
+    .preview-panel {
+      position: static;
+      top: auto;
+    }
   }
 
-  /* ---------- Form card ---------- */
   .form-card {
     background: #fff;
     border-radius: 20px;
@@ -48,7 +49,6 @@
     line-height: 1.5;
   }
 
-  /* ---------- Edit-mode print status banner ---------- */
   .edit-print-banner {
     display: flex;
     align-items: center;
@@ -131,7 +131,6 @@
     color: #fff;
   }
 
-  /* ---------- Sections ---------- */
   .form-section {
     margin-bottom: 28px;
     padding-bottom: 24px;
@@ -167,7 +166,6 @@
     margin-left: 8px;
   }
 
-  /* ---------- Grid inside sections ---------- */
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -234,7 +232,6 @@
     line-height: 1.4;
   }
 
-  /* ---------- Field errors ---------- */
   .field-error {
     color: #dc2626;
     font-size: 0.78rem;
@@ -249,7 +246,6 @@
     background: #fef2f2;
   }
 
-  /* ---------- Photo preview ---------- */
   .photo-field {
     display: flex;
     align-items: center;
@@ -282,7 +278,6 @@
     min-width: 200px;
   }
 
-  /* ---------- Actions bar ---------- */
   .form-actions {
     display: flex;
     gap: 12px;
@@ -291,7 +286,6 @@
     border-top: 1px dashed rgba(139, 32, 32, 0.12);
   }
 
-  /* ---------- Right column: live preview ---------- */
   .preview-panel {
     position: sticky;
     top: 90px;
@@ -315,7 +309,6 @@
     max-width: 280px;
   }
 
-  /* ---------- Mini print-status pill under preview ---------- */
   .preview-print-pill {
     display: inline-flex;
     align-items: center;
@@ -344,7 +337,6 @@
     border-color: var(--print-reprinted-br, #bfdbfe);
   }
 
-  /* ---------- Non-field errors ---------- */
   .form-errors {
     background: #fef2f2;
     border: 1px solid #fecaca;
@@ -369,9 +361,6 @@
     .form-card { padding: 24px 20px; }
   }
 
-  /* ============================================================
-     LIVE PREVIEW CARD — self-contained (matches id_card_front.html)
-     ============================================================ */
   .id-card-wrapper {
     display: inline-block;
     padding: 12px;
@@ -578,9 +567,6 @@
 
 <div class="form-layout">
 
-  <!-- ============================================================
-       LEFT: Form
-       ============================================================ -->
   <div class="form-card">
     <h1>{{ title }}</h1>
     <p class="subtitle">
@@ -591,7 +577,6 @@
       {% endif %}
     </p>
 
-    {% comment %}Print status banner — edit mode only{% endcomment %}
     {% if teacher %}
       <div class="edit-print-banner
         {% if teacher.print_count == 0 %}print-banner-unprinted
@@ -601,11 +586,11 @@
         <div class="pb-left">
           <div class="pb-icon">
             {% if teacher.print_count == 0 %}
-              <i class="fas fa-circle-exclamation"></i>
+              <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
             {% elif teacher.print_count == 1 %}
-              <i class="fas fa-circle-check"></i>
+              <i class="fas fa-circle-check" aria-hidden="true"></i>
             {% else %}
-              <i class="fas fa-rotate-right"></i>
+              <i class="fas fa-rotate-right" aria-hidden="true"></i>
             {% endif %}
           </div>
           <div>
@@ -632,26 +617,35 @@
         <div class="pb-actions">
           {% if teacher.print_count > 0 %}
             <form method="post"
-                  action="{% url 'card_print_reset' teacher.pk %}"
-                  onsubmit="return confirm('Reset all print tracking for {{ teacher.full_name|escapejs }}? This cannot be undone.');"
+                  action="{% url 'id_cards:card_print_reset' teacher.pk %}"
+                  class="js-confirm-reset"
+                  data-confirm="Reset all print tracking for {{ teacher.full_name }}? This cannot be undone."
                   style="display:inline;">
               {% csrf_token %}
+              <input type="hidden" name="confirm" value="RESET">
               <button type="submit" class="btn btn-outline">
-                <i class="fas fa-eraser"></i> Reset
+                <i class="fas fa-eraser" aria-hidden="true"></i> Reset
               </button>
             </form>
           {% endif %}
-          <a href="{% url 'card_print' teacher.pk %}" class="btn btn-outline">
-            <i class="fas fa-print"></i>
-            {% if teacher.print_count == 0 %}Print{% else %}Reprint{% endif %}
-          </a>
+
+          <form method="post"
+                action="{% url 'id_cards:card_print' teacher.pk %}"
+                style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="track" value="1">
+            <button type="submit" class="btn btn-outline">
+              <i class="fas fa-print" aria-hidden="true"></i>
+              {% if teacher.print_count == 0 %}Print{% else %}Reprint{% endif %}
+            </button>
+          </form>
         </div>
       </div>
     {% endif %}
 
     {% if form.non_field_errors %}
       <div class="form-errors">
-        <strong><i class="fas fa-triangle-exclamation"></i> Please fix the following:</strong>
+        <strong><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Please fix the following:</strong>
         <ul>
           {% for error in form.non_field_errors %}
             <li>{{ error }}</li>
@@ -663,10 +657,9 @@
     <form method="post" enctype="multipart/form-data" id="teacherForm" novalidate>
       {% csrf_token %}
 
-      <!-- ========== SECTION 1: Identity ========== -->
       <div class="form-section">
         <div class="section-title">
-          <i class="fas fa-user"></i> Identity
+          <i class="fas fa-user" aria-hidden="true"></i> Identity
         </div>
 
         <div class="form-grid">
@@ -700,7 +693,7 @@
                 {% if form.instance.photo %}
                   <img src="{{ form.instance.photo.url }}" alt="Current photo">
                 {% else %}
-                  <i class="fas fa-user" style="font-size:1.6rem; opacity:0.35;"></i>
+                  <i class="fas fa-user" style="font-size:1.6rem; opacity:0.35;" aria-hidden="true"></i>
                 {% endif %}
               </div>
               <div class="photo-input">
@@ -710,7 +703,7 @@
                 </span>
                 {% if form.instance.photo %}
                   <span class="helptext">
-                    Current: <a href="{{ form.instance.photo.url }}" target="_blank">view photo</a>
+                    Current: <a href="{{ form.instance.photo.url }}" target="_blank" rel="noopener">view photo</a>
                   </span>
                 {% endif %}
               </div>
@@ -722,10 +715,9 @@
         </div>
       </div>
 
-      <!-- ========== SECTION 2: Employment ========== -->
       <div class="form-section">
         <div class="section-title">
-          <i class="fas fa-briefcase"></i> Employment
+          <i class="fas fa-briefcase" aria-hidden="true"></i> Employment
         </div>
 
         <div class="form-grid">
@@ -794,10 +786,9 @@
         </div>
       </div>
 
-      <!-- ========== SECTION 3: Contact ========== -->
       <div class="form-section">
         <div class="section-title">
-          <i class="fas fa-address-book"></i> Contact
+          <i class="fas fa-address-book" aria-hidden="true"></i> Contact
         </div>
 
         <div class="form-grid">
@@ -819,10 +810,9 @@
         </div>
       </div>
 
-      <!-- ========== SECTION 4: Back of Card ========== -->
       <div class="form-section">
         <div class="section-title">
-          <i class="fas fa-credit-card"></i> Back of Card
+          <i class="fas fa-credit-card" aria-hidden="true"></i> Back of Card
         </div>
 
         <p class="helptext" style="margin-top:-12px; margin-bottom:16px;">
@@ -830,17 +820,6 @@
         </p>
 
         <div class="form-grid">
-          <div class="form-group {% if form.blood_group.errors %}has-error{% endif %}">
-            <label for="{{ form.blood_group.id_for_label }}">Blood Group</label>
-            {{ form.blood_group }}
-            {% if form.blood_group.help_text %}
-              <span class="helptext">{{ form.blood_group.help_text }}</span>
-            {% endif %}
-            {% if form.blood_group.errors %}
-              <div class="field-error">{{ form.blood_group.errors.0 }}</div>
-            {% endif %}
-          </div>
-
           <div class="form-group {% if form.emergency_contact_phone.errors %}has-error{% endif %}">
             <label for="{{ form.emergency_contact_phone.id_for_label }}">
               Emergency Contact Phone
@@ -853,48 +832,104 @@
               <div class="field-error">{{ form.emergency_contact_phone.errors.0 }}</div>
             {% endif %}
           </div>
+
+          <div class="form-group {% if form.issue_date.errors %}has-error{% endif %}">
+            <label for="{{ form.issue_date.id_for_label }}">Issue Date</label>
+            {{ form.issue_date }}
+            {% if form.issue_date.help_text %}
+              <span class="helptext">{{ form.issue_date.help_text }}</span>
+            {% endif %}
+            {% if form.issue_date.errors %}
+              <div class="field-error">{{ form.issue_date.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group {% if form.expiry_date.errors %}has-error{% endif %}">
+            <label for="{{ form.expiry_date.id_for_label }}">Expiry Date</label>
+            {{ form.expiry_date }}
+            {% if form.expiry_date.help_text %}
+              <span class="helptext">{{ form.expiry_date.help_text }}</span>
+            {% endif %}
+            {% if form.expiry_date.errors %}
+              <div class="field-error">{{ form.expiry_date.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group full {% if form.authorized_use.errors %}has-error{% endif %}">
+            <label for="{{ form.authorized_use.id_for_label }}">Authorized Use</label>
+            {{ form.authorized_use }}
+            {% if form.authorized_use.help_text %}
+              <span class="helptext">{{ form.authorized_use.help_text }}</span>
+            {% endif %}
+            {% if form.authorized_use.errors %}
+              <div class="field-error">{{ form.authorized_use.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group full {% if form.security.errors %}has-error{% endif %}">
+            <label for="{{ form.security.id_for_label }}">Security Notice</label>
+            {{ form.security }}
+            {% if form.security.help_text %}
+              <span class="helptext">{{ form.security.help_text }}</span>
+            {% endif %}
+            {% if form.security.errors %}
+              <div class="field-error">{{ form.security.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group full {% if form.id_card_terms.errors %}has-error{% endif %}">
+            <label for="{{ form.id_card_terms.id_for_label }}">Terms of Use</label>
+            {{ form.id_card_terms }}
+            {% if form.id_card_terms.help_text %}
+              <span class="helptext">{{ form.id_card_terms.help_text }}</span>
+            {% endif %}
+            {% if form.id_card_terms.errors %}
+              <div class="field-error">{{ form.id_card_terms.errors.0 }}</div>
+            {% endif %}
+          </div>
         </div>
       </div>
 
-      <!-- ========== Actions ========== -->
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">
-          <i class="fas fa-save"></i>
+          <i class="fas fa-save" aria-hidden="true"></i>
           {% if teacher %}Save Changes{% else %}Create Card{% endif %}
         </button>
-        <a href="{% if teacher %}{% url 'card_detail' teacher.pk %}{% else %}{% url 'card_list' %}{% endif %}"
+        <a href="{% if teacher %}{% url 'id_cards:card_detail' teacher.pk %}{% else %}{% url 'id_cards:card_list' %}{% endif %}"
            class="btn btn-outline">
           Cancel
         </a>
         {% if teacher %}
-          <a href="{% url 'card_detail' teacher.pk %}" class="btn btn-outline">
-            <i class="fas fa-eye"></i> View Card
+          <a href="{% url 'id_cards:card_detail' teacher.pk %}" class="btn btn-outline">
+            <i class="fas fa-eye" aria-hidden="true"></i> View Card
           </a>
-          <a href="{% url 'card_print' teacher.pk %}" class="btn btn-secondary">
-            <i class="fas fa-print"></i>
-            {% if teacher.print_count == 0 %}Print Now{% else %}Reprint Now{% endif %}
-          </a>
+
+          <form method="post"
+                action="{% url 'id_cards:card_print' teacher.pk %}"
+                style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="track" value="1">
+            <button type="submit" class="btn btn-secondary">
+              <i class="fas fa-print" aria-hidden="true"></i>
+              {% if teacher.print_count == 0 %}Print Now{% else %}Reprint Now{% endif %}
+            </button>
+          </form>
         {% endif %}
       </div>
     </form>
   </div>
 
-  <!-- ============================================================
-       RIGHT: Live preview
-       Matches id_card_front.html layout (single header line).
-       ============================================================ -->
   <div class="preview-panel no-print">
     <div class="preview-label">Live Preview</div>
 
     <div id="liveCard" class="id-card-wrapper">
       <div class="id-card" style="
-        --primary: {{ school.primary_color|default:'#8B2020' }};
-        --secondary: {{ school.secondary_color|default:'#C87A2C' }};
-        --accent: {{ school.accent_color|default:'#FBF6EC' }};
-        --text: {{ school.text_color|default:'#2A1810' }};
+        --primary: {{ school.primary_color|safe_hex:'#8B2020' }};
+        --secondary: {{ school.secondary_color|safe_hex:'#C87A2C' }};
+        --accent: {{ school.accent_color|safe_hex:'#FBF6EC' }};
+        --text: {{ school.text_color|safe_hex:'#2A1810' }};
       ">
 
-        <!-- HEADER: logo (left) + single-line school name -->
         <div class="card-header">
           <div class="header-top">
             <div class="header-logo">
@@ -903,7 +938,8 @@
                      style="width:100%; height:100%; object-fit:contain;">
               {% else %}
                 <i class="fas fa-graduation-cap"
-                   style="font-size: 0.85rem; color: var(--primary);"></i>
+                   style="font-size: 0.85rem; color: var(--primary);"
+                   aria-hidden="true"></i>
               {% endif %}
             </div>
 
@@ -917,26 +953,26 @@
           <div class="gold-divider"></div>
         </div>
 
-        <!-- ROLE — just above the profile picture -->
         <div class="role-above-photo" id="pvRole">
           {% if teacher %}{{ teacher.get_role_display|upper }}{% else %}FACULTY{% endif %}
         </div>
 
-        <!-- PHOTO -->
         <div class="photo-section">
           <div class="photo-ring">
             <div class="photo-placeholder" id="pvPhoto">
               {% if form.instance.photo %}
                 <img src="{{ form.instance.photo.url }}"
-                     alt="" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                     alt=""
+                     style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
               {% else %}
-                <span id="pvInitials">?</span>
+                <span id="pvInitials">
+                  {% if teacher %}{{ teacher.initials }}{% else %}?{% endif %}
+                </span>
               {% endif %}
             </div>
           </div>
         </div>
 
-        <!-- INFO -->
         <div class="info">
           <div class="teacher-name" id="pvName">
             {% if teacher %}{{ teacher.full_name|upper }}{% else %}—{% endif %}
@@ -955,50 +991,52 @@
               </div>
               <div>
                 <span class="label">Department :</span>
-                <span class="value" id="pvDepartment">General</span>
+                <span class="value" id="pvDepartment">
+                  {% if teacher.department %}{{ teacher.department.name }}{% else %}General{% endif %}
+                </span>
               </div>
-              <div id="pvLevelsRow" style="display:none;">
+              <div id="pvLevelsRow" style="{% if not teacher.levels.all %}display:none;{% endif %}">
                 <span class="label">Levels :</span>
-                <span class="value" id="pvLevels">—</span>
+                <span class="value" id="pvLevels">
+                  {% if teacher %}{{ teacher.levels_display|default:"—" }}{% else %}—{% endif %}
+                </span>
               </div>
-              <div id="pvValidRow" style="display:none;">
+              <div id="pvValidRow" style="{% if not teacher.valid_thru %}display:none;{% endif %}">
                 <span class="label">Valid Till :</span>
-                <span class="value" id="pvValid">—</span>
+                <span class="value" id="pvValid">
+                  {% if teacher.valid_thru %}{{ teacher.valid_thru|date:"m/Y" }}{% else %}—{% endif %}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- FOOTER -->
         <div class="footer">
           <div class="staff-info">
-            {{ teacher.template.card_footer_text|default:"STAFF IDENTIFICATION" }}
+            {% if teacher.template %}{{ teacher.template.card_footer_text }}{% else %}STAFF IDENTIFICATION{% endif %}
           </div>
         </div>
 
-        <!-- HOLOGRAM -->
         <div class="holo-sticker">
           <div class="short-name">{{ school.short_name|default:"ID"|upper|slice:":5" }}</div>
           <div class="authentic">AUTHENTIC</div>
         </div>
 
-        <!-- GOLD BAR -->
         <div class="gold-bar"></div>
       </div>
     </div>
 
-    {% comment %}Print status pill under preview{% endcomment %}
     {% if teacher %}
       <div class="preview-print-pill
         {% if teacher.print_count == 0 %}pill-unprinted
         {% elif teacher.print_count == 1 %}pill-printed
         {% else %}pill-reprinted{% endif %}">
         {% if teacher.print_count == 0 %}
-          <i class="fas fa-circle-exclamation"></i> Not Printed
+          <i class="fas fa-circle-exclamation" aria-hidden="true"></i> Not Printed
         {% elif teacher.print_count == 1 %}
-          <i class="fas fa-circle-check"></i> Printed
+          <i class="fas fa-circle-check" aria-hidden="true"></i> Printed
         {% else %}
-          <i class="fas fa-rotate-right"></i> Reprinted ×{{ teacher.print_count }}
+          <i class="fas fa-rotate-right" aria-hidden="true"></i> Reprinted ×{{ teacher.print_count }}
         {% endif %}
       </div>
     {% endif %}
@@ -1015,14 +1053,10 @@
 
 {% block extra_js %}
 <script>
-  /* ============================================================
-     LIVE PREVIEW — updates the mini ID card as the user types
-     ============================================================ */
   (function () {
     const form = document.getElementById('teacherForm');
     if (!form) return;
 
-    // Field references
     const nameInput        = form.querySelector('input[name="full_name"]');
     const designationInput = form.querySelector('input[name="designation"]');
     const roleSelect       = form.querySelector('select[name="role"]');
@@ -1031,7 +1065,6 @@
     const validThruInput   = form.querySelector('input[name="valid_thru"]');
     const photoInput       = form.querySelector('input[type="file"][name="photo"]');
 
-    // Preview targets
     const pvName        = document.getElementById('pvName');
     const pvDesignation = document.getElementById('pvDesignation');
     const pvRole        = document.getElementById('pvRole');
@@ -1041,21 +1074,43 @@
     const pvValid       = document.getElementById('pvValid');
     const pvValidRow    = document.getElementById('pvValidRow');
     const pvPhoto       = document.getElementById('pvPhoto');
-    const pvInitials    = document.getElementById('pvInitials');
 
-    /* ---------------- Name ---------------- */
+    const formPhotoPreview = document.getElementById('photoPreview');
+
+    function getSelectedText(select) {
+      if (!select || select.selectedIndex < 0) return '';
+      const opt = select.options[select.selectedIndex];
+      return opt ? opt.text.trim() : '';
+    }
+
+    function initialsFrom(name) {
+      return name.split(/\s+/).filter(Boolean)
+        .slice(0, 2)
+        .map(p => p[0].toUpperCase())
+        .join('');
+    }
+
+    function setInitials(name) {
+      if (pvPhoto && pvPhoto.querySelector('img')) return;
+      const initials = initialsFrom(name) || '?';
+      let span = document.getElementById('pvInitials');
+      if (!span) {
+        span = document.createElement('span');
+        span.id = 'pvInitials';
+        pvPhoto.innerHTML = '';
+        pvPhoto.appendChild(span);
+      }
+      span.textContent = initials;
+    }
+
     if (nameInput && pvName) {
       nameInput.addEventListener('input', function () {
         const v = (nameInput.value || '').trim();
         pvName.textContent = v ? v.toUpperCase() : '—';
-        updateInitials(v);
+        setInitials(v);
       });
-
-      // Run once on load so any pre-filled value is reflected
-      if (nameInput.value) updateInitials(nameInput.value.trim());
     }
 
-    /* ---------------- Designation ---------------- */
     if (designationInput && pvDesignation) {
       designationInput.addEventListener('input', function () {
         const v = (designationInput.value || '').trim();
@@ -1063,26 +1118,25 @@
       });
     }
 
-    /* ---------------- Role (appears above the photo) ---------------- */
     if (roleSelect && pvRole) {
       roleSelect.addEventListener('change', function () {
-        const text = roleSelect.options[roleSelect.selectedIndex]?.text || 'FACULTY';
+        const text = getSelectedText(roleSelect) || 'FACULTY';
         pvRole.textContent = text.toUpperCase();
       });
     }
 
-    /* ---------------- Department ---------------- */
     if (departmentSelect && pvDepartment) {
       departmentSelect.addEventListener('change', function () {
-        const text = departmentSelect.options[departmentSelect.selectedIndex]?.text || 'General';
-        pvDepartment.textContent = departmentSelect.value ? text : 'General';
+        const text = getSelectedText(departmentSelect);
+        pvDepartment.textContent = departmentSelect.value && text ? text : 'General';
       });
     }
 
-    /* ---------------- Levels ---------------- */
     if (levelsSelect && pvLevels && pvLevelsRow) {
       levelsSelect.addEventListener('change', function () {
-        const selected = Array.from(levelsSelect.selectedOptions).map(o => o.text);
+        const selected = Array.from(levelsSelect.selectedOptions)
+          .map(o => o.text.trim())
+          .filter(Boolean);
         if (selected.length) {
           pvLevels.textContent = selected.join(', ');
           pvLevelsRow.style.display = '';
@@ -1092,7 +1146,6 @@
       });
     }
 
-    /* ---------------- Valid Thru ---------------- */
     if (validThruInput && pvValid && pvValidRow) {
       validThruInput.addEventListener('change', function () {
         const v = validThruInput.value;
@@ -1100,10 +1153,9 @@
           pvValidRow.style.display = 'none';
           return;
         }
-        // <input type="date"> gives YYYY-MM-DD
         const parts = v.split('-');
         if (parts.length === 3) {
-          pvValid.textContent = parts[1] + '/' + parts[0]; // MM/YYYY
+          pvValid.textContent = parts[1] + '/' + parts[0];
         } else {
           pvValid.textContent = v;
         }
@@ -1111,54 +1163,56 @@
       });
     }
 
-    /* ---------------- Photo ---------------- */
-    if (photoInput && pvPhoto) {
+    if (photoInput) {
       photoInput.addEventListener('change', function (e) {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = function (ev) {
-          pvPhoto.innerHTML =
-            '<img src="' + ev.target.result + '" ' +
-            'style="width:100%; height:100%; object-fit:cover; border-radius:50%;">';
+          const src = ev.target.result;
+          if (pvPhoto) {
+            pvPhoto.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = '';
+            img.style.cssText = 'width:100%; height:100%; object-fit:cover; border-radius:50%;';
+            pvPhoto.appendChild(img);
+          }
+          if (formPhotoPreview) {
+            formPhotoPreview.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = 'Selected photo';
+            formPhotoPreview.appendChild(img);
+          }
         };
         reader.readAsDataURL(file);
       });
     }
 
-    /* ---------------- Initials helper ---------------- */
-    function updateInitials(fullName) {
-      const parts = fullName.split(/\s+/).filter(Boolean);
-      const initials = parts.slice(0, 2).map(p => p[0].toUpperCase()).join('');
-      // Update the placeholder initials if the photo hasn't been replaced
-      // with an <img> yet.
-      if (pvPhoto && !pvPhoto.querySelector('img')) {
-        if (pvInitials) {
-          pvInitials.textContent = initials || '?';
-        } else {
-          pvPhoto.textContent = initials || '?';
-        }
-      }
-    }
-
-    /* ============================================================
-       Trim whitespace on text inputs before submit
-       ============================================================ */
     form.addEventListener('submit', function () {
       form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]')
         .forEach(function (el) { el.value = el.value.trim(); });
     });
 
-    /* ============================================================
-       Ctrl / Cmd + Enter → submit
-       ============================================================ */
     form.addEventListener('keydown', function (e) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        form.submit();
+        if (typeof form.requestSubmit === 'function') {
+          form.requestSubmit();
+        } else {
+          form.submit();
+        }
       }
     });
 
+    document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        if (!window.confirm(form.dataset.confirm)) {
+          e.preventDefault();
+        }
+      });
+    });
   })();
 </script>
 {% endblock %}

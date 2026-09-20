@@ -65,7 +65,13 @@
     flex-direction: column;
     gap: 3px;
   }
-  .dept-card .dept-meta i { color: var(--secondary); width: 14px; }
+  .dept-card .dept-meta i {
+    color: var(--secondary);
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+    margin-right: 4px;
+  }
   .dept-card .dept-count {
     font-size: 0.82rem;
     color: var(--text);
@@ -78,7 +84,12 @@
     align-items: center;
     gap: 6px;
   }
-  .dept-card .dept-count i { color: var(--secondary); }
+  .dept-card .dept-count i {
+    color: var(--secondary);
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+  }
   .dept-card .dept-count strong { color: var(--primary); }
   .dept-card .dept-actions {
     display: flex;
@@ -92,6 +103,17 @@
     padding: 6px 11px;
     font-size: 0.75rem;
   }
+  .dept-card .btn-outline-danger {
+    background: transparent;
+    color: #dc2626;
+    border: 1.5px solid #dc2626;
+    transition: background 0.15s, color 0.15s;
+  }
+  .dept-card .btn-outline-danger:hover {
+    background: #dc2626;
+    color: #fff;
+  }
+
   .status-pill {
     display: inline-block;
     padding: 2px 9px;
@@ -103,6 +125,7 @@
   }
   .status-pill.active { background: #d1fae5; color: #065f46; }
   .status-pill.inactive { background: #e5e7eb; color: #374151; }
+
   @media (max-width: 600px) {
     .dept-grid { grid-template-columns: 1fr; }
   }
@@ -117,11 +140,11 @@
     <p>{{ departments|length }} department{{ departments|length|pluralize }} on file</p>
   </div>
   <div class="actions">
-    <a href="{% url 'card_list' %}" class="btn btn-outline">
-      <i class="fas fa-arrow-left"></i> Back
+    <a href="{% url 'id_cards:card_list' %}" class="btn btn-outline">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i> Back
     </a>
-    <a href="{% url 'department_create' %}" class="btn btn-primary">
-      <i class="fas fa-plus"></i> Add Department
+    <a href="{% url 'id_cards:department_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus" aria-hidden="true"></i> Add Department
     </a>
   </div>
 </div>
@@ -136,7 +159,10 @@
         </div>
 
         <div class="dept-meta">
-          <div><i class="fas fa-calendar"></i> Created {{ dept.created_at|date:"M j, Y" }}</div>
+          <div>
+            <i class="fas fa-calendar-plus" aria-hidden="true"></i>
+            Created {{ dept.created_at|date:"M j, Y" }}
+          </div>
           <div>
             <span class="status-pill {% if dept.is_active %}active{% else %}inactive{% endif %}">
               {% if dept.is_active %}Active{% else %}Inactive{% endif %}
@@ -145,19 +171,20 @@
         </div>
 
         <div class="dept-count">
-          <i class="fas fa-users"></i>
-          <strong>{{ dept.teachers.count }}</strong> staff member{{ dept.teachers.count|pluralize }}
+          <i class="fas fa-users" aria-hidden="true"></i>
+          <strong>{{ dept.teacher_count }}</strong> staff member{{ dept.teacher_count|pluralize }}
         </div>
 
         <div class="dept-actions">
-          <a href="{% url 'department_edit' dept.pk %}" class="btn btn-outline">
-            <i class="fas fa-pen"></i> Edit
+          <a href="{% url 'id_cards:department_edit' dept.pk %}" class="btn btn-outline">
+            <i class="fas fa-pen" aria-hidden="true"></i> Edit
           </a>
-          <a href="{% url 'department_delete' dept.pk %}" class="btn btn-outline" style="color:#dc2626; border-color:#dc2626;">
-            <i class="fas fa-trash"></i> Delete
+          <a href="{% url 'id_cards:department_delete' dept.pk %}"
+             class="btn btn-outline-danger">
+            <i class="fas fa-trash" aria-hidden="true"></i> Delete
           </a>
-          <a href="{% url 'card_list' %}?dept={{ dept.pk }}" class="btn btn-outline">
-            <i class="fas fa-list"></i> View Staff
+          <a href="{% url 'id_cards:card_list' %}?dept={{ dept.pk }}" class="btn btn-outline">
+            <i class="fas fa-list" aria-hidden="true"></i> View Staff
           </a>
         </div>
       </div>
@@ -165,12 +192,12 @@
   </div>
 {% else %}
   <div class="empty-state">
-    <i class="fas fa-building"></i>
+    <i class="fas fa-building" aria-hidden="true"></i>
     <h2>No departments yet</h2>
     <p>Departments group your staff by role or faculty. Add the first one to get started.</p>
     <div class="empty-actions">
-      <a href="{% url 'department_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Add First Department
+      <a href="{% url 'id_cards:department_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus" aria-hidden="true"></i> Add First Department
       </a>
     </div>
   </div>

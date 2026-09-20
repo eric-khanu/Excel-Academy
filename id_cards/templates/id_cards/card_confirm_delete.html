@@ -23,7 +23,6 @@
     overflow: hidden;
   }
 
-  /* Subtle red vignette at the top */
   .delete-card::before {
     content: "";
     position: absolute;
@@ -34,7 +33,6 @@
     background: linear-gradient(90deg, #dc2626, #f87171, #dc2626);
   }
 
-  /* ---------- Warning icon ---------- */
   .delete-icon {
     width: 72px;
     height: 72px;
@@ -50,7 +48,6 @@
     border: 2px solid #fecaca;
   }
 
-  /* ---------- Headings ---------- */
   .delete-card h1 {
     font-family: 'Cinzel', serif;
     font-size: 1.55rem;
@@ -114,6 +111,7 @@
     color: var(--primary);
     line-height: 1.2;
     margin-bottom: 3px;
+    word-break: break-word;
   }
 
   .teacher-preview .preview-text .preview-sub {
@@ -125,7 +123,7 @@
   .teacher-preview .preview-text .preview-meta {
     font-size: 0.78rem;
     color: #5a4a3a;
-    font-family: monospace;
+    font-family: 'Menlo', 'Consolas', monospace;
     font-weight: 600;
     letter-spacing: 0.3px;
   }
@@ -164,10 +162,7 @@
     flex-shrink: 0;
   }
 
-  .print-history .ph-text {
-    flex: 1;
-    min-width: 180px;
-  }
+  .print-history .ph-text { flex: 1; min-width: 180px; }
 
   .print-history .ph-title {
     font-family: 'Cinzel', serif;
@@ -187,7 +182,6 @@
 
   .print-history .ph-sub strong { font-weight: 700; }
 
-  /* Colour variants — reuse base.html print-status palette */
   .print-history.ph-unprinted {
     background: var(--print-unprinted-bg, #fef3c7);
     border-color: var(--print-unprinted-br, #fde68a);
@@ -227,11 +221,7 @@
     gap: 8px;
   }
 
-  .warning-box ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
+  .warning-box ul { list-style: none; padding: 0; margin: 0; }
 
   .warning-box li {
     display: flex;
@@ -251,8 +241,7 @@
   }
 
   /* ============================================================
-     TYPED CONFIRMATION (new)
-     Admin must type the employee ID to enable the delete button.
+     TYPED CONFIRMATION
      ============================================================ */
   .confirm-zone {
     margin-bottom: 22px;
@@ -270,10 +259,7 @@
     margin-bottom: 10px;
     display: block;
   }
-  .confirm-zone .cz-label strong {
-    font-weight: 700;
-    color: #991b1b;
-  }
+  .confirm-zone .cz-label strong { font-weight: 700; color: #991b1b; }
   .confirm-zone .cz-input-wrap {
     display: flex;
     gap: 8px;
@@ -320,9 +306,8 @@
     align-items: center;
     gap: 6px;
   }
-  .confirm-zone .cz-hint i {
-    color: var(--secondary);
-  }
+  .confirm-zone .cz-hint i { color: var(--secondary); }
+  .confirm-zone .cz-hint.is-match i { color: #16a34a; }
 
   /* ---------- Actions ---------- */
   .delete-actions {
@@ -333,12 +318,13 @@
     padding-top: 8px;
   }
 
-  .delete-actions .btn {
-    min-width: 150px;
-    justify-content: center;
-  }
+  .delete-actions .btn { min-width: 150px; justify-content: center; }
 
-  /* Cancel is intentionally larger / more prominent than Delete */
+  /*
+    Cancel is intentionally prominent while Delete is disabled.
+    The delete button lights up (see .btn-delete-printed) once the
+    typed ID matches, shifting visual emphasis.
+  */
   .delete-actions .btn-cancel {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: #fff;
@@ -363,7 +349,6 @@
     color: #fff;
   }
 
-  /* Delete button is disabled until the confirmation input matches */
   .delete-actions .btn-delete:disabled {
     opacity: 0.45;
     cursor: not-allowed;
@@ -374,7 +359,6 @@
     color: #dc2626;
   }
 
-  /* Extra warning when card has been printed — bigger, more emphatic */
   .delete-actions .btn-delete.btn-delete-printed:not(:disabled) {
     background: #dc2626;
     color: #fff;
@@ -417,12 +401,10 @@
 <div class="delete-layout">
   <div class="delete-card">
 
-    <!-- Warning icon -->
     <div class="delete-icon">
-      <i class="fas fa-triangle-exclamation"></i>
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
     </div>
 
-    <!-- Heading -->
     <h1>Delete this staff record?</h1>
     <p class="lead">
       You're about to permanently remove this staff member and their ID card.
@@ -454,7 +436,7 @@
          ============================================================ -->
     {% if teacher.print_count == 0 %}
       <div class="print-history ph-unprinted">
-        <div class="ph-icon"><i class="fas fa-circle-exclamation"></i></div>
+        <div class="ph-icon"><i class="fas fa-circle-exclamation" aria-hidden="true"></i></div>
         <div class="ph-text">
           <div class="ph-title">Never Printed</div>
           <div class="ph-sub">
@@ -465,7 +447,7 @@
       </div>
     {% elif teacher.print_count == 1 %}
       <div class="print-history ph-printed">
-        <div class="ph-icon"><i class="fas fa-circle-check"></i></div>
+        <div class="ph-icon"><i class="fas fa-circle-check" aria-hidden="true"></i></div>
         <div class="ph-text">
           <div class="ph-title">Printed Once</div>
           <div class="ph-sub">
@@ -478,7 +460,7 @@
       </div>
     {% else %}
       <div class="print-history ph-reprinted">
-        <div class="ph-icon"><i class="fas fa-rotate-right"></i></div>
+        <div class="ph-icon"><i class="fas fa-rotate-right" aria-hidden="true"></i></div>
         <div class="ph-text">
           <div class="ph-title">Reprinted ×{{ teacher.print_count }}</div>
           <div class="ph-sub">
@@ -494,24 +476,24 @@
     <!-- What will be lost -->
     <div class="warning-box">
       <div class="warning-title">
-        <i class="fas fa-circle-exclamation"></i>
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
         What will be permanently deleted
       </div>
       <ul>
         <li>
-          <i class="fas fa-xmark"></i>
+          <i class="fas fa-xmark" aria-hidden="true"></i>
           <span>The staff profile, photo, and all personal details</span>
         </li>
         <li>
-          <i class="fas fa-xmark"></i>
+          <i class="fas fa-xmark" aria-hidden="true"></i>
           <span>The generated Employee ID <strong>{{ teacher.employee_id }}</strong> (cannot be reused)</span>
         </li>
         <li>
-          <i class="fas fa-xmark"></i>
+          <i class="fas fa-xmark" aria-hidden="true"></i>
           <span>All associations with departments and levels</span>
         </li>
         <li>
-          <i class="fas fa-xmark"></i>
+          <i class="fas fa-xmark" aria-hidden="true"></i>
           <span>
             {% if teacher.print_count > 0 %}
               The print history (<strong>{{ teacher.print_count }} print{{ teacher.print_count|pluralize }}</strong>) — this record will no longer appear in print reports
@@ -525,11 +507,11 @@
 
     <!-- ============================================================
          TYPED CONFIRMATION ZONE
-         Admin must type the employee ID exactly to enable the
-         delete button. This is a hard gate that cannot be dismissed
-         by pressing Enter, unlike a window.confirm() dialog.
+
+         The server MUST also validate this value — see `card_delete`
+         in views.py. The client-side gate is UX, not security.
          ============================================================ -->
-    <form method="post" id="deleteForm" autocomplete="off">
+    <form method="post" action="" id="deleteForm" autocomplete="off">
       {% csrf_token %}
 
       <div class="confirm-zone">
@@ -548,34 +530,30 @@
                  spellcheck="false"
                  required>
         </div>
-        <div class="cz-hint">
-          <i class="fas fa-circle-info"></i>
-          The delete button unlocks only when the ID matches exactly.
+        <div class="cz-hint" id="czHint">
+          <i class="fas fa-circle-info" aria-hidden="true"></i>
+          <span id="czHintText">
+            The delete button unlocks only when the ID matches exactly.
+          </span>
         </div>
       </div>
 
       <div class="delete-actions">
-
-        <!-- Cancel = primary (safer default) -->
-        <a href="{% url 'card_detail' teacher.pk %}" class="btn btn-cancel">
-          <i class="fas fa-arrow-left"></i> Cancel &amp; Go Back
+        <a href="{% url 'id_cards:card_detail' teacher.pk %}" class="btn btn-cancel">
+          <i class="fas fa-arrow-left" aria-hidden="true"></i> Cancel &amp; Go Back
         </a>
 
-        <!-- Delete = disabled until the input matches -->
         <button type="submit"
                 class="btn btn-delete {% if teacher.print_count > 0 %}btn-delete-printed{% endif %}"
                 id="deleteBtn"
                 disabled>
-          <i class="fas fa-trash"></i>
+          <i class="fas fa-trash" aria-hidden="true"></i>
           Yes, Delete Permanently
         </button>
-
       </div>
     </form>
 
-    <!-- Keyboard hint -->
     <div class="keyboard-hint">
-      Tip: press <kbd>Esc</kbd> to cancel.
       The delete button unlocks once you type the ID exactly.
     </div>
 
@@ -589,13 +567,15 @@
   /* ============================================================
      TYPED-CONFIRMATION GATE
      The delete button stays disabled until the admin types the
-     employee ID exactly. This is a hard gate — it cannot be
-     dismissed with Enter or a stray click.
+     employee ID exactly. Server-side validation (in `card_delete`)
+     enforces the same rule — this is UX only.
      ============================================================ */
   (function () {
-    const input  = document.getElementById('confirmInput');
-    const button = document.getElementById('deleteBtn');
-    const form   = document.getElementById('deleteForm');
+    const input     = document.getElementById('confirmInput');
+    const button    = document.getElementById('deleteBtn');
+    const form      = document.getElementById('deleteForm');
+    const hintBox   = document.getElementById('czHint');
+    const hintText  = document.getElementById('czHintText');
     if (!input || !button || !form) return;
 
     // Expected value — from the server, safely escaped for JS context.
@@ -611,6 +591,20 @@
 
       button.disabled = !match;
       input.classList.toggle('is-match', match);
+      if (hintBox) hintBox.classList.toggle('is-match', match);
+
+      if (hintText) {
+        if (!value) {
+          hintText.textContent =
+            'The delete button unlocks only when the ID matches exactly.';
+        } else if (match) {
+          hintText.textContent =
+            'Match confirmed. The delete button is now enabled.';
+        } else {
+          hintText.textContent =
+            'Not matching. Type the employee ID exactly as shown above.';
+        }
+      }
     }
 
     // Uppercase as the user types for a friendlier UX
@@ -620,7 +614,7 @@
       sync();
     });
 
-    // Prevent accidental submit via Enter until match is achieved
+    // Guard against Enter-submits before the input matches
     form.addEventListener('submit', function (e) {
       if (button.disabled) {
         e.preventDefault();
@@ -631,19 +625,6 @@
 
     // Initialise (in case of browser autofill)
     sync();
-  })();
-
-  /* ============================================================
-     Keyboard shortcuts
-     - Escape → cancel (go back)
-     ============================================================ */
-  (function () {
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        window.location.href = "{% url 'card_detail' teacher.pk %}";
-      }
-    });
   })();
 </script>
 {% endblock %}

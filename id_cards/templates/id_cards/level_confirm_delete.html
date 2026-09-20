@@ -68,14 +68,23 @@
     font-size: 1rem;
     color: var(--primary);
     flex-shrink: 0;
+    /* Prevent long level names from stretching the badge */
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .level-preview .lp-info { text-align: left; }
+  .level-preview .lp-info {
+    text-align: left;
+    min-width: 0;
+  }
   .level-preview .lp-info h3 {
     font-family: 'Cinzel', serif;
     font-size: 1rem;
     font-weight: 800;
     color: var(--primary);
     margin-bottom: 3px;
+    word-break: break-word;
   }
   .level-preview .lp-info .lp-sub {
     font-size: 0.78rem;
@@ -94,6 +103,12 @@
     line-height: 1.55;
   }
   .warning-box strong { font-weight: 700; color: #991b1b; }
+
+  /* ============================================================
+     ACTION HIERARCHY
+     Cancel  → outlined neutral (safe, low emphasis)
+     Delete  → solid red (danger, high emphasis)
+     ============================================================ */
   .del-actions {
     display: flex;
     gap: 12px;
@@ -101,9 +116,11 @@
     flex-wrap: wrap;
   }
   .del-actions .btn { min-width: 140px; justify-content: center; }
+
   .del-actions .btn-cancel {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: #fff;
+    background: #ffffff;
+    color: var(--primary);
+    border: 1.5px solid var(--primary);
     padding: 12px 24px;
     border-radius: 10px;
     text-decoration: none;
@@ -112,12 +129,17 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    box-shadow: 0 4px 12px rgba(139, 32, 32, 0.3);
+    transition: background 0.15s, color 0.15s, transform 0.15s;
   }
-  .del-actions .btn-cancel:hover { transform: translateY(-2px); }
+  .del-actions .btn-cancel:hover {
+    background: var(--primary);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
   .del-actions .btn-delete {
-    background: transparent;
-    color: #dc2626;
+    background: #dc2626;
+    color: #fff;
     border: 1.5px solid #dc2626;
     padding: 12px 24px;
     border-radius: 10px;
@@ -128,12 +150,21 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    box-shadow: 0 4px 12px -3px rgba(220, 38, 38, 0.4);
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
   }
-  .del-actions .btn-delete:hover { background: #dc2626; color: #fff; }
+  .del-actions .btn-delete:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -3px rgba(220, 38, 38, 0.5);
+  }
+
   @media (max-width: 600px) {
     .del-card { padding: 28px 22px; }
     .del-actions .btn,
-    .del-actions .btn-cancel { width: 100%; }
+    .del-actions .btn-cancel,
+    .del-actions .btn-delete { width: 100%; }
   }
 </style>
 {% endblock %}
@@ -141,7 +172,9 @@
 {% block content %}
 <div class="del-layout">
   <div class="del-card">
-    <div class="del-icon"><i class="fas fa-triangle-exclamation"></i></div>
+    <div class="del-icon">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+    </div>
 
     <h1>Delete this level?</h1>
     <p class="lead">
@@ -149,31 +182,40 @@
       will no longer have it listed on their card.
     </p>
 
-    <div class="level-preview">
-      <div class="lp-badge">{{ level.name }}</div>
-      <div class="lp-info">
-        <h3>{{ level.get_level_type_display }}</h3>
-        <div class="lp-sub">
-          {{ level.teachers.count }} staff member{{ level.teachers.count|pluralize }} assigned
+    {% with count=level.teachers.count %}
+      <div class="level-preview">
+        <div class="lp-badge" title="{{ level.name }}">{{ level.name }}</div>
+        <div class="lp-info">
+          <h3>{{ level.get_level_type_display }}</h3>
+          <div class="lp-sub">
+            {% if count %}
+              {{ count }} staff member{{ count|pluralize }} assigned
+            {% else %}
+              No staff currently assigned
+            {% endif %}
+          </div>
         </div>
       </div>
-    </div>
+    {% endwith %}
 
     <div class="warning-box">
-      <strong><i class="fas fa-circle-exclamation"></i> What will happen:</strong><br>
+      <strong>
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+        What will happen:
+      </strong><br>
       The level is permanently removed. Staff records remain, but this level
       will no longer appear in their list of assigned levels on ID cards.
       This cannot be undone.
     </div>
 
-    <form method="post">
+    <form method="post" action="">
       {% csrf_token %}
       <div class="del-actions">
-        <a href="{% url 'level_list' %}" class="btn-cancel">
-          <i class="fas fa-arrow-left"></i> Cancel
+        <a href="{% url 'id_cards:level_list' %}" class="btn-cancel">
+          <i class="fas fa-arrow-left" aria-hidden="true"></i> Cancel
         </a>
         <button type="submit" class="btn-delete">
-          <i class="fas fa-trash"></i> Yes, Delete
+          <i class="fas fa-trash" aria-hidden="true"></i> Yes, Delete
         </button>
       </div>
     </form>

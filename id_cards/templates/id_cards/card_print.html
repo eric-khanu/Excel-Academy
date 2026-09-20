@@ -1,3 +1,4 @@
+{% load id_cards_extras %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,18 +14,28 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet">
+
+{# Font Awesome — pinned version + SRI. #}
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      integrity="sha512-Avb2w+pjqdY2pPt8wPh3xnniExXvxTkP4C+F6ZTpAlTXKwBT5LtRGoE6ChCUhLxZvYq6cCmAJs2LY8PbAs4D0Q=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer">
 
 <style>
   /* ============================================================
-     THEME (driven by School branding)
+     THEME — colors pass through |safe_hex to prevent CSS injection.
+     Without it, a malicious School.primary_color like
+       "#fff; } body { display: none } .x {"
+     could break out of the :root block.
      ============================================================ */
   :root {
-    --primary:   {{ school.primary_color|default:"#8B2020" }};
-    --secondary: {{ school.secondary_color|default:"#C87A2C" }};
-    --accent:    {{ school.accent_color|default:"#FBF6EC" }};
-    --text:      {{ school.text_color|default:"#2A1810" }};
+    --primary:   {{ school.primary_color|safe_hex:'#8B2020' }};
+    --secondary: {{ school.secondary_color|safe_hex:'#C87A2C' }};
+    --accent:    {{ school.accent_color|safe_hex:'#FBF6EC' }};
+    --text:      {{ school.text_color|safe_hex:'#2A1810' }};
     --primary-dark: #5A1414;
 
     --print-unprinted-bg: #fef3c7;
@@ -59,7 +70,7 @@
   }
 
   /* ============================================================
-     PRINT HEADER (visible on screen, hidden on paper)
+     PRINT HEADER (screen only)
      ============================================================ */
   .print-header {
     max-width: 1100px;
@@ -115,7 +126,7 @@
   }
 
   /* ============================================================
-     PRINT-MODE BANNER
+     PRINT-MODE BANNER (screen only)
      ============================================================ */
   .print-mode-banner {
     max-width: 1100px;
@@ -180,7 +191,6 @@
     background: #e2e8f0;
     color: #475569;
   }
-  /* Preview (no tracking) mode */
   .print-mode-banner.banner-preview {
     background: #f8fafc;
     border-color: #cbd5e1;
@@ -193,7 +203,7 @@
   }
 
   /* ============================================================
-     PRINT GRID — cards arranged for cutting
+     PRINT GRID
      ============================================================ */
   .print-grid {
     display: flex;
@@ -211,16 +221,15 @@
     gap: 10px;
     align-items: flex-start;
     padding: 12px;
+    padding-top: 28px;
     background: rgba(255, 255, 255, 0.55);
     border: 1px dashed rgba(139, 32, 32, 0.25);
     border-radius: 14px;
     page-break-inside: avoid;
     break-inside: avoid;
     position: relative;
-    padding-top: 32px; /* room for the pair-label */
   }
 
-  /* ---------- Pair label (screen only) ---------- */
   .card-pair .pair-label {
     position: absolute;
     top: 8px;
@@ -234,7 +243,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--muted);
+    color: var(--muted, #7a6a5a);
     flex-wrap: wrap;
   }
   .card-pair .pair-label .pl-left {
@@ -256,11 +265,10 @@
   .card-pair .pair-label .pl-left .pl-id {
     font-family: 'Menlo', 'Consolas', monospace;
     font-weight: 600;
-    color: var(--muted);
+    color: #7a6a5a;
     font-size: 0.64rem;
   }
 
-  /* Print status pill in the pair label */
   .pair-label .pl-pill {
     display: inline-flex;
     align-items: center;
@@ -380,7 +388,7 @@
   }
 
   /* ============================================================
-     CUTTING GUIDE INFO (screen only)
+     CUTTING GUIDE (screen only)
      ============================================================ */
   .cut-guide {
     max-width: 1100px;
@@ -409,7 +417,6 @@
     margin-top: 3px;
   }
 
-  /* Print tracking summary inside the cut guide */
   .cut-guide .tracking-summary {
     margin-top: 14px;
     padding-top: 14px;
@@ -462,7 +469,7 @@
       margin: 0;
     }
 
-    /* Hide everything that isn't the cards */
+    /* Hide everything except the cards */
     .print-header,
     .print-mode-banner,
     .no-print-bar,
@@ -561,16 +568,20 @@
     </h1>
     <p>
       {% if print_all %}
-        {{ teachers|length }} staff record{{ teachers|length|pluralize }} ready
+        {% if teachers %}
+          {{ teachers|length }} staff record{{ teachers|length|pluralize }} ready
+        {% else %}
+          No records to print
+        {% endif %}
         <span class="count-badge">{{ school.short_name|default:"ID" }}</span>
       {% else %}
         {{ teacher.full_name }} · {{ teacher.employee_id }}
       {% endif %}
     </p>
   </div>
-  <a href="{% if print_all %}{% url 'card_list' %}{% else %}{% url 'card_detail' teacher.pk %}{% endif %}"
+  <a href="{% if print_all %}{% url 'id_cards:card_list' %}{% else %}{% url 'id_cards:card_detail' teacher.pk %}{% endif %}"
      class="back-link">
-    <i class="fas fa-arrow-left"></i> Back
+    <i class="fas fa-arrow-left" aria-hidden="true"></i> Back
   </a>
 </div>
 
@@ -578,10 +589,10 @@
      PRINT-MODE BANNER (hidden on print)
      ============================================================ -->
 {% if print_all %}
-  {% if tracked == False %}
-    {% comment %}Preview mode — tracking is disabled for this batch.{% endcomment %}
+  {% if not tracked %}
+    {# Preview mode — tracking is disabled for this batch. #}
     <div class="print-mode-banner no-print banner-preview">
-      <div class="pmb-icon"><i class="fas fa-eye"></i></div>
+      <div class="pmb-icon"><i class="fas fa-eye" aria-hidden="true"></i></div>
       <div class="pmb-text">
         <div class="pmb-title">Preview Mode — No Tracking</div>
         <div class="pmb-sub">
@@ -592,7 +603,7 @@
     </div>
   {% else %}
     <div class="print-mode-banner no-print banner-mixed">
-      <div class="pmb-icon"><i class="fas fa-layer-group"></i></div>
+      <div class="pmb-icon"><i class="fas fa-layer-group" aria-hidden="true"></i></div>
       <div class="pmb-text">
         <div class="pmb-title">Bulk Print Session</div>
         <div class="pmb-sub">
@@ -607,7 +618,7 @@
 {% else %}
   {% if teacher.print_count == 0 %}
     <div class="print-mode-banner no-print banner-unprinted">
-      <div class="pmb-icon"><i class="fas fa-circle-exclamation"></i></div>
+      <div class="pmb-icon"><i class="fas fa-circle-exclamation" aria-hidden="true"></i></div>
       <div class="pmb-text">
         <div class="pmb-title">First Print — Original Copy</div>
         <div class="pmb-sub">
@@ -618,7 +629,7 @@
     </div>
   {% elif teacher.print_count == 1 %}
     <div class="print-mode-banner no-print banner-printed">
-      <div class="pmb-icon"><i class="fas fa-circle-check"></i></div>
+      <div class="pmb-icon"><i class="fas fa-circle-check" aria-hidden="true"></i></div>
       <div class="pmb-text">
         <div class="pmb-title">Already Printed Once — Reprinting</div>
         <div class="pmb-sub">
@@ -630,7 +641,7 @@
     </div>
   {% else %}
     <div class="print-mode-banner no-print banner-reprinted">
-      <div class="pmb-icon"><i class="fas fa-rotate-right"></i></div>
+      <div class="pmb-icon"><i class="fas fa-rotate-right" aria-hidden="true"></i></div>
       <div class="pmb-text">
         <div class="pmb-title">Reprinting — Copy #{{ teacher.print_count|add:1 }}</div>
         <div class="pmb-sub">
@@ -645,13 +656,15 @@
 
 <!-- ============================================================
      CARD GRID — front + back per teacher
+
+     Uses the two existing partials (id_card_front.html, id_card_back.html)
+     rather than a combined id_card.html that doesn't exist.
      ============================================================ -->
 <div class="print-grid">
   {% if print_all %}
     {% for teacher in teachers %}
       <div class="card-pair">
 
-        {% comment %}Pair label (screen only).{% endcomment %}
         <div class="pair-label" aria-hidden="true">
           <div class="pl-left">
             <span class="pl-name">{{ teacher.full_name }}</span>
@@ -659,28 +672,28 @@
           </div>
           {% if teacher.print_count == 0 %}
             <span class="pl-pill pill-unprinted">
-              <i class="fas fa-circle-exclamation"></i> Not Printed
+              <i class="fas fa-circle-exclamation" aria-hidden="true"></i> Not Printed
             </span>
           {% elif teacher.print_count == 1 %}
             <span class="pl-pill pill-printed">
-              <i class="fas fa-circle-check"></i> Printed
+              <i class="fas fa-circle-check" aria-hidden="true"></i> Printed
             </span>
           {% else %}
             <span class="pl-pill pill-reprinted">
-              <i class="fas fa-rotate-right"></i> Reprinted ×{{ teacher.print_count }}
+              <i class="fas fa-rotate-right" aria-hidden="true"></i> Reprinted ×{{ teacher.print_count }}
             </span>
           {% endif %}
         </div>
 
-        {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="front" %}
+        {% include "id_cards/partials/id_card_front.html" with teacher=teacher school=school %}
 
         <div class="pair-divider" aria-hidden="true"></div>
 
-        {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="back" %}
+        {% include "id_cards/partials/id_card_back.html" with teacher=teacher school=school %}
       </div>
     {% empty %}
       <div style="padding:40px; text-align:center; color:#7a6a5a;">
-        <i class="fas fa-id-card" style="font-size:3rem; opacity:0.3;"></i>
+        <i class="fas fa-id-card" style="font-size:3rem; opacity:0.3;" aria-hidden="true"></i>
         <h2 style="margin-top:16px; font-family:'Cinzel',serif;">No active cards to print</h2>
         <p style="margin-top:8px;">Add staff members or set their status to active first.</p>
       </div>
@@ -688,7 +701,6 @@
   {% else %}
     <div class="card-pair">
 
-      {% comment %}Pair label (screen only).{% endcomment %}
       <div class="pair-label" aria-hidden="true">
         <div class="pl-left">
           <span class="pl-name">{{ teacher.full_name }}</span>
@@ -696,24 +708,24 @@
         </div>
         {% if teacher.print_count == 0 %}
           <span class="pl-pill pill-unprinted">
-            <i class="fas fa-circle-exclamation"></i> Not Printed
+            <i class="fas fa-circle-exclamation" aria-hidden="true"></i> Not Printed
           </span>
         {% elif teacher.print_count == 1 %}
           <span class="pl-pill pill-printed">
-            <i class="fas fa-circle-check"></i> Printed
+            <i class="fas fa-circle-check" aria-hidden="true"></i> Printed
           </span>
         {% else %}
           <span class="pl-pill pill-reprinted">
-            <i class="fas fa-rotate-right"></i> Reprinted ×{{ teacher.print_count }}
+            <i class="fas fa-rotate-right" aria-hidden="true"></i> Reprinted ×{{ teacher.print_count }}
           </span>
         {% endif %}
       </div>
 
-      {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="front" %}
+      {% include "id_cards/partials/id_card_front.html" with teacher=teacher school=school %}
 
       <div class="pair-divider" aria-hidden="true"></div>
 
-      {% include "id_cards/partials/id_card.html" with teacher=teacher school=school side="back" %}
+      {% include "id_cards/partials/id_card_back.html" with teacher=teacher school=school %}
     </div>
   {% endif %}
 </div>
@@ -721,17 +733,16 @@
 <!-- ============================================================
      FLOATING TOOLBAR (screen only)
 
-     The "PDF" link carries the current query-string forward so
-     filters like ?printed=no and ?track=0 are preserved when the
-     user jumps from the browser-print view to the PDF view.
+     The PDF link forwards only the meaningful filter params
+     (?printed=, ?track=), not transient ones like ?autoprint=1.
      ============================================================ -->
 <div class="no-print-bar no-print">
   <div class="bar-text">
-    {% if tracked == False %}
-      <i class="fas fa-eye"></i>
+    {% if not tracked %}
+      <i class="fas fa-eye" aria-hidden="true"></i>
       <span>Preview only — not tracking</span>
     {% else %}
-      <i class="fas fa-print"></i>
+      <i class="fas fa-print" aria-hidden="true"></i>
       <span>
         {% if print_all %}
           {{ teachers|length }} record{{ teachers|length|pluralize }} ready
@@ -742,12 +753,14 @@
     {% endif %}
   </div>
   <div class="bar-buttons">
-    <button onclick="window.print()">
-      <i class="fas fa-print"></i> Print Now
+    <button type="button" onclick="window.print()">
+      <i class="fas fa-print" aria-hidden="true"></i> Print Now
     </button>
-    <a href="{% if print_all %}{% url 'card_pdf_all' %}{% else %}{% url 'card_pdf' teacher.pk %}{% endif %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
+
+    {# Build a clean PDF URL, forwarding only whitelisted params. #}
+    <a href="{% if print_all %}{% url 'id_cards:card_pdf_all' %}{% else %}{% url 'id_cards:card_pdf' teacher.pk %}{% endif %}{% if request.GET.printed or request.GET.track %}?{% if request.GET.printed %}printed={{ request.GET.printed|urlencode }}{% endif %}{% if request.GET.printed and request.GET.track %}&{% endif %}{% if request.GET.track %}track={{ request.GET.track|urlencode }}{% endif %}{% endif %}"
        class="btn-ghost">
-      <i class="fas fa-file-pdf"></i> PDF
+      <i class="fas fa-file-pdf" aria-hidden="true"></i> PDF
     </a>
   </div>
 </div>
@@ -756,43 +769,42 @@
      CUTTING GUIDE (screen only)
      ============================================================ -->
 <div class="cut-guide no-print">
-  <strong><i class="fas fa-scissors"></i> Printing tips</strong>
+  <strong><i class="fas fa-scissors" aria-hidden="true"></i> Printing tips</strong>
 
   <div class="guide-row">
-    <i class="fas fa-circle-check"></i>
+    <i class="fas fa-circle-check" aria-hidden="true"></i>
     <span>Each pair shows the <strong>front</strong> (left) and <strong>back</strong> (right) of one card. Cut each pair separately, or print double-sided for a single physical card.</span>
   </div>
 
   <div class="guide-row">
-    <i class="fas fa-circle-check"></i>
+    <i class="fas fa-circle-check" aria-hidden="true"></i>
     <span>Set <strong>Scale = 100%</strong> and <strong>Margins = None</strong> in the print dialog. Turn on <strong>Background graphics</strong>.</span>
   </div>
 
   <div class="guide-row">
-    <i class="fas fa-circle-check"></i>
+    <i class="fas fa-circle-check" aria-hidden="true"></i>
     <span>Recommended: 300gsm cardstock, or print on plain paper and laminate for durability.</span>
   </div>
 
   <div class="guide-row">
-    <i class="fas fa-circle-check"></i>
+    <i class="fas fa-circle-check" aria-hidden="true"></i>
     <span>Each card is CR80 sized (2.125" × 3.375") — standard ID card. Cut along the outer edge with a guillotine.</span>
   </div>
 
-  {% comment %}Print tracking summary (screen only).{% endcomment %}
   {% if print_all and teachers %}
     <div class="tracking-summary">
-      {% if tracked == False %}
+      {% if not tracked %}
         <span class="ts-chip ts-preview">
-          <i class="fas fa-eye"></i>
+          <i class="fas fa-eye" aria-hidden="true"></i>
           Preview — print history will NOT be updated
         </span>
       {% else %}
         <span class="ts-chip ts-unprinted">
-          <i class="fas fa-circle-exclamation"></i>
+          <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
           {{ teachers|length }} card{{ teachers|length|pluralize }} in this batch
         </span>
         <span class="ts-chip ts-printed">
-          <i class="fas fa-info-circle"></i>
+          <i class="fas fa-info-circle" aria-hidden="true"></i>
           Print history updated on this print run
         </span>
       {% endif %}
@@ -801,15 +813,15 @@
     <div class="tracking-summary">
       {% if teacher.print_count == 0 %}
         <span class="ts-chip ts-unprinted">
-          <i class="fas fa-circle-exclamation"></i> First print — original
+          <i class="fas fa-circle-exclamation" aria-hidden="true"></i> First print — original
         </span>
       {% elif teacher.print_count == 1 %}
         <span class="ts-chip ts-printed">
-          <i class="fas fa-circle-check"></i> Copy #2 of this card
+          <i class="fas fa-circle-check" aria-hidden="true"></i> Copy #2 of this card
         </span>
       {% else %}
         <span class="ts-chip ts-reprinted">
-          <i class="fas fa-rotate-right"></i> Copy #{{ teacher.print_count|add:1 }} of this card
+          <i class="fas fa-rotate-right" aria-hidden="true"></i> Copy #{{ teacher.print_count|add:1 }} of this card
         </span>
       {% endif %}
     </div>
@@ -818,25 +830,10 @@
 
 <script>
   /* ------------------------------------------------------------------
-     Auto-trigger print dialog when opened via ?autoprint=1
+     Keyboard shortcut: Escape → back is intentionally omitted.
+     Browsers deliver Escape during print dialogs, which caused
+     accidental navigation away from the print view.
      ------------------------------------------------------------------ */
-  (function () {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('autoprint') === '1') {
-      window.addEventListener('load', function () {
-        setTimeout(function () { window.print(); }, 500);
-      });
-    }
-  })();
-
-  /* ------------------------------------------------------------------
-     Keyboard shortcut: Escape → back
-     ------------------------------------------------------------------ */
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      window.history.back();
-    }
-  });
 </script>
 
 </body>

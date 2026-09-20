@@ -51,8 +51,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'django.contrib.humanize', 
 
     "id_cards",
+    'student',
 ]
 
 MIDDLEWARE = [
@@ -170,3 +172,9 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+
+
+LOGIN_URL = '/admin/login/'
+LOGIN_REDIRECT_URL = '/'          # after successful login, go to card_list
+LOGOUT_REDIRECT_URL = '/admin/login/'

@@ -1,8 +1,31 @@
 from django.db import models, IntegrityError, transaction
-from django.core.validators import FileExtensionValidator
+from django.core.validators import (
+    FileExtensionValidator,
+    RegexValidator,
+    MinValueValidator,
+    MaxValueValidator,
+)
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.text import slugify
+from django.db.models import F, IntegerField
+from django.db.models.functions import Cast, Substr, Coalesce
 import re
+
+
+# ============================================================================
+# Shared validators
+# ============================================================================
+HEX_COLOR_VALIDATOR = RegexValidator(
+    regex=r'^#(?:[0-9a-fA-F]{3}){1,2}$',
+    message="Enter a valid hex color, e.g. #8B2020.",
+)
+
+
+def validate_image_size(file, limit_mb=5):
+    """Reject image uploads larger than `limit_mb` megabytes."""
+    if file.size > limit_mb * 1024 * 1024:
+        raise ValidationError(f"Image must be under {limit_mb} MB.")
 
 
 # ============================================================================
@@ -12,36 +35,36 @@ class School(models.Model):
     """School-level branding — logo, name, colors, contact info."""
 
     # --- Identity ---
-    name = models.CharField(
-        max_length=200,
-        default="Excel Junior Secondary School",
-    )
+    name = models.CharField(max_length=200, default="Excel Junior Secondary School")
     short_name = models.CharField(
-        max_length=50,
-        default="EJSS",
+        max_length=50, default="EJSS",
         help_text="Used as the ID prefix, e.g. EJSS-2026-001",
     )
     tagline = models.CharField(
-        max_length=200,
-        blank=True,
+        max_length=200, blank=True,
         default="Be strong and courageous, your works shall be rewarded",
     )
     scripture_ref = models.CharField(
         max_length=100, blank=True, default="2 Chronicles 15:7"
     )
     address = models.CharField(
-        max_length=200,
-        blank=True,
-        default="",
+        max_length=200, blank=True, default="",
         help_text="School address, shown on the back of the card.",
     )
-    established = models.CharField(max_length=20, blank=True, default="1995")
+    established = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(1800), MaxValueValidator(2100)],
+        help_text="Year the school was established, e.g. 1995.",
+    )
 
-    # --- Logo ---
+    # --- Logo (SVG intentionally excluded — XSS vector) ---
     logo = models.ImageField(
         upload_to='logos/',
         blank=True, null=True,
-        validators=[FileExtensionValidator(['png', 'jpg', 'jpeg', 'svg'])],
+        validators=[
+            FileExtensionValidator(['png', 'jpg', 'jpeg']),
+            validate_image_size,
+        ],
     )
 
     # --- Contact (shown on the back of the card) ---
@@ -55,10 +78,18 @@ class School(models.Model):
     )
 
     # --- Brand colors ---
-    primary_color = models.CharField(max_length=7, default="#8B2020")
-    secondary_color = models.CharField(max_length=7, default="#C87A2C")
-    accent_color = models.CharField(max_length=7, default="#FBF6EC")
-    text_color = models.CharField(max_length=7, default="#2A1810")
+    primary_color = models.CharField(
+        max_length=7, default="#8B2020", validators=[HEX_COLOR_VALIDATOR]
+    )
+    secondary_color = models.CharField(
+        max_length=7, default="#C87A2C", validators=[HEX_COLOR_VALIDATOR]
+    )
+    accent_color = models.CharField(
+        max_length=7, default="#FBF6EC", validators=[HEX_COLOR_VALIDATOR]
+    )
+    text_color = models.CharField(
+        max_length=7, default="#2A1810", validators=[HEX_COLOR_VALIDATOR]
+    )
 
     class Meta:
         verbose_name = "School Branding"
@@ -68,13 +99,18 @@ class School(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        """Force this model to behave as a singleton — pk=1 always."""
+        """
+        Force singleton behaviour (pk=1) without silently overwriting
+        or racing on concurrent creates.
+        """
         self.pk = 1
+        if not School.objects.filter(pk=1).exists():
+            kwargs.setdefault('force_insert', True)
         super().save(*args, **kwargs)
 
     @classmethod
     def get_solo(cls):
-        """Convenience: fetch-or-create the single branding row."""
+        """Fetch-or-create the single branding row."""
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 
@@ -115,9 +151,7 @@ class Level(models.Model):
 class Department(models.Model):
     name = models.CharField(max_length=150, unique=True)
     code = models.CharField(
-        max_length=10,
-        blank=True,
-        unique=True,
+        max_length=10, blank=True, unique=True,
         help_text="Auto-generated from the name (e.g. 'Science' → SCI). "
                   "Leave blank to auto-generate.",
     )
@@ -158,18 +192,14 @@ class Department(models.Model):
             word = words[0].upper()
             base = word[:3] if len(word) >= 3 else word
 
-        qs = Department.objects.exclude(pk=self.pk) if self.pk else Department.objects.all()
-
-        code = base
-        suffix = 1
-        while qs.filter(code=code).exists():
-            suffix += 1
-            code = f"{base[:8]}{suffix}"[:10]
-        return code
+        return self._resolve_collision(base)
 
     def _resolve_collision(self, base):
-        """Given a user-supplied code, find a unique variant with a suffix."""
-        qs = Department.objects.exclude(pk=self.pk) if self.pk else Department.objects.all()
+        """Given a base code, find a unique variant with a numeric suffix."""
+        qs = (
+            Department.objects.exclude(pk=self.pk)
+            if self.pk else Department.objects.all()
+        )
         code = base
         suffix = 1
         while qs.filter(code=code).exists():
@@ -178,14 +208,26 @@ class Department(models.Model):
         return code
 
     def save(self, *args, **kwargs):
+        """
+        Normalise + generate code, retrying on race-condition
+        IntegrityErrors.
+        """
         if self.code:
             self.code = self.code.upper().strip()
-            qs = Department.objects.exclude(pk=self.pk) if self.pk else Department.objects.all()
-            if qs.filter(code=self.code).exists():
-                self.code = self._resolve_collision(self.code)
         else:
             self.code = self._generate_code()
-        super().save(*args, **kwargs)
+
+        for _ in range(5):
+            try:
+                with transaction.atomic():
+                    return super().save(*args, **kwargs)
+            except IntegrityError:
+                # Code collided with a concurrent insert — regenerate.
+                self.code = self._resolve_collision(self.code)
+
+        raise IntegrityError(
+            f"Could not allocate a unique Department code for '{self.name}'."
+        )
 
 
 # ============================================================================
@@ -196,6 +238,50 @@ class IDCardTemplate(models.Model):
     show_hologram = models.BooleanField(default=True)
     show_gold_bar = models.BooleanField(default=True)
     show_barcode = models.BooleanField(default=False)
+
+    # --- Back-of-card visibility toggles ---
+    show_terms = models.BooleanField(
+        default=True,
+        help_text="Show the terms of use section on the back of the card.",
+    )
+    show_issue_date = models.BooleanField(
+        default=True,
+        help_text="Show the issue date on the back of the card.",
+    )
+    show_expiry_date = models.BooleanField(
+        default=True,
+        help_text="Show the expiry date on the back of the card.",
+    )
+    show_authorized = models.BooleanField(
+        default=True,
+        help_text="Show the authorization statement on the back of the card.",
+    )
+    show_security = models.BooleanField(
+        default=True,
+        help_text="Show the security notice on the back of the card.",
+    )
+
+    # --- Default template content (per-template override) ---
+    default_terms = models.TextField(
+        blank=True,
+        default=(
+            "This card is the property of the school and is not transferable. "
+            "It must be carried at all times while on school premises and "
+            "produced on demand by any authorized staff member."
+        ),
+        help_text="Default terms of use text. Can be overridden per teacher.",
+    )
+    default_authorized_use = models.CharField(
+        max_length=200, blank=True,
+        default="Authorized for official school use only.",
+        help_text="Default authorized-use statement.",
+    )
+    default_security = models.CharField(
+        max_length=200, blank=True,
+        default="If found, please return to the school office. Reward available.",
+        help_text="Default security / lost-card notice.",
+    )
+
     card_footer_text = models.CharField(
         max_length=100, default="STAFF IDENTIFICATION"
     )
@@ -205,6 +291,9 @@ class IDCardTemplate(models.Model):
 
     class Meta:
         ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(fields=['name'], name='uniq_template_name'),
+        ]
 
     def __str__(self):
         return self.name
@@ -240,18 +329,6 @@ class Teacher(models.Model):
         ('expired', 'Expired'),
     ]
 
-    BLOOD_GROUP_CHOICES = [
-        ('', '— Select Blood Group —'),   # blank default so it stays optional
-        ('O+',  'O+'),
-        ('O-',  'O−'),
-        ('A+',  'A+'),
-        ('A-',  'A−'),
-        ('B+',  'B+'),
-        ('B-',  'B−'),
-        ('AB+', 'AB+'),
-        ('AB-', 'AB−'),
-    ]
-
     # --- Personal info ------------------------------------------------------
     full_name = models.CharField(max_length=200)
     designation = models.CharField(
@@ -261,29 +338,25 @@ class Teacher(models.Model):
     photo = models.ImageField(
         upload_to='photos/',
         blank=True, null=True,
-        validators=[FileExtensionValidator(['png', 'jpg', 'jpeg'])],
+        validators=[
+            FileExtensionValidator(['png', 'jpg', 'jpeg']),
+            validate_image_size,
+        ],
     )
 
     # --- Role ---------------------------------------------------------------
     role = models.CharField(
-        max_length=30,
-        choices=ROLE_CHOICES,
-        default='TEACHER',
+        max_length=30, choices=ROLE_CHOICES, default='TEACHER',
         help_text="Staff role",
     )
 
     # --- Employment ---------------------------------------------------------
     employee_id = models.CharField(
-        max_length=50,
-        unique=True,
-        blank=True,
-        editable=False,
+        max_length=50, unique=True, blank=True, editable=False,
         help_text="Auto-generated from school short name and year",
     )
     department = models.ForeignKey(
-        Department,
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
+        Department, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='teachers',
     )
     levels = models.ManyToManyField(
@@ -297,16 +370,40 @@ class Teacher(models.Model):
     phone = models.CharField(max_length=30, blank=True)
 
     # --- Back-of-card info --------------------------------------------------
-    blood_group = models.CharField(
-        max_length=3,
-        choices=BLOOD_GROUP_CHOICES,
-        blank=True,
-        default='',
-        help_text="Shown on the back of the card.",
-    )
     emergency_contact_phone = models.CharField(
         max_length=30, blank=True,
         help_text="Phone number for emergency contact.",
+    )
+
+    # --- Back-of-card official / legal info ---------------------------------
+    issue_date = models.DateField(
+        null=True, blank=True,
+        help_text="Date the card was issued. Shown on the back.",
+    )
+    expiry_date = models.DateField(
+        null=True, blank=True,
+        help_text="Date the card expires. Shown on the back.",
+    )
+    id_card_terms = models.TextField(
+        blank=True,
+        help_text=(
+            "Terms of use for this specific card. "
+            "If left blank, the template default is used."
+        ),
+    )
+    authorized_use = models.CharField(
+        max_length=200, blank=True,
+        help_text=(
+            "Authorization statement. "
+            "If left blank, the template default is used."
+        ),
+    )
+    security = models.CharField(
+        max_length=200, blank=True,
+        help_text=(
+            "Security / lost-card notice. "
+            "If left blank, the template default is used."
+        ),
     )
 
     # --- Print tracking -----------------------------------------------------
@@ -337,10 +434,12 @@ class Teacher(models.Model):
 
     class Meta:
         ordering = ['full_name']
+        verbose_name = "Teacher / Staff"
+        verbose_name_plural = "Teachers / Staff"
         indexes = [
             models.Index(fields=['status']),
-            models.Index(fields=['print_count']),
             models.Index(fields=['employee_id']),
+            models.Index(fields=['-last_printed_at']),
         ]
 
     def __str__(self):
@@ -354,52 +453,50 @@ class Teacher(models.Model):
         Format:  <SCHOOL_SHORT>-<YEAR>-<NNN>
         Example: EJSS-2026-001, EJSS-2026-002
 
-        A single sequential counter per (school, year). The sequence
-        resets automatically on January 1st of each new year.
+        Uses a numeric cast so the counter survives past 999 without
+        lexicographic sort bugs.
         """
         school = School.objects.first()
-        short = (school.short_name if school and school.short_name else 'SCH').upper()
-        short = slugify(short).upper().replace('-', '') or 'SCH'
+        short = (school.short_name if school and school.short_name else 'SCH')
+        short = re.sub(r'[^A-Za-z0-9]', '', slugify(short)).upper() or 'SCH'
 
         year = timezone.now().year
-        pattern = f"{short}-{year}-"
+        prefix = f"{short}-{year}-"
 
-        last = (
+        last_seq = (
             Teacher.objects
-            .filter(employee_id__startswith=pattern)
-            .order_by('-employee_id')
-            .values_list('employee_id', flat=True)
+            .filter(employee_id__startswith=prefix)
+            .annotate(
+                seq=Cast(Substr('employee_id', len(prefix) + 1), IntegerField())
+            )
+            .order_by('-seq')
+            .values_list('seq', flat=True)
             .first()
         )
 
-        next_num = 1
-        if last:
-            try:
-                next_num = int(last.rsplit('-', 1)[-1]) + 1
-            except (ValueError, IndexError):
-                next_num = 1
-
-        return f"{pattern}{next_num:03d}"
+        next_num = (last_seq or 0) + 1
+        return f"{prefix}{next_num:03d}"
 
     def save(self, *args, **kwargs):
         """
-        Assign an employee ID on first save.
-
-        If two concurrent saves race for the same ID (very unlikely in a
-        small school tool, but possible during a bulk import), retry once
-        with a fresh number.
+        Assign an employee ID on first save, retrying up to 5 times if a
+        concurrent insert claims the same ID first.
         """
-        if not self.employee_id:
+        is_new = self._state.adding and not self.employee_id
+        if not is_new:
+            return super().save(*args, **kwargs)
+
+        for _ in range(5):
             self.employee_id = self._generate_employee_id()
             try:
                 with transaction.atomic():
-                    super().save(*args, **kwargs)
-                return
+                    return super().save(*args, **kwargs)
             except IntegrityError:
-                # Another request claimed the ID first; regenerate and retry.
-                self.employee_id = self._generate_employee_id()
+                continue
 
-        super().save(*args, **kwargs)
+        raise IntegrityError(
+            "Unable to allocate a unique employee_id after 5 attempts."
+        )
 
     # ------------------------------------------------------------------
     # Display helpers
@@ -415,31 +512,75 @@ class Teacher(models.Model):
 
     @property
     def levels_display(self):
-        names = list(self.levels.values_list('name', flat=True))
-        return ', '.join(names) if names else ''
+        """
+        Comma-separated level names. Cached per-instance to avoid N+1
+        queries when the same instance is rendered repeatedly.
+        Prefetch with .prefetch_related('levels') for list views.
+        """
+        if not hasattr(self, '_levels_display_cache'):
+            self._levels_display_cache = list(
+                self.levels.values_list('name', flat=True)
+            )
+        return ', '.join(self._levels_display_cache)
 
     @property
     def is_expired(self):
-        """True if valid_thru is set and in the past."""
+        """
+        True if the card is explicitly marked expired OR the valid_thru
+        date is in the past.
+        """
+        if self.status == 'expired':
+            return True
         if not self.valid_thru:
             return False
         return self.valid_thru < timezone.now().date()
+
+    # --- Resolved back-of-card values (fall back to template defaults) ---
+    @property
+    def resolved_terms(self):
+        if self.id_card_terms:
+            return self.id_card_terms
+        if self.template and self.template.default_terms:
+            return self.template.default_terms
+        return ""
+
+    @property
+    def resolved_authorized_use(self):
+        if self.authorized_use:
+            return self.authorized_use
+        if self.template and self.template.default_authorized_use:
+            return self.template.default_authorized_use
+        return ""
+
+    @property
+    def resolved_security(self):
+        if self.security:
+            return self.security
+        if self.template and self.template.default_security:
+            return self.template.default_security
+        return ""
+
+    @property
+    def resolved_issue_date(self):
+        return self.issue_date or self.created_at.date()
+
+    @property
+    def resolved_expiry_date(self):
+        return self.expiry_date or self.valid_thru
+
     # ------------------------------------------------------------------
     # Print tracking
     # ------------------------------------------------------------------
     @property
     def is_printed(self):
-        """True if the card has been printed at least once."""
         return self.print_count > 0
 
     @property
     def is_reprinted(self):
-        """True if the card has been printed more than once."""
         return self.print_count > 1
 
     @property
     def print_status(self):
-        """Machine-friendly status key: 'unprinted' | 'printed' | 'reprinted'."""
         if self.print_count == 0:
             return 'unprinted'
         if self.print_count == 1:
@@ -448,7 +589,6 @@ class Teacher(models.Model):
 
     @property
     def print_status_display(self):
-        """Human-friendly label for UI badges."""
         if self.print_count == 0:
             return 'Not Printed'
         if self.print_count == 1:
@@ -457,60 +597,58 @@ class Teacher(models.Model):
 
     def mark_printed(self, save=True):
         """
-        Record a print event.
-
-        - Increments print_count
-        - Sets first_printed_at on the first print
-        - Always refreshes last_printed_at
-
-        Returns True if a save was performed.
+        Record a print event. When `save=True`, uses an atomic DB update
+        so concurrent prints don't lose counts.
         """
         now = timezone.now()
+
+        if save:
+            if not self.pk:
+                raise ValueError("Cannot mark an unsaved Teacher as printed.")
+            Teacher.objects.filter(pk=self.pk).update(
+                print_count=F('print_count') + 1,
+                first_printed_at=Coalesce('first_printed_at', now),
+                last_printed_at=now,
+            )
+            self.refresh_from_db(
+                fields=['print_count', 'first_printed_at', 'last_printed_at']
+            )
+            return True
+
+        # In-memory path (no DB write)
+        self.print_count = (self.print_count or 0) + 1
         if self.first_printed_at is None:
             self.first_printed_at = now
         self.last_printed_at = now
-        self.print_count = (self.print_count or 0) + 1
-
-        if save:
-            self.save(update_fields=[
-                'print_count', 'first_printed_at', 'last_printed_at',
-            ])
         return True
 
     @classmethod
     def mark_many_printed(cls, teachers):
         """
-        Efficiently record a print event for multiple teachers at once.
-        Use this in bulk print/PDF views instead of calling mark_printed()
-        in a Python loop — it runs a single UPDATE query.
-        Returns the number of rows updated.
+        Atomically increment print tracking for many teachers in one
+        query. Returns the number of rows updated.
         """
-        teachers = list(teachers)
-        if not teachers:
-            return 0
-
-        now = timezone.now()
         ids = [t.pk for t in teachers if t.pk]
         if not ids:
             return 0
 
-        # First print: stamp first_printed_at where it's still NULL
-        cls.objects.filter(
-            pk__in=ids, first_printed_at__isnull=True
-        ).update(first_printed_at=now)
-
-        # Refresh last_printed_at + increment print_count
+        now = timezone.now()
         return cls.objects.filter(pk__in=ids).update(
+            print_count=F('print_count') + 1,
+            first_printed_at=Coalesce('first_printed_at', now),
             last_printed_at=now,
-            print_count=models.F('print_count') + 1,
         )
 
     @classmethod
-    def reset_all_print_tracking(cls):
+    def reset_all_print_tracking(cls, *, confirm=False):
         """
-        Wipe print history for every teacher.
-        Returns the number of rows updated.
+        Wipe print tracking for every teacher. Requires confirm=True to
+        guard against accidental invocation.
         """
+        if not confirm:
+            raise ValueError(
+                "Pass confirm=True to reset ALL print tracking records."
+            )
         return cls.objects.update(
             print_count=0,
             first_printed_at=None,
@@ -518,7 +656,6 @@ class Teacher(models.Model):
         )
 
     def reset_print_tracking(self, save=True):
-        """Erase all print history for this card."""
         self.print_count = 0
         self.first_printed_at = None
         self.last_printed_at = None

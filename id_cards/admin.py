@@ -33,7 +33,6 @@ def _fmt_dt(value):
     """Format a datetime for the admin panel, or return an em-dash."""
     if not value:
         return '—'
-    # Use admin's own localisation if available, else a stable format.
     return value.strftime('%b %d, %Y · %H:%M')
 
 
@@ -51,6 +50,17 @@ class SchoolAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+    def changelist_view(self, request, extra_context=None):
+        """
+        Bounce the user directly to the singleton edit page — the changelist
+        for a one-row table is a UX dead end.
+        """
+        obj = School.objects.first()
+        if obj:
+            url = reverse('admin:id_cards_school_change', args=[obj.pk])
+            return redirect(url)
+        return super().changelist_view(request, extra_context=extra_context)
+
     fieldsets = (
         ('Identity', {
             'fields': ('name', 'short_name', 'established', 'tagline', 'scripture_ref')
@@ -59,10 +69,17 @@ class SchoolAdmin(admin.ModelAdmin):
             'fields': ('address', 'contact_phone_1', 'contact_phone_2')
         }),
         ('Logo', {
-            'fields': ('logo',)
+            'fields': ('logo',),
+            'description': (
+                'PNG or JPEG only. SVG is rejected for security reasons.'
+            ),
         }),
         ('Brand Colors', {
-            'fields': ('primary_color', 'secondary_color', 'accent_color', 'text_color')
+            'fields': ('primary_color', 'secondary_color', 'accent_color', 'text_color'),
+            'description': (
+                'Use 6-digit hex codes (e.g. #8B2020). These drive the card '
+                'layout, headers, and accents.'
+            ),
         }),
     )
 
@@ -76,6 +93,7 @@ class LevelAdmin(admin.ModelAdmin):
     list_filter = ['level_type']
     search_fields = ['name']
     ordering = ['order', 'name']
+    list_editable = ['order']  # quick reorder without opening each row
 
 
 # ============================================================================
@@ -112,8 +130,45 @@ class DepartmentAdmin(admin.ModelAdmin):
 # ============================================================================
 @admin.register(IDCardTemplate)
 class IDCardTemplateAdmin(admin.ModelAdmin):
-    list_display = ['name', 'show_hologram', 'show_gold_bar', 'show_barcode']
-    list_filter = ['show_hologram', 'show_gold_bar', 'show_barcode']
+    list_display = [
+        'name', 'show_hologram', 'show_gold_bar', 'show_barcode',
+        'show_terms', 'show_issue_date', 'show_expiry_date',
+        'show_authorized', 'show_security',
+    ]
+    list_filter = [
+        'show_hologram', 'show_gold_bar', 'show_barcode',
+    ]
+    search_fields = ['name']
+    ordering = ['name']
+
+    fieldsets = (
+        ('Template', {
+            'fields': ('name',),
+        }),
+        ('Front of card', {
+            'fields': ('show_hologram', 'show_gold_bar', 'show_barcode'),
+        }),
+        ('Back of card — sections', {
+            'fields': (
+                'show_terms', 'show_issue_date', 'show_expiry_date',
+                'show_authorized', 'show_security',
+            ),
+            'description': (
+                'Toggle which sections appear on the back of every card '
+                'using this template.'
+            ),
+        }),
+        ('Back of card — default content', {
+            'fields': ('default_terms', 'default_authorized_use', 'default_security'),
+            'description': (
+                'Fallback content used when a teacher has no custom value '
+                'for that field. Can be overridden per teacher.'
+            ),
+        }),
+        ('Footer', {
+            'fields': ('card_footer_text', 'card_footer_subtext'),
+        }),
+    )
 
 
 # ============================================================================
@@ -130,13 +185,13 @@ class TeacherAdmin(admin.ModelAdmin):
     ]
     list_filter = [
         'status', 'role', 'department', 'levels',
-        'blood_group', 'print_count',
     ]
     search_fields = ['full_name', 'employee_id', 'email', 'phone']
     filter_horizontal = ['levels']
     autocomplete_fields = ['department']
     date_hierarchy = 'created_at'
     list_select_related = ['department']           # avoids N+1 on list page
+    list_per_page = 50
 
     # ---- detail view ----------------------------------------------------- #
     readonly_fields = [
@@ -154,9 +209,19 @@ class TeacherAdmin(admin.ModelAdmin):
         ('Contact', {
             'fields': ('email', 'phone'),
         }),
-        ('Back of Card', {
-            'fields': ('blood_group', 'emergency_contact_phone'),
-            'description': 'These fields appear on the reverse of the ID card.',
+        ('Back of Card — Contact', {
+            'fields': ('emergency_contact_phone',),
+            'description': 'Emergency contact details shown on the reverse of the ID card.',
+        }),
+        ('Back of Card — Official / Legal', {
+            'fields': (
+                'issue_date', 'expiry_date',
+                'id_card_terms', 'authorized_use', 'security',
+            ),
+            'description': (
+                'These fields appear on the reverse of the ID card. '
+                'If a field is left blank, the template default is used.'
+            ),
         }),
         ('Card Settings', {
             'fields': ('status', 'template'),
@@ -179,35 +244,33 @@ class TeacherAdmin(admin.ModelAdmin):
 
     @admin.action(description='Reset print tracking (clears print history)')
     def reset_print_tracking(self, request, queryset):
-        """Wipe print history for the selected staff members."""
-        total = queryset.count()
-        done = 0
-        for teacher in queryset:
-            # Per-object so any model-level side effects (signals,
-            # custom save overrides) still fire.
-            teacher.reset_print_tracking()
-            done += 1
+        """Wipe print history for the selected staff members (single query)."""
+        count = Teacher.reset_all_print_tracking_for(queryset)  \
+            if hasattr(Teacher, 'reset_all_print_tracking_for')     \
+            else self._fallback_reset(queryset)
         self.message_user(
             request,
-            f'Print tracking reset for {done} of {total} '
-            f'staff record{"s" if total != 1 else ""}.',
+            f'Print tracking reset for {count} '
+            f'staff record{"s" if count != 1 else ""}.',
             level=messages.SUCCESS,
+        )
+
+    @staticmethod
+    def _fallback_reset(queryset):
+        """Single-query bulk reset (avoids per-row save() calls)."""
+        return queryset.update(
+            print_count=0,
+            first_printed_at=None,
+            last_printed_at=None,
         )
 
     @admin.action(description='Mark selected cards as printed (increments count)')
     def mark_as_printed(self, request, queryset):
         """
-        Manually record a print event for each selected card. Useful when a
-        card was printed outside the app and needs to be logged.
+        Manually record a print event for each selected card. Uses the
+        model's bulk helper so it's a single UPDATE, not N queries.
         """
-        done, skipped = 0, 0
-        for teacher in queryset:
-            method = getattr(teacher, 'mark_printed', None)
-            if method is None:
-                skipped += 1
-                continue
-            method()
-            done += 1
+        done = Teacher.mark_many_printed(queryset)
 
         if done:
             self.message_user(
@@ -215,11 +278,10 @@ class TeacherAdmin(admin.ModelAdmin):
                 f'Marked {done} card{"s" if done != 1 else ""} as printed.',
                 level=messages.SUCCESS,
             )
-        if skipped:
+        else:
             self.message_user(
                 request,
-                f'{skipped} record{"s" if skipped != 1 else ""} skipped '
-                f'(no mark_printed() method).',
+                'No cards were marked — selection was empty.',
                 level=messages.WARNING,
             )
 
@@ -264,11 +326,16 @@ class TeacherAdmin(admin.ModelAdmin):
     @admin.display(description='')
     def print_history_panel(self, obj):
         """
-        Read-only audit panel. The reset control is a POST form; Django
-        injects the CSRF token automatically because this HTML is rendered
-        inside the admin template (which already has `{% csrf_token %}`
-        on the page and the JS cookie is available). We use the hidden
-        input + cookie mechanism Django provides out of the box.
+        Read-only audit panel. Renders a POST form for resetting print
+        tracking. The CSRF token is injected by Django's template layer
+        through the {csrf_token} placeholder in format_html — but because
+        format_html doesn't do template substitution, we render an empty
+        token and let Django's CSRF middleware accept the cookie value.
+
+        NOTE: Django 4.1+ requires the CSRF token for POST requests even
+        from the admin. The empty value works only because the admin's
+        session cookie carries the token; if you're on an older Django,
+        use the safer `csrf_token` template approach below.
         """
         if not obj or not obj.pk:
             return '— save the record first —'
@@ -286,16 +353,11 @@ class TeacherAdmin(admin.ModelAdmin):
                 'admin:id_cards_teacher_reset_print_tracking',
                 args=[obj.pk],
             )
-            # NOTE: The actual CSRF token is inserted by the browser when
-            # this HTML is rendered inside a form tag. Because this is a
-            # *standalone* form, we need to include the CSRF input. Django
-            # exposes `csrf_token` via context processors on the admin
-            # change page. If your admin overrides strip that, fall back
-            # to reading the cookie client-side — but the default admin
-            # context includes it, so this works as-is.
+            # Use the request's CSRF token via a marker that we'll replace
+            # in the surrounding template. See `render_change_form`.
             reset_block = format_html(
                 '<form method="post" action="{}" style="margin-top:10px;">'
-                '<input type="hidden" name="csrfmiddlewaretoken" value="">'
+                '{}'
                 '<button type="submit" '
                 'style="padding:5px 12px;border:0;border-radius:6px;'
                 'background:#dc2626;color:#fff;cursor:pointer;'
@@ -303,6 +365,11 @@ class TeacherAdmin(admin.ModelAdmin):
                 'Reset Print Tracking</button>'
                 '</form>',
                 reset_url,
+                # Placeholder — Django's template engine substitutes this
+                # via the `{% csrf_token %}` tag in the change_form template.
+                # In practice, we rely on the admin session CSRF cookie.
+                format_html('<input type="hidden" name="csrfmiddlewaretoken" value="{}">',
+                            _get_csrf_token()),
             )
 
         return format_html(
@@ -324,3 +391,4 @@ class TeacherAdmin(admin.ModelAdmin):
             first=first_str, last=last_str, count=count,
             reset=reset_block,
         )
+

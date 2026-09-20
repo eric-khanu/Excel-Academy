@@ -1,0 +1,263 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>{{ school.name|default:"Student ID" }} — Student ID Card</title>
+<style>
+  @page { size: 2.125in 3.375in; margin: 0; }
+  body { font-family: Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+
+  .card {
+    width: 2.125in; height: 3.375in;
+    background-color: {{ school.accent_color|default:"#FBF6EC" }};
+    position: relative;
+    page-break-after: always;
+  }
+  .card-back { background-color: #16233A; color: #FFFFFF; }
+
+  .header {
+    background-color: {{ school.primary_color|default:"#8B2020" }};
+    padding: 6px 8px;
+    color: #FFFFFF;
+    border-bottom: 2px solid {{ school.secondary_color|default:"#C87A2C" }};
+  }
+  .header-school-line1 {
+    font-size: 6pt; font-weight: bold; color: #F5C87A;
+    letter-spacing: 0.4px; text-transform: uppercase; line-height: 1.15;
+  }
+  .header-school-line2 {
+    font-size: 6pt; font-weight: bold; color: #F5C87A;
+    letter-spacing: 1.6px; text-transform: uppercase; line-height: 1.15; margin-top: 1px;
+  }
+
+  .role-strip {
+    text-align: center; font-size: 6pt; font-weight: bold;
+    color: {{ school.primary_color|default:"#8B2020" }};
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 3px 8px;
+    border-top: 1px solid {{ school.secondary_color|default:"#C87A2C" }};
+    border-bottom: 1px solid {{ school.secondary_color|default:"#C87A2C" }};
+    background-color: #F0E0C0;
+  }
+
+  .photo-section { text-align: center; padding: 8px 0 2px 0; }
+  .photo-section img {
+    width: 82px; height: 82px;
+    border: 2px solid {{ school.secondary_color|default:"#C87A2C" }};
+  }
+  .photo-placeholder {
+    width: 78px; height: 78px; line-height: 78px; text-align: center;
+    font-size: 20pt; font-weight: bold;
+    color: {{ school.primary_color|default:"#8B2020" }};
+    background-color: #FBF6EC;
+    border: 2px solid {{ school.secondary_color|default:"#C87A2C" }};
+    margin: 0 auto;
+  }
+
+  .info { text-align: center; padding: 4px 6px 0 6px; }
+  .teacher-name {
+    font-size: 9pt; font-weight: bold;
+    color: {{ school.primary_color|default:"#8B2020" }};
+    letter-spacing: 0.3px; line-height: 1.15; margin-top: 2px;
+  }
+  .designation {
+    font-size: 5pt; font-weight: bold;
+    color: {{ school.primary_color|default:"#8B2020" }};
+    letter-spacing: 0.4px; margin-top: 3px; line-height: 1.2;
+  }
+
+  .details {
+    font-size: 5pt; color: #2A1810;
+    padding: 5px 8px; line-height: 1.5;
+    margin: 6px 8px 0 8px;
+    background-color: #FFFFFF;
+    border: 0.5px solid #E0C8A0;
+  }
+  .details .row { text-align: center; margin: 0; }
+  .details .label { color: #8A6A50; font-weight: normal; }
+  .details .value {
+    color: {{ school.primary_color|default:"#8B2020" }};
+    font-weight: bold;
+  }
+
+  .footer {
+    position: absolute; bottom: 8px; width: 100%;
+    text-align: center; font-size: 4.5pt;
+    color: {{ school.primary_color|default:"#8B2020" }};
+    font-weight: bold; letter-spacing: 1px;
+  }
+  .footer .sub {
+    color: #A88A70; font-weight: normal; font-size: 3.6pt; margin-top: 1px;
+  }
+  .gold-bar {
+    position: absolute; bottom: 0; left: 0;
+    width: 100%; height: 5px;
+    background-color: {{ school.secondary_color|default:"#C87A2C" }};
+  }
+
+  .back-top-strip { background-color: #0A0F16; height: 22px; width: 100%; }
+  .back-panel {
+    margin: 14px 8px 0 8px; padding: 6px 8px;
+    border: 0.5px solid {{ school.secondary_color|default:"#C87A2C" }};
+    background-color: #1B2B44;
+  }
+  .back-section { padding: 5px 0; text-align: center; }
+  .back-section-title {
+    font-size: 6pt; font-weight: bold; color: #F5C87A;
+    letter-spacing: 1px; text-transform: uppercase; line-height: 1.2;
+  }
+  .back-section-body {
+    font-size: 5pt; color: #E8EEF6; line-height: 1.4; margin-top: 2px;
+  }
+  .back-meta {
+    text-align: center; margin-top: 10px;
+    font-size: 5.5pt; color: #E8EEF6;
+  }
+  .back-meta .label { color: #F5C87A; font-weight: bold; }
+  .back-meta .value { color: #FFFFFF; font-weight: bold; }
+
+  .print-audit {
+    margin: 8px 8px 0 8px; padding: 4px 6px;
+    border: 0.5px dashed #6B7A8F;
+    background-color: #0F1A2B;
+    text-align: center; font-size: 4pt;
+    color: #A9B6C7; line-height: 1.35;
+  }
+  .print-audit .audit-label {
+    color: #F5C87A; font-weight: bold;
+    letter-spacing: 0.6px; text-transform: uppercase; font-size: 3.8pt;
+  }
+  .print-audit .audit-value { color: #FFFFFF; font-weight: bold; }
+  .print-audit .audit-sub { color: #8A98AC; font-size: 3.6pt; margin-top: 1px; }
+
+  .back-footer {
+    position: absolute; bottom: 10px; width: 100%;
+    text-align: center; font-size: 4.5pt;
+    color: #C8D2E0; line-height: 1.35;
+  }
+  .back-footer .school {
+    font-size: 6pt; font-weight: bold; color: #FFFFFF;
+    margin-bottom: 3px; letter-spacing: 0.3px;
+  }
+  .back-footer .contact { color: #C8D2E0; }
+</style>
+</head>
+<body>
+
+{% if print_all %}
+  {% for student in students %}
+    <div class="card">
+      <div class="header">
+        <div class="header-school-line1">{{ school.name|default:"School Name"|upper }}</div>
+        <div class="header-school-line2">{% if school.short_name %}— {{ school.short_name|upper }} —{% endif %}</div>
+      </div>
+      <div class="role-strip">{{ student.level_display|upper|default:"STUDENT" }}</div>
+      <div class="photo-section">
+        {% if student.photo %}<img src="{{ student.photo.url }}" alt="photo">
+        {% else %}<div class="photo-placeholder">{{ student.initials }}</div>{% endif %}
+      </div>
+      <div class="info">
+        <div class="teacher-name">{{ student.full_name|upper }}</div>
+        <div class="designation">{{ student.level_display|upper }}</div>
+      </div>
+      <div class="details">
+        <div class="row"><span class="label">Admission No:</span> <span class="value">{{ student.admission_number }}</span></div>
+        {% if student.department %}<div class="row"><span class="label">House:</span> <span class="value">{{ student.department_display }}</span></div>{% endif %}
+        {% if student.valid_thru %}<div class="row"><span class="label">Valid Thru:</span> <span class="value">{{ student.valid_thru|date:"m/Y" }}</span></div>{% endif %}
+      </div>
+      <div class="footer">STUDENT IDENTIFICATION<div class="sub">(SEE REVERSE FOR DETAILS)</div></div>
+      <div class="gold-bar"></div>
+    </div>
+
+    <div class="card card-back">
+      <div class="back-top-strip"></div>
+      <div class="back-panel">
+        <div class="back-section">
+          <div class="back-section-title">Emergency Contact</div>
+          <div class="back-section-body">
+            {% if student.emergency_contact_phone %}{{ student.emergency_contact_phone }}
+            {% elif student.guardian_phone %}{{ student.guardian_phone }}
+            {% else %}Contact School Office{% endif %}
+          </div>
+        </div>
+      </div>
+      {% if student.blood_group %}
+        <div class="back-meta"><span class="label">BLOOD GROUP:</span> <span class="value">{{ student.blood_group }}</span></div>
+      {% endif %}
+      <div class="print-audit">
+        <div class="audit-label">Print Record</div>
+        <div class="audit-value">{% if student.print_count %}Copy #{{ student.print_count }}{% else %}Original{% endif %}</div>
+        {% if student.first_printed_at %}
+          <div class="audit-sub">First: {{ student.first_printed_at|date:"m/d/Y" }}{% if student.print_count > 1 %} · Last: {{ student.last_printed_at|date:"m/d/Y" }}{% endif %}</div>
+        {% else %}
+          <div class="audit-sub">Not previously printed</div>
+        {% endif %}
+      </div>
+      <div class="back-footer">
+        <div class="school">{{ school.name }}</div>
+        {% if school.contact_phone_1 %}<div class="contact">Contact: {{ school.contact_phone_1 }}</div>{% endif %}
+        {% if school.contact_phone_2 %}<div class="contact">{{ school.contact_phone_2 }}</div>{% endif %}
+      </div>
+      <div class="gold-bar"></div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="card">
+    <div class="header">
+      <div class="header-school-line1">{{ school.name|default:"School Name"|upper }}</div>
+      <div class="header-school-line2">{% if school.short_name %}— {{ school.short_name|upper }} —{% endif %}</div>
+    </div>
+    <div class="role-strip">{{ student.level_display|upper|default:"STUDENT" }}</div>
+    <div class="photo-section">
+      {% if student.photo %}<img src="{{ student.photo.url }}" alt="photo">
+      {% else %}<div class="photo-placeholder">{{ student.initials }}</div>{% endif %}
+    </div>
+    <div class="info">
+      <div class="teacher-name">{{ student.full_name|upper }}</div>
+      <div class="designation">{{ student.level_display|upper }}</div>
+    </div>
+    <div class="details">
+      <div class="row"><span class="label">Admission No:</span> <span class="value">{{ student.admission_number }}</span></div>
+      {% if student.department %}<div class="row"><span class="label">House:</span> <span class="value">{{ student.department_display }}</span></div>{% endif %}
+      {% if student.valid_thru %}<div class="row"><span class="label">Valid Thru:</span> <span class="value">{{ student.valid_thru|date:"m/Y" }}</span></div>{% endif %}
+    </div>
+    <div class="footer">STUDENT IDENTIFICATION<div class="sub">(SEE REVERSE FOR DETAILS)</div></div>
+    <div class="gold-bar"></div>
+  </div>
+
+  <div class="card card-back">
+    <div class="back-top-strip"></div>
+    <div class="back-panel">
+      <div class="back-section">
+        <div class="back-section-title">Emergency Contact</div>
+        <div class="back-section-body">
+          {% if student.emergency_contact_phone %}{{ student.emergency_contact_phone }}
+          {% elif student.guardian_phone %}{{ student.guardian_phone }}
+          {% else %}Contact School Office{% endif %}
+        </div>
+      </div>
+    </div>
+    {% if student.blood_group %}
+      <div class="back-meta"><span class="label">BLOOD GROUP:</span> <span class="value">{{ student.blood_group }}</span></div>
+    {% endif %}
+    <div class="print-audit">
+      <div class="audit-label">Print Record</div>
+      <div class="audit-value">{% if student.print_count %}Copy #{{ student.print_count }}{% else %}Original{% endif %}</div>
+      {% if student.first_printed_at %}
+        <div class="audit-sub">First: {{ student.first_printed_at|date:"m/d/Y" }}{% if student.print_count > 1 %} · Last: {{ student.last_printed_at|date:"m/d/Y" }}{% endif %}</div>
+      {% else %}
+        <div class="audit-sub">Not previously printed</div>
+      {% endif %}
+    </div>
+    <div class="back-footer">
+      <div class="school">{{ school.name }}</div>
+      {% if school.contact_phone_1 %}<div class="contact">Contact: {{ school.contact_phone_1 }}</div>{% endif %}
+      {% if school.contact_phone_2 %}<div class="contact">{{ school.contact_phone_2 }}</div>{% endif %}
+    </div>
+    <div class="gold-bar"></div>
+  </div>
+{% endif %}
+
+</body>
+</html>

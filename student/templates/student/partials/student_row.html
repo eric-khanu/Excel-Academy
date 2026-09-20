@@ -1,0 +1,74 @@
+<div class="student-row">
+
+  <div class="avatar-sm">
+    {% if student.photo %}
+      <img src="{{ student.photo.url }}" alt="{{ student.full_name }}">
+    {% else %}
+      {{ student.initials }}
+    {% endif %}
+  </div>
+
+  <div class="name-cell">
+    <a href="{% url 'student:student_detail' student.pk %}" class="name">{{ student.full_name }}</a>
+    <div class="role-sub">{{ student.level_display }}</div>
+  </div>
+
+  <div class="cell admission-cell">
+    <span class="cell-label">Adm</span>
+    <span class="mono">{{ student.admission_number }}</span>
+  </div>
+
+  <div class="cell">
+    <span class="cell-label">Level</span>
+    {{ student.level_display }}
+  </div>
+
+  <div class="cell">
+    <div class="chip-row">
+      {% if student.blood_group %}
+        <span class="meta-blood"><i class="fas fa-droplet"></i> {{ student.blood_group }}</span>
+      {% endif %}
+      {% if student.gender %}
+        <span class="meta-level-tag">{{ student.get_gender_display }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="cell">
+    {% if print_state == "unprinted" %}
+      <span class="badge-print badge-print-unprinted">
+        <i class="fas fa-circle-exclamation"></i> Not Printed
+      </span>
+    {% elif print_state == "printed" %}
+      <span class="badge-print badge-print-printed">
+        <i class="fas fa-circle-check"></i> Printed
+      </span>
+      {% if student.last_printed_at %}
+        <div class="print-date">{{ student.last_printed_at|date:"M j, Y" }}</div>
+      {% endif %}
+    {% elif print_state == "reprinted" %}
+      <span class="badge-print badge-print-reprinted">
+        <i class="fas fa-rotate-right"></i> ×{{ student.print_count }}
+      </span>
+      {% if student.last_printed_at %}
+        <div class="print-date">Last: {{ student.last_printed_at|date:"M j, Y" }}</div>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="row-actions">
+    <a href="{% url 'student:student_detail' student.pk %}" class="btn btn-outline btn-sm" title="View">
+      <i class="fas fa-eye"></i>
+    </a>
+    <a href="{% url 'student:student_edit' student.pk %}" class="btn btn-outline btn-sm" title="Edit">
+      <i class="fas fa-pen"></i>
+    </a>
+    <a href="{% url 'student:student_print' student.pk %}" class="btn btn-secondary btn-sm icon-btn"
+       title="{% if print_state == 'unprinted' %}Print{% else %}Reprint{% endif %}">
+      <i class="fas fa-print"></i>
+    </a>
+    <a href="{% url 'student:student_pdf' student.pk %}" class="btn btn-primary btn-sm icon-btn" title="Download PDF">
+      <i class="fas fa-file-pdf"></i>
+    </a>
+  </div>
+</div>

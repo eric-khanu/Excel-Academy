@@ -1,23 +1,29 @@
+import csv
 import io
 import os
-import csv
+import re
 from datetime import datetime
+from functools import wraps
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-from django.contrib import messages
-from django.views.decorators.http import require_http_methods, require_POST
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.staticfiles import finders
-from django.db import transaction
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import IntegrityError, transaction
 from django.db.models import Q, Count, Sum, Max
+from django.http import HttpResponse, StreamingHttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import urlencode
+from django.views.decorators.http import require_http_methods, require_POST
 
 from .models import Teacher, School, IDCardTemplate, Department, Level
 from .forms import (
     TeacherForm, SchoolForm, DepartmentForm, LevelForm, BulkImportForm,
-    PrintResetForm,
+    PrintResetForm, IDCardTemplateForm,
 )
 
 # ---------------------------------------------------------------------------
@@ -29,20 +35,33 @@ try:
 except ImportError:
     XHTML2PDF_AVAILABLE = False
 
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+MAX_BULK_IMPORT_ROWS = 5000
+MAX_BULK_PRINT_CARDS = 500          # safety cap for synchronous PDF generation
+ALLOWED_PDF_REMOTE_HOSTS = frozenset({
+    'fonts.googleapis.com',
+    'fonts.gstatic.com',
+})
+PDF_FILENAME_SAFE = re.compile(r'[^A-Za-z0-9._-]+')
+PRINT_FILTERS = frozenset({'', 'no', 'yes', 'once', 'reprinted'})
+
 
 # ============================================================================
 # HELPERS
 # ============================================================================
 def get_school():
-    """Return the single School branding record (created on first access)."""
-    school, _ = School.objects.get_or_create(pk=1)
-    return school
+    """Return the singleton School branding record."""
+    return School.get_solo()
 
 
 def link_callback(uri, rel):
     """
-    Resolve HTML URIs to absolute filesystem paths so xhtml2pdf can embed
-    images and CSS. Handles /static/, /media/, absolute paths, and remote URLs.
+    Resolve HTML URIs to filesystem paths for xhtml2pdf.
+
+    Remote URLs are only allowed for an explicit allowlist of hosts —
+    this prevents SSRF via a card template that references arbitrary URLs.
     """
     # Static files
     if uri.startswith(settings.STATIC_URL):
@@ -54,22 +73,47 @@ def link_callback(uri, rel):
     # Media files
     if uri.startswith(settings.MEDIA_URL):
         path = uri.replace(settings.MEDIA_URL, '')
-        return os.path.join(settings.MEDIA_ROOT, path)
+        candidate = os.path.join(settings.MEDIA_ROOT, path)
+        # Ensure the resolved path is still inside MEDIA_ROOT
+        real = os.path.realpath(candidate)
+        if not real.startswith(os.path.realpath(settings.MEDIA_ROOT)):
+            raise ValueError(f"Refusing to load out-of-tree media: {uri}")
+        return candidate
 
-    # Absolute local path already
+    # Absolute local path
     if os.path.isfile(uri):
         return uri
 
-    # Remote URLs (e.g. Google Fonts) — pass through, xhtml2pdf will fetch
+    # Remote URLs — allowlist only
     if uri.startswith(('http://', 'https://')):
-        return uri
+        from urllib.parse import urlparse
+        host = urlparse(uri).hostname or ''
+        if host in ALLOWED_PDF_REMOTE_HOSTS:
+            return uri
+        raise ValueError(f"Refusing to fetch remote resource: {uri}")
 
-    # Fallback — treat as media-relative
     return os.path.join(settings.MEDIA_ROOT, uri)
 
 
+def _safe_filename(name, fallback="document.pdf"):
+    """
+    Sanitize a filename for Content-Disposition. Strips path separators,
+    CR/LF, and non-alphanumeric characters (except dots, dashes, underscores).
+    """
+    name = (name or '').strip()
+    if not name:
+        return fallback
+    # Strip any directory components
+    name = os.path.basename(name)
+    # Replace disallowed chars
+    name = PDF_FILENAME_SAFE.sub('_', name)
+    if not name.lower().endswith('.pdf'):
+        name = name + '.pdf'
+    return name[:200] or fallback
+
+
 def _render_pdf(template_name, context, filename):
-    """Shared PDF renderer for single and bulk exports."""
+    """Shared PDF renderer. Sanitizes filename; raises on failure."""
     if not XHTML2PDF_AVAILABLE:
         return HttpResponse(
             "xhtml2pdf is not installed. Run: pip install xhtml2pdf",
@@ -78,7 +122,9 @@ def _render_pdf(template_name, context, filename):
 
     html_string = render_to_string(template_name, context)
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="{filename}"'
+
+    safe = _safe_filename(filename)
+    response['Content-Disposition'] = f'inline; filename="{safe}"'
 
     result = pisa.CreatePDF(
         io.BytesIO(html_string.encode("UTF-8")),
@@ -87,20 +133,17 @@ def _render_pdf(template_name, context, filename):
     )
 
     if result.err:
-        return HttpResponse(f"PDF generation error: {result.err}", status=500)
+        return HttpResponse(
+            "PDF generation failed. Please contact an administrator.",
+            status=500,
+        )
     return response
 
 
 def _apply_print_filter(queryset, printed_param):
     """
-    Apply the ?printed= filter to a teacher queryset.
-
-    Accepted values:
-        ''          → no filter (all)
-        'no'        → unprinted only (print_count == 0)
-        'yes'       → printed any number of times (print_count > 0)
-        'once'      → printed exactly once (print_count == 1)
-        'reprinted' → printed more than once (print_count > 1)
+    Apply the ?printed= filter. Unknown values are treated as no filter,
+    but we validate at the view level too.
     """
     if printed_param == 'no':
         return queryset.filter(print_count=0)
@@ -113,11 +156,39 @@ def _apply_print_filter(queryset, printed_param):
     return queryset
 
 
+def _require_staff(view_func):
+    """
+    Decorator: require authentication. Use this on every card view.
+    Replace with your own role check if you have role-based permissions.
+    """
+    @wraps(view_func)
+    @login_required
+    def _wrapped(request, *args, **kwargs):
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+
+def _require_admin(view_func):
+    """
+    Decorator: require authentication AND staff status.
+    Replace `user.is_staff` with your own permission check if needed.
+    """
+    @wraps(view_func)
+    @login_required
+    def _wrapped(request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied("Administrator access required.")
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+
 # ============================================================================
 # CARD / TEACHER VIEWS
 # ============================================================================
+@require_http_methods(["GET"])
+@_require_staff
 def card_list(request):
-    """Dashboard — shows all staff cards with filters and print tracking."""
+    """Dashboard — staff cards with filters and print tracking."""
     teachers = (
         Teacher.objects
         .select_related('department', 'template')
@@ -125,12 +196,19 @@ def card_list(request):
         .order_by('full_name')
     )
 
-    # --- Filters ---
-    q        = request.GET.get('q', '').strip()
-    role     = request.GET.get('role', '')
-    status   = request.GET.get('status', '')
-    dept     = request.GET.get('dept', '')
-    printed  = request.GET.get('printed', '')
+    # --- Filters (validated) ---
+    q        = request.GET.get('q', '').strip()[:200]
+    role     = request.GET.get('role', '').strip()
+    status   = request.GET.get('status', '').strip()
+    dept     = request.GET.get('dept', '').strip()
+    printed  = request.GET.get('printed', '').strip()
+
+    if role and role not in dict(Teacher.ROLE_CHOICES):
+        role = ''
+    if status and status not in dict(Teacher.CARD_STATUS):
+        status = ''
+    if printed not in PRINT_FILTERS:
+        printed = ''
 
     if q:
         teachers = teachers.filter(
@@ -144,62 +222,65 @@ def card_list(request):
     if status:
         teachers = teachers.filter(status=status)
     if dept:
-        teachers = teachers.filter(department__id=dept)
+        try:
+            teachers = teachers.filter(department__id=int(dept))
+        except (TypeError, ValueError):
+            pass
 
     teachers = _apply_print_filter(teachers, printed)
 
-    # --- Materialise the queryset ONCE, then partition in Python ---
-    # This is faster than running three .filter().count() queries,
-    # and gives the template three pre-split lists to iterate over.
+    # Materialise once, partition in Python
     teachers = list(teachers)
-
     unprinted_teachers = [t for t in teachers if t.print_count == 0]
     printed_teachers   = [t for t in teachers if t.print_count == 1]
     reprinted_teachers = [t for t in teachers if t.print_count > 1]
 
-    # --- Stats (across the whole DB, not the filtered set) ---
+    # Single aggregate query instead of 7 COUNT() queries
+    agg = Teacher.objects.aggregate(
+        total=Count('id'),
+        active=Count('id', filter=Q(status='active')),
+        teachers=Count('id', filter=Q(role='TEACHER')),
+        unprinted=Count('id', filter=Q(print_count=0)),
+        printed=Count('id', filter=Q(print_count=1)),
+        reprinted=Count('id', filter=Q(print_count__gt=1)),
+    )
     stats = {
-        'total':       Teacher.objects.count(),
-        'active':      Teacher.objects.filter(status='active').count(),
-        'teachers':    Teacher.objects.filter(role='TEACHER').count(),
+        'total':       agg['total'] or 0,
+        'active':      agg['active'] or 0,
+        'teachers':    agg['teachers'] or 0,
         'departments': Department.objects.filter(is_active=True).count(),
-        'unprinted':   Teacher.objects.filter(print_count=0).count(),
-        'printed':     Teacher.objects.filter(print_count=1).count(),
-        'reprinted':   Teacher.objects.filter(print_count__gt=1).count(),
+        'unprinted':   agg['unprinted'] or 0,
+        'printed':     agg['printed'] or 0,
+        'reprinted':   agg['reprinted'] or 0,
     }
 
     context = {
-        # Base list (still useful for the header count and empty check)
         'teachers': teachers,
-
-        # Three partitioned lists — the template iterates over these
         'unprinted_teachers': unprinted_teachers,
         'printed_teachers':   printed_teachers,
         'reprinted_teachers': reprinted_teachers,
-
-        # Section counts
         'unprinted_count': len(unprinted_teachers),
         'printed_count':   len(printed_teachers),
         'reprinted_count': len(reprinted_teachers),
-
-        # Rest of the page context
         'school': get_school(),
         'departments': Department.objects.filter(is_active=True),
         'roles': Teacher.ROLE_CHOICES,
         'stats': stats,
         'current_filters': {
-            'q': q,
-            'role': role,
-            'status': status,
-            'dept': dept,
-            'printed': printed,
+            'q': q, 'role': role, 'status': status,
+            'dept': dept, 'printed': printed,
         },
     }
     return render(request, 'id_cards/card_list.html', context)
 
+
+@require_http_methods(["GET"])
+@_require_staff
 def card_detail(request, pk):
     teacher = get_object_or_404(
-        Teacher.objects.select_related('department', 'template').prefetch_related('levels'),
+        Teacher.objects
+        .select_related('department', 'template')
+        .prefetch_related('levels'),
         pk=pk,
     )
     return render(request, 'id_cards/card_detail.html', {
@@ -207,7 +288,9 @@ def card_detail(request, pk):
         'school': get_school(),
     })
 
+
 @require_http_methods(["GET", "POST"])
+@_require_admin
 def card_create(request):
     if request.method == 'POST':
         form = TeacherForm(request.POST, request.FILES)
@@ -216,9 +299,9 @@ def card_create(request):
             messages.success(
                 request,
                 f"ID card for {teacher.full_name} created — "
-                f"Employee ID: {teacher.employee_id}"
+                f"Employee ID: {teacher.employee_id}",
             )
-            return redirect('card_detail', pk=teacher.pk)
+            return redirect('id_cards:card_detail', pk=teacher.pk)
     else:
         form = TeacherForm()
     return render(request, 'id_cards/card_form.html', {
@@ -229,6 +312,7 @@ def card_create(request):
 
 
 @require_http_methods(["GET", "POST"])
+@_require_admin
 def card_edit(request, pk):
     teacher = get_object_or_404(Teacher, pk=pk)
     if request.method == 'POST':
@@ -236,7 +320,7 @@ def card_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, f"ID card for {teacher.full_name} updated.")
-            return redirect('card_detail', pk=teacher.pk)
+            return redirect('id_cards:card_detail', pk=teacher.pk)
     else:
         form = TeacherForm(instance=teacher)
     return render(request, 'id_cards/card_form.html', {
@@ -247,13 +331,15 @@ def card_edit(request, pk):
     })
 
 
+@require_http_methods(["GET", "POST"])
+@_require_admin
 def card_delete(request, pk):
     teacher = get_object_or_404(Teacher, pk=pk)
     if request.method == 'POST':
         name = teacher.full_name
         teacher.delete()
         messages.success(request, f"Deleted {name}'s ID card.")
-        return redirect('card_list')
+        return redirect('id_cards:card_list')
     return render(request, 'id_cards/card_confirm_delete.html', {
         'teacher': teacher,
         'school': get_school(),
@@ -261,68 +347,88 @@ def card_delete(request, pk):
 
 
 # ============================================================================
-# PRINT VIEWS (browser-native) — these MARK AS PRINTED
+# PRINT VIEWS (browser-native)
 # ============================================================================
+@require_http_methods(["GET", "POST"])
+@_require_staff
 def card_print(request, pk):
-    """Print a single card — records a print event."""
+    """
+    Render a single card for browser printing.
+
+    Print tracking is only incremented when the request is a POST, so
+    crawlers, prefetchers, and email link scanners can't mutate history.
+    """
     teacher = get_object_or_404(Teacher, pk=pk)
-    teacher.mark_printed()
+
+    tracked = False
+    if request.method == 'POST' and request.POST.get('track') == '1':
+        teacher.mark_printed()
+        tracked = True
+
     return render(request, 'id_cards/card_print.html', {
         'teacher': teacher,
         'school': get_school(),
+        'tracked': tracked,
+        'is_bulk': False,
     })
 
 
+@require_http_methods(["GET", "POST"])
+@_require_staff
 def card_print_all(request):
     """
-    Print all cards — records a print event per card (bulk).
+    Print all cards — bulk view.
 
-    Query params:
-        ?printed=no        → only unprinted cards
-        ?printed=yes       → only already-printed cards (any count)
-        ?printed=once      → only printed exactly once
-        ?printed=reprinted → only reprinted cards
-        (none)             → all active cards
-        ?track=0           → do NOT record print events (preview mode)
+    Print tracking only fires on POST with track=1.
+    Query params on GET: ?printed=no|yes|once|reprinted
     """
     teachers_qs = (
         Teacher.objects
         .filter(status='active')
-        .select_related('department')
+        .select_related('department', 'template')
         .order_by('full_name')
     )
 
     printed_filter = request.GET.get('printed', '')
+    if printed_filter not in PRINT_FILTERS:
+        printed_filter = ''
     teachers_qs = _apply_print_filter(teachers_qs, printed_filter)
 
     teachers = list(teachers_qs)
 
-    # ---- Print tracking (skippable for preview runs) ----
-    track = request.GET.get('track', '1') != '0'
-    if track and teachers:
-        Teacher.mark_many_printed(teachers)
-        # Refresh the instances so the audit strip in the template
-        # reflects the NEW count.
-        for t in teachers:
-            t.refresh_from_db(
-                fields=['print_count', 'first_printed_at', 'last_printed_at']
-            )
+    tracked = False
+    if request.method == 'POST' and request.POST.get('track') == '1':
+        if teachers:
+            Teacher.mark_many_printed(teachers)
+            # Re-fetch only the print-tracking fields in one query
+            refreshed = {
+                t.pk: t for t in Teacher.objects.filter(
+                    pk__in=[t.pk for t in teachers]
+                ).only('pk', 'print_count', 'first_printed_at', 'last_printed_at')
+            }
+            for t in teachers:
+                r = refreshed.get(t.pk)
+                if r:
+                    t.print_count = r.print_count
+                    t.first_printed_at = r.first_printed_at
+                    t.last_printed_at = r.last_printed_at
+            tracked = True
 
     return render(request, 'id_cards/card_print.html', {
         'teachers': teachers,
         'school': get_school(),
         'print_all': True,
-        'tracked': track,
+        'tracked': tracked,
+        'is_bulk': True,
     })
 
 
 @require_POST
+@_require_admin
 def card_print_reset(request, pk):
     """
-    Reset print tracking on a single card.
-
-    POST only. Protected by the PrintResetForm — the admin must type
-    "RESET" to confirm, so a misclick can't wipe the audit trail.
+    Reset print tracking on a single card. POST only, confirmed via
+    PrintResetForm (typed phrase).
     """
     teacher = get_object_or_404(Teacher, pk=pk)
     form = PrintResetForm(request.POST, teacher=teacher)
@@ -333,90 +439,119 @@ def card_print_reset(request, pk):
         messages.success(
             request,
             f"Print tracking reset for {teacher.full_name} "
-            f"(was {previous_count} print{'s' if previous_count != 1 else ''})."
+            f"(was {previous_count} print{'s' if previous_count != 1 else ''}).",
         )
     else:
         messages.error(
             request,
-            "Print tracking was NOT reset — confirmation phrase didn't match."
+            "Print tracking was NOT reset — confirmation phrase didn't match.",
         )
 
-    return redirect('card_detail', pk=pk)
+    return redirect('id_cards:card_detail', pk=pk)
 
 
 @require_POST
+@_require_admin
 def reset_all_print_counts(request):
     """
     Bulk-reset print tracking for every staff member.
-
-    POST only, guarded by CSRF + an explicit confirmation in the template.
+    POST only + explicit confirmation phrase.
     """
-    updated = Teacher.reset_all_print_tracking()
+    confirm = (request.POST.get('confirm') or '').strip().upper()
+    if confirm != 'RESET':
+        messages.error(
+            request,
+            "Print tracking was NOT reset — type RESET to confirm.",
+        )
+        return redirect('id_cards:school_settings')
+
+    updated = Teacher.reset_all_print_tracking(confirm=True)
     messages.success(
         request,
-        f"Print tracking reset for {updated} staff record{'s' if updated != 1 else ''}."
+        f"Print tracking reset for {updated} staff record{'s' if updated != 1 else ''}.",
     )
-    return redirect('school_settings')
+    return redirect('id_cards:school_settings')
 
 
 # ============================================================================
-# PDF VIEWS — these MARK AS PRINTED too
+# PDF VIEWS
 # ============================================================================
+@require_http_methods(["GET", "POST"])
+@_require_staff
 def card_pdf(request, pk):
     """
-    Download a single card as PDF — records a print event.
+    Download a single card as PDF.
 
-    Query params:
-        ?track=0 → do NOT record a print event (preview / re-download)
+    Print tracking only fires on POST with track=1.
     """
     teacher = get_object_or_404(Teacher, pk=pk)
 
-    track = request.GET.get('track', '1') != '0'
-    if track:
+    tracked = False
+    if request.method == 'POST' and request.POST.get('track') == '1':
         teacher.mark_printed()
+        tracked = True
 
-    safe_name = teacher.full_name.replace(' ', '_').replace('/', '_')
+    safe_name = _safe_filename(
+        f"{teacher.full_name}_{teacher.employee_id}.pdf",
+        fallback=f"card_{teacher.employee_id}.pdf",
+    )
     return _render_pdf(
         'id_cards/card_pdf.html',
-        {'teacher': teacher, 'school': get_school(), 'single': True},
-        f"{safe_name}_{teacher.employee_id}.pdf",
+        {
+            'teacher': teacher,
+            'school': get_school(),
+            'single': True,
+            'tracked': tracked,
+        },
+        safe_name,
     )
 
 
+@require_http_methods(["GET", "POST"])
+@_require_staff
 def card_pdf_all(request):
     """
-    Download all active cards as one PDF — records a print event per card.
+    Download all active cards as one PDF.
 
-    Query params:
-        ?printed=no        → only unprinted
-        ?printed=yes       → only already-printed
-        ?printed=once      → exactly one print
-        ?printed=reprinted → reprinted
-        ?track=0           → do NOT record print events
+    Print tracking only fires on POST with track=1.
+    Enforces a safety cap (MAX_BULK_PRINT_CARDS) to avoid request timeouts.
     """
     teachers_qs = (
         Teacher.objects
         .filter(status='active')
-        .select_related('department')
+        .select_related('department', 'template')
         .order_by('full_name')
     )
 
     printed_filter = request.GET.get('printed', '')
+    if printed_filter not in PRINT_FILTERS:
+        printed_filter = ''
     teachers_qs = _apply_print_filter(teachers_qs, printed_filter)
+
+    total = teachers_qs.count()
+    if total > MAX_BULK_PRINT_CARDS:
+        messages.error(
+            request,
+            f"Too many cards ({total}) — the limit is {MAX_BULK_PRINT_CARDS}. "
+            f"Please narrow the filter.",
+        )
+        return redirect('id_cards:card_list')
 
     teachers = list(teachers_qs)
 
-    track = request.GET.get('track', '1') != '0'
-    if track and teachers:
+    tracked = False
+    if request.method == 'POST' and request.POST.get('track') == '1' and teachers:
         Teacher.mark_many_printed(teachers)
-        for t in teachers:
-            t.refresh_from_db(
-                fields=['print_count', 'first_printed_at', 'last_printed_at']
-            )
+        tracked = True
 
     return _render_pdf(
         'id_cards/card_pdf.html',
-        {'teachers': teachers, 'school': get_school(), 'print_all': True},
+        {
+            'teachers': teachers,
+            'school': get_school(),
+            'print_all': True,
+            'tracked': tracked,
+        },
         "All_Staff_ID_Cards.pdf",
     )
 
@@ -425,6 +560,7 @@ def card_pdf_all(request):
 # SCHOOL SETTINGS
 # ============================================================================
 @require_http_methods(["GET", "POST"])
+@_require_admin
 def school_settings(request):
     school = get_school()
 
@@ -433,23 +569,25 @@ def school_settings(request):
         if form.is_valid():
             form.save()
             messages.success(request, "School branding updated.")
-            return redirect('school_settings')
+            return redirect('id_cards:school_settings')
     else:
         form = SchoolForm(instance=school)
 
-    # ---- Print tracking overview for the settings page ----
     totals = Teacher.objects.aggregate(
         total=Count('id'),
         total_prints=Sum('print_count'),
         last_print=Max('last_printed_at'),
+        unprinted=Count('id', filter=Q(print_count=0)),
+        printed=Count('id', filter=Q(print_count=1)),
+        reprinted=Count('id', filter=Q(print_count__gt=1)),
     )
     print_stats = {
         'total':        totals['total'] or 0,
         'total_prints': totals['total_prints'] or 0,
         'last_print':   totals['last_print'],
-        'unprinted':    Teacher.objects.filter(print_count=0).count(),
-        'printed':      Teacher.objects.filter(print_count=1).count(),
-        'reprinted':    Teacher.objects.filter(print_count__gt=1).count(),
+        'unprinted':    totals['unprinted'] or 0,
+        'printed':      totals['printed'] or 0,
+        'reprinted':    totals['reprinted'] or 0,
     }
 
     return render(request, 'id_cards/school_settings.html', {
@@ -460,10 +598,82 @@ def school_settings(request):
 
 
 # ============================================================================
+# ID CARD TEMPLATE CRUD
+# ============================================================================
+@require_http_methods(["GET"])
+@_require_staff
+def template_list(request):
+    templates = IDCardTemplate.objects.all().order_by('name')
+    return render(request, 'id_cards/template_list.html', {
+        'templates': templates,
+        'school': get_school(),
+    })
+
+
+@require_http_methods(["GET", "POST"])
+@_require_admin
+def template_create(request):
+    if request.method == 'POST':
+        form = IDCardTemplateForm(request.POST)
+        if form.is_valid():
+            tpl = form.save()
+            messages.success(request, f"Template '{tpl.name}' created.")
+            return redirect('id_cards:template_list')
+    else:
+        form = IDCardTemplateForm()
+    return render(request, 'id_cards/template_form.html', {
+        'form': form,
+        'school': get_school(),
+        'title': 'Add Card Template',
+    })
+
+
+@require_http_methods(["GET", "POST"])
+@_require_admin
+def template_edit(request, pk):
+    tpl = get_object_or_404(IDCardTemplate, pk=pk)
+    if request.method == 'POST':
+        form = IDCardTemplateForm(request.POST, instance=tpl)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Template '{tpl.name}' updated.")
+            return redirect('id_cards:template_list')
+    else:
+        form = IDCardTemplateForm(instance=tpl)
+    return render(request, 'id_cards/template_form.html', {
+        'form': form,
+        'template': tpl,
+        'school': get_school(),
+        'title': f'Edit — {tpl.name}',
+    })
+
+
+@require_http_methods(["GET", "POST"])
+@_require_admin
+def template_delete(request, pk):
+    tpl = get_object_or_404(IDCardTemplate, pk=pk)
+    if request.method == 'POST':
+        name = tpl.name
+        tpl.delete()
+        messages.success(request, f"Template '{name}' deleted.")
+        return redirect('id_cards:template_list')
+    return render(request, 'id_cards/template_confirm_delete.html', {
+        'template': tpl,
+        'school': get_school(),
+    })
+
+
+# ============================================================================
 # DEPARTMENT CRUD
 # ============================================================================
+@require_http_methods(["GET"])
+@_require_staff
 def department_list(request):
-    departments = Department.objects.all().order_by('name')
+    departments = (
+        Department.objects
+        .annotate(teacher_count=Count('teachers'))
+        .order_by('name')
+    )
     return render(request, 'id_cards/department_list.html', {
         'departments': departments,
         'school': get_school(),
@@ -471,13 +681,17 @@ def department_list(request):
 
 
 @require_http_methods(["GET", "POST"])
+@_require_admin
 def department_create(request):
     if request.method == 'POST':
         form = DepartmentForm(request.POST)
         if form.is_valid():
             dept = form.save()
-            messages.success(request, f"Department '{dept.name}' created (code: {dept.code}).")
-            return redirect('department_list')
+            messages.success(
+                request,
+                f"Department '{dept.name}' created (code: {dept.code}).",
+            )
+            return redirect('id_cards:department_list')
     else:
         form = DepartmentForm()
     return render(request, 'id_cards/department_form.html', {
@@ -488,6 +702,7 @@ def department_create(request):
 
 
 @require_http_methods(["GET", "POST"])
+@_require_admin
 def department_edit(request, pk):
     dept = get_object_or_404(Department, pk=pk)
     if request.method == 'POST':
@@ -495,7 +710,7 @@ def department_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, f"Department '{dept.name}' updated.")
-            return redirect('department_list')
+            return redirect('id_cards:department_list')
     else:
         form = DepartmentForm(instance=dept)
     return render(request, 'id_cards/department_form.html', {
@@ -506,13 +721,15 @@ def department_edit(request, pk):
     })
 
 
+@require_http_methods(["GET", "POST"])
+@_require_admin
 def department_delete(request, pk):
     dept = get_object_or_404(Department, pk=pk)
     if request.method == 'POST':
         name = dept.name
         dept.delete()
         messages.success(request, f"Department '{name}' deleted.")
-        return redirect('department_list')
+        return redirect('id_cards:department_list')
     return render(request, 'id_cards/department_confirm_delete.html', {
         'department': dept,
         'school': get_school(),
@@ -522,6 +739,8 @@ def department_delete(request, pk):
 # ============================================================================
 # LEVEL CRUD
 # ============================================================================
+@require_http_methods(["GET"])
+@_require_staff
 def level_list(request):
     levels = Level.objects.all().order_by('order', 'name')
     return render(request, 'id_cards/level_list.html', {
@@ -531,13 +750,14 @@ def level_list(request):
 
 
 @require_http_methods(["GET", "POST"])
+@_require_admin
 def level_create(request):
     if request.method == 'POST':
         form = LevelForm(request.POST)
         if form.is_valid():
             level = form.save()
             messages.success(request, f"Level '{level.name}' created.")
-            return redirect('level_list')
+            return redirect('id_cards:level_list')
     else:
         form = LevelForm()
     return render(request, 'id_cards/level_form.html', {
@@ -548,6 +768,7 @@ def level_create(request):
 
 
 @require_http_methods(["GET", "POST"])
+@_require_admin
 def level_edit(request, pk):
     level = get_object_or_404(Level, pk=pk)
     if request.method == 'POST':
@@ -555,7 +776,7 @@ def level_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, f"Level '{level.name}' updated.")
-            return redirect('level_list')
+            return redirect('id_cards:level_list')
     else:
         form = LevelForm(instance=level)
     return render(request, 'id_cards/level_form.html', {
@@ -566,13 +787,15 @@ def level_edit(request, pk):
     })
 
 
+@require_http_methods(["GET", "POST"])
+@_require_admin
 def level_delete(request, pk):
     level = get_object_or_404(Level, pk=pk)
     if request.method == 'POST':
         name = level.name
         level.delete()
         messages.success(request, f"Level '{name}' deleted.")
-        return redirect('level_list')
+        return redirect('id_cards:level_list')
     return render(request, 'id_cards/level_confirm_delete.html', {
         'level': level,
         'school': get_school(),
@@ -582,71 +805,84 @@ def level_delete(request, pk):
 # ============================================================================
 # BULK CSV IMPORT
 # ============================================================================
+def _parse_import_date(raw):
+    """Best-effort date parser. Returns a date or None."""
+    raw = (raw or '').strip()
+    if not raw:
+        return None
+    for fmt in ('%Y-%m-%d', '%m/%Y', '%m/%d/%Y', '%d/%m/%Y'):
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
 @require_http_methods(["GET", "POST"])
+@_require_admin
 def bulk_import(request):
     """
     Upload a CSV with columns:
         full_name, designation, role, department, levels,
-        email, phone, valid_thru, blood_group, emergency_contact_phone
-
-    - department : department NAME (must already exist)
-    - levels     : semicolon-separated level NAMES (e.g. "JSS1;JSS2")
-    - role       : one of the ROLE_CHOICES keys (TEACHER, SECRETARY, …)
-    - valid_thru : YYYY-MM-DD or MM/YYYY (best-effort parsing)
-    - blood_group: O+, O-, A+, A-, B+, B-, AB+, AB- (optional)
+        email, phone, valid_thru, emergency_contact_phone,
+        issue_date, expiry_date, id_card_terms,
+        authorized_use, security
 
     Employee IDs are auto-generated by the model.
+    Capped at MAX_BULK_IMPORT_ROWS to prevent DoS.
     """
     if request.method == 'POST':
         form = BulkImportForm(request.POST, request.FILES)
         if not form.is_valid():
             for error in form.errors.values():
                 messages.error(request, error.as_text())
-            return redirect('bulk_import')
+            return redirect('id_cards:bulk_import')
 
         csv_file = form.cleaned_data['csv_file']
-        decoded = csv_file.read().decode('utf-8-sig').splitlines()
+
+        try:
+            decoded = csv_file.read().decode('utf-8-sig').splitlines()
+        except UnicodeDecodeError:
+            messages.error(
+                request,
+                "File is not valid UTF-8. Please re-export as UTF-8 CSV.",
+            )
+            return redirect('id_cards:bulk_import')
+
         reader = csv.DictReader(decoded)
+        rows = list(reader)
+
+        if len(rows) > MAX_BULK_IMPORT_ROWS:
+            messages.error(
+                request,
+                f"Too many rows ({len(rows)}). "
+                f"The limit is {MAX_BULK_IMPORT_ROWS} per upload.",
+            )
+            return redirect('id_cards:bulk_import')
 
         created, skipped, errors = 0, 0, []
-
         valid_roles = dict(Teacher.ROLE_CHOICES)
-        valid_blood_groups = {
-            choice[0] for choice in Teacher.BLOOD_GROUP_CHOICES if choice[0]
+
+        # Pre-resolve departments and levels once — avoids N queries per row.
+        dept_lookup = {
+            d.name.lower(): d for d in Department.objects.all()
+        }
+        level_lookup = {
+            l.name.lower(): l for l in Level.objects.all()
         }
 
-        for i, row in enumerate(reader, start=2):  # row 1 = header
+        for i, row in enumerate(reader, start=2):
             full_name = (row.get('full_name') or '').strip()
             if not full_name:
                 skipped += 1
                 continue
 
-            # Resolve department by name
-            dept_name = (row.get('department') or '').strip()
-            dept = None
-            if dept_name:
-                dept = Department.objects.filter(name__iexact=dept_name).first()
+            dept_name = (row.get('department') or '').strip().lower()
+            dept = dept_lookup.get(dept_name) if dept_name else None
 
-            # Resolve role (fallback to TEACHER)
             role_key = (row.get('role') or 'TEACHER').strip().upper()
             if role_key not in valid_roles:
                 role_key = 'TEACHER'
-
-            # Parse valid_thru (best-effort)
-            valid_thru = None
-            vt_raw = (row.get('valid_thru') or '').strip()
-            if vt_raw:
-                for fmt in ('%Y-%m-%d', '%m/%Y', '%m/%d/%Y', '%d/%m/%Y'):
-                    try:
-                        valid_thru = datetime.strptime(vt_raw, fmt).date()
-                        break
-                    except ValueError:
-                        continue
-
-            # Blood group (validate against choices)
-            blood_group = (row.get('blood_group') or '').strip().upper()
-            if blood_group and blood_group not in valid_blood_groups:
-                blood_group = ''
 
             try:
                 with transaction.atomic():
@@ -657,21 +893,33 @@ def bulk_import(request):
                         department=dept,
                         email=(row.get('email') or '').strip(),
                         phone=(row.get('phone') or '').strip(),
-                        valid_thru=valid_thru,
-                        blood_group=blood_group,
+                        valid_thru=_parse_import_date(row.get('valid_thru')),
+                        issue_date=_parse_import_date(row.get('issue_date')),
+                        expiry_date=_parse_import_date(row.get('expiry_date')),
                         emergency_contact_phone=(
                             row.get('emergency_contact_phone') or ''
                         ).strip(),
+                        id_card_terms=(row.get('id_card_terms') or '').strip(),
+                        authorized_use=(row.get('authorized_use') or '').strip(),
+                        security=(row.get('security') or '').strip(),
                     )
-                    # Attach levels
+
                     levels_raw = (row.get('levels') or '').strip()
                     if levels_raw:
-                        names = [n.strip() for n in levels_raw.split(';') if n.strip()]
-                        lvls = Level.objects.filter(name__in=names)
-                        teacher.levels.set(lvls)
+                        names = [
+                            n.strip().lower()
+                            for n in levels_raw.split(';') if n.strip()
+                        ]
+                        lvls = [
+                            level_lookup[n] for n in names
+                            if n in level_lookup
+                        ]
+                        if lvls:
+                            teacher.levels.set(lvls)
                 created += 1
-            except Exception as e:
-                errors.append(f"Row {i} ({full_name}): {e}")
+
+            except (IntegrityError, ValidationError, ValueError) as exc:
+                errors.append(f"Row {i} ({full_name}): {exc}")
                 skipped += 1
 
         if created:
@@ -683,7 +931,7 @@ def bulk_import(request):
         if len(errors) > 5:
             messages.error(request, f"…and {len(errors) - 5} more errors.")
 
-        return redirect('card_list')
+        return redirect('id_cards:card_list')
 
     return render(request, 'id_cards/bulk_import.html', {
         'form': BulkImportForm(),
@@ -698,21 +946,62 @@ import qrcode
 from qrcode.image.svg import SvgPathImage
 
 
+@require_http_methods(["GET"])
+@_require_staff
 def qr_employee_svg(request, employee_id):
     """
-    Returns a QR code SVG for the given employee_id.
-    Encodes the employee ID as plain text — no server verification needed.
-    Works offline, in print, and on any QR reader.
+    Returns a QR code SVG encoding the teacher's information plus the
+    school's contact details.
+
+    Requires login. Staff can only fetch their own card unless they are
+    admins — this prevents enumeration of the full staff roster.
     """
     teacher = get_object_or_404(Teacher, employee_id=employee_id)
+
+    # Object-level permission: only admins or the teacher themselves.
+    if not request.user.is_staff:
+        own = getattr(request.user, 'teacher', None)
+        if own is None or own.pk != teacher.pk:
+            raise PermissionDenied("You can only view your own QR code.")
+
+    school = get_school()
+
+    lines = []
+
+    def add(label, value):
+        if value:
+            lines.append(f"{label}: {value}")
+
+    add("NAME", teacher.full_name)
+    add("EMPLOYEE ID", teacher.employee_id)
+    add("DESIGNATION", teacher.designation)
+    add("ROLE", teacher.get_role_display())
+    add("DEPARTMENT", teacher.department_display if teacher.department else "")
+    add("LEVELS", teacher.levels_display)
+    add("EMAIL", teacher.email)
+    add("PHONE", teacher.phone)
+    add("EMERGENCY", teacher.emergency_contact_phone)
+    if teacher.valid_thru:
+        add("VALID THRU", teacher.valid_thru.strftime("%m/%Y"))
+    if teacher.issue_date:
+        add("ISSUED", teacher.issue_date.strftime("%m/%Y"))
+
+    if lines:
+        lines.append("--")
+    add("SCHOOL", school.name)
+    add("ADDRESS", school.address)
+    add("PHONE 1", school.contact_phone_1)
+    add("PHONE 2", school.contact_phone_2)
+
+    qr_data = "\n".join(lines)
 
     qr = qrcode.QRCode(
         version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_M,
         box_size=10,
-        border=1,
+        border=4,   # spec-required quiet zone
     )
-    qr.add_data(teacher.employee_id)
+    qr.add_data(qr_data)
     qr.make(fit=True)
 
     img = qr.make_image(image_factory=SvgPathImage)
@@ -720,4 +1009,71 @@ def qr_employee_svg(request, employee_id):
     img.save(buffer)
     buffer.seek(0)
 
-    return HttpResponse(buffer.getvalue(), content_type='image/svg+xml')
+    response = HttpResponse(buffer.getvalue(), content_type='image/svg+xml')
+    # Prevent this response from being cached by intermediaries.
+    response['Cache-Control'] = 'private, no-store'
+    return response
+
+
+def _prepare_teacher_for_pdf(teacher):
+    """Attach PDF-friendly attributes to a teacher instance."""
+    # Force relative photo URL so xhtml2pdf loads from MEDIA_ROOT.
+    if teacher.photo:
+        teacher.photo_relative_url = teacher.photo.url  # already /media/...
+    return teacher
+
+def _prepare_qr_for_pdf(teacher):
+    """
+    Generate a QR code as a base64 data URI, so xhtml2pdf doesn't have
+    to fetch it over HTTP (which would hit the login-required QR view).
+    """
+    import base64
+    import qrcode
+    import io as _io
+
+    school = get_school()
+    lines = []
+
+    def add(label, value):
+        if value:
+            lines.append(f"{label}: {value}")
+
+    add("NAME", teacher.full_name)
+    add("EMPLOYEE ID", teacher.employee_id)
+    add("DESIGNATION", teacher.designation)
+    add("ROLE", teacher.get_role_display())
+    add("DEPARTMENT", teacher.department_display if teacher.department else "")
+    add("LEVELS", teacher.levels_display)
+    add("EMAIL", teacher.email)
+    add("PHONE", teacher.phone)
+    add("EMERGENCY", teacher.emergency_contact_phone)
+
+    if teacher.resolved_issue_date:
+        add("ISSUED", teacher.resolved_issue_date.strftime("%m/%Y"))
+
+    if teacher.resolved_expiry_date:
+        add("EXPIRES", teacher.resolved_expiry_date.strftime("%m/%Y"))
+
+    if lines:
+        lines.append("--")
+
+    add("SCHOOL", school.name)
+    add("ADDRESS", school.address)
+    add("PHONE 1", school.contact_phone_1)
+    add("PHONE 2", school.contact_phone_2)
+
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=2,
+    )
+    qr.add_data("\n".join(lines))
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = _io.BytesIO()
+    img.save(buf, format='PNG')
+    b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+    teacher.qr_data_uri = f"data:image/png;base64,{b64}"
+    return teacher

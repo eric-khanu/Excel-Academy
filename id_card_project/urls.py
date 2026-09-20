@@ -28,6 +28,7 @@ urlpatterns = [
 
     # Main application — all ID card views live under the root path
     path('', include('id_cards.urls')),
+    path('students/', include('student.urls', namespace='student')),
 
     # Favicon — redirect to the static file to avoid 404 noise in the console
     path(

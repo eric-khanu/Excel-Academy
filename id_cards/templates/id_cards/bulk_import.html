@@ -70,11 +70,12 @@
     padding: 4px 0;
   }
   .schema-box .sb-row .field {
-    min-width: 130px;
+    min-width: 170px;
     font-family: 'Menlo', 'Consolas', monospace;
     font-weight: 700;
     color: var(--primary);
     font-size: 0.76rem;
+    flex-shrink: 0;
   }
   .schema-box .sb-row .desc {
     color: #6b5a4a;
@@ -86,12 +87,30 @@
     font-weight: 700;
     font-size: 0.66rem;
     text-transform: uppercase;
+    flex-shrink: 0;
   }
   .schema-box .sb-row .badge-opt {
     color: var(--muted);
     font-weight: 700;
     font-size: 0.66rem;
     text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .schema-box .sb-group {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin: 12px 0 4px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(139, 32, 32, 0.12);
+  }
+  .schema-box .sb-group:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
   }
   .schema-box .sb-note {
     margin-top: 10px;
@@ -175,6 +194,11 @@
   }
   .file-zone.has-file .fz-filename { display: inline-block; }
   .file-zone.has-file .fz-icon { color: #16a34a; }
+  .file-zone.drop-error {
+    border-color: #dc2626;
+    background: #fef2f2;
+  }
+  .file-zone.drop-error .fz-sub { color: #991b1b; font-weight: 600; }
 
   /* Errors */
   .field-error {
@@ -204,6 +228,7 @@
   @media (max-width: 600px) {
     .import-card { padding: 24px 20px; }
     .schema-box .sb-row { flex-direction: column; gap: 2px; }
+    .schema-box .sb-row .field { min-width: 0; }
   }
 </style>
 {% endblock %}
@@ -217,17 +242,22 @@
       are generated automatically. Each row must have at least a full name.
     </p>
 
-    <!-- Schema info -->
+    {# ============================================================
+       SCHEMA INFO — matches the fields read by bulk_import() in views.py
+       ============================================================ #}
     <div class="schema-box">
       <div class="sb-title">
-        <i class="fas fa-table-columns"></i> CSV Format
+        <i class="fas fa-table-columns" aria-hidden="true"></i> CSV Format
       </div>
 
+      <div class="sb-group">Required</div>
       <div class="sb-row">
         <span class="field">full_name</span>
         <span class="badge-req">Required</span>
         <span class="desc">Staff member's full name</span>
       </div>
+
+      <div class="sb-group">Identity</div>
       <div class="sb-row">
         <span class="field">designation</span>
         <span class="badge-opt">Optional</span>
@@ -236,7 +266,7 @@
       <div class="sb-row">
         <span class="field">role</span>
         <span class="badge-opt">Optional</span>
-        <span class="desc">One of the role keys: <code>TEACHER</code>, <code>SECRETARY</code>, <code>ACCOUNTANT</code>, <code>PRINCIPAL</code>, etc.</span>
+        <span class="desc">Role key: <code>TEACHER</code>, <code>SECRETARY</code>, <code>ACCOUNTANT</code>, <code>PRINCIPAL</code>, etc.</span>
       </div>
       <div class="sb-row">
         <span class="field">department</span>
@@ -248,6 +278,8 @@
         <span class="badge-opt">Optional</span>
         <span class="desc">Semicolon-separated level names, e.g. <code>JSS1;JSS2</code></span>
       </div>
+
+      <div class="sb-group">Contact</div>
       <div class="sb-row">
         <span class="field">email</span>
         <span class="badge-opt">Optional</span>
@@ -259,37 +291,64 @@
         <span class="desc">Contact phone number</span>
       </div>
       <div class="sb-row">
-        <span class="field">valid_thru</span>
-        <span class="badge-opt">Optional</span>
-        <span class="desc">Expiry date — <code>YYYY-MM-DD</code> or <code>MM/YYYY</code></span>
-      </div>
-      <div class="sb-row">
-        <span class="field">blood_group</span>
-        <span class="badge-opt">Optional</span>
-        <span class="desc">One of <code>O+</code>, <code>O-</code>, <code>A+</code>, <code>A-</code>, <code>B+</code>, <code>B-</code>, <code>AB+</code>, <code>AB-</code></span>
-      </div>
-      <div class="sb-row">
         <span class="field">emergency_contact_phone</span>
         <span class="badge-opt">Optional</span>
         <span class="desc">Emergency contact number (shown on the back of the ID card)</span>
       </div>
 
+      <div class="sb-group">Card validity</div>
+      <div class="sb-row">
+        <span class="field">valid_thru</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Expiry date — <code>YYYY-MM-DD</code> or <code>MM/YYYY</code></span>
+      </div>
+      <div class="sb-row">
+        <span class="field">issue_date</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Issue date — <code>YYYY-MM-DD</code> or <code>MM/YYYY</code></span>
+      </div>
+      <div class="sb-row">
+        <span class="field">expiry_date</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Explicit expiry date — <code>YYYY-MM-DD</code> or <code>MM/YYYY</code></span>
+      </div>
+
+      <div class="sb-group">Back-of-card text</div>
+      <div class="sb-row">
+        <span class="field">id_card_terms</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Custom terms of use (overrides template default)</span>
+      </div>
+      <div class="sb-row">
+        <span class="field">authorized_use</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Custom authorization statement</span>
+      </div>
+      <div class="sb-row">
+        <span class="field">security</span>
+        <span class="badge-opt">Optional</span>
+        <span class="desc">Custom security / lost-card notice</span>
+      </div>
+
       <div class="sb-note">
-        <i class="fas fa-circle-info" style="color:var(--secondary);"></i>
+        <i class="fas fa-circle-info" style="color:var(--secondary);" aria-hidden="true"></i>
         The first row of the CSV must be the header row. Unknown columns are
         ignored. Department and level names are matched case-insensitively.
       </div>
 
-      <a href="data:text/csv;charset=utf-8,full_name,designation,role,department,levels,email,phone,valid_thru,blood_group,emergency_contact_phone%0ASarah%20Chen,Senior%20Mathematics%20Teacher,TEACHER,Mathematics,JSS1;JSS2,sarah%40school.edu,%2B234%20800%20111%202222,2027-12-31,O%2B,%2B234%20800%20333%204444"
-         download="staff_import_sample.csv"
+      {# Sample CSV — served by the bulk_import_sample view #}
+      <a href="{% url 'id_cards:bulk_import_sample' %}"
          class="sample-download">
-        <i class="fas fa-download"></i> Download Sample CSV
+        <i class="fas fa-download" aria-hidden="true"></i> Download Sample CSV
       </a>
     </div>
 
     {% if form.non_field_errors %}
       <div class="form-errors">
-        <strong><i class="fas fa-triangle-exclamation"></i> Please fix:</strong>
+        <strong>
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+          Please fix:
+        </strong>
         <ul style="margin: 6px 0 0; padding-left: 20px;">
           {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
         </ul>
@@ -300,9 +359,11 @@
       {% csrf_token %}
 
       <div class="file-zone" id="fileZone">
-        <div class="fz-icon"><i class="fas fa-file-csv"></i></div>
+        <div class="fz-icon"><i class="fas fa-file-csv" aria-hidden="true"></i></div>
         <div class="fz-title">Drop your CSV here or click to browse</div>
-        <div class="fz-sub">Maximum file size: 5 MB · Accepts .csv only</div>
+        <div class="fz-sub" id="fzSub">
+          Maximum file size: 5 MB · Accepts .csv only
+        </div>
         <div class="fz-filename" id="fzFilename"></div>
         {{ form.csv_file }}
       </div>
@@ -313,9 +374,11 @@
 
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">
-          <i class="fas fa-upload"></i> Import Staff
+          <i class="fas fa-upload" aria-hidden="true"></i> Import Staff
         </button>
-        <a href="{% url 'card_list' %}" class="btn btn-outline">Cancel</a>
+        <a href="{% url 'id_cards:card_list' %}" class="btn btn-outline">
+          Cancel
+        </a>
       </div>
     </form>
   </div>
@@ -324,41 +387,107 @@
 
 {% block extra_js %}
 <script>
+  /* ============================================================
+     FILE DROP ZONE
+     - Uses DataTransfer to assign dropped files to the input,
+       which is the most portable approach across browsers.
+     - Validates that the dropped file looks like a CSV before
+       accepting it (browsers do NOT enforce `accept` on drop).
+     - Falls back to a click-to-browse prompt if assignment fails.
+     ============================================================ */
   (function () {
-    const zone   = document.getElementById('fileZone');
-    const input  = zone ? zone.querySelector('input[type="file"]') : null;
-    const label  = document.getElementById('fzFilename');
+    const zone     = document.getElementById('fileZone');
+    const input    = zone ? zone.querySelector('input[type="file"]') : null;
+    const label    = document.getElementById('fzFilename');
+    const subText  = document.getElementById('fzSub');
     if (!zone || !input) return;
+
+    const DEFAULT_SUB = subText ? subText.textContent : '';
 
     function sync() {
       if (input.files && input.files.length) {
         label.textContent = input.files[0].name;
         zone.classList.add('has-file');
+        zone.classList.remove('drop-error');
+        if (subText) subText.textContent = DEFAULT_SUB;
       } else {
         label.textContent = '';
         zone.classList.remove('has-file');
       }
     }
 
-    input.addEventListener('change', sync);
+    function showError(msg) {
+      if (subText) subText.textContent = msg;
+      zone.classList.add('drop-error');
+      zone.classList.remove('has-file');
+      label.textContent = '';
+    }
 
-    // Drag-and-drop polish (files still go through the native input)
+    function looksLikeCsv(file) {
+      const name = (file.name || '').toLowerCase();
+      return name.endsWith('.csv');
+    }
+
+    /**
+     * Assign a FileList to the input using DataTransfer.
+     * Returns true if the assignment actually stuck.
+     */
+    function trySetFiles(fileList) {
+      try {
+        const dt = new DataTransfer();
+        for (let i = 0; i < fileList.length; i++) {
+          dt.items.add(fileList[i]);
+        }
+        input.files = dt.files;
+        return input.files && input.files.length > 0;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    input.addEventListener('change', function () {
+      if (input.files && input.files.length && !looksLikeCsv(input.files[0])) {
+        showError('Only .csv files are accepted.');
+        input.value = '';
+        return;
+      }
+      sync();
+    });
+
     ['dragenter', 'dragover'].forEach(function (evt) {
       zone.addEventListener(evt, function (e) {
-        e.preventDefault(); e.stopPropagation();
+        e.preventDefault();
+        e.stopPropagation();
         zone.classList.add('dragover');
       });
     });
+
     ['dragleave', 'drop'].forEach(function (evt) {
       zone.addEventListener(evt, function (e) {
-        e.preventDefault(); e.stopPropagation();
+        e.preventDefault();
+        e.stopPropagation();
         zone.classList.remove('dragover');
-        if (evt === 'drop' && e.dataTransfer.files.length) {
-          input.files = e.dataTransfer.files;
-          sync();
-        }
       });
     });
+
+    zone.addEventListener('drop', function (e) {
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (!files || !files.length) return;
+
+      if (!looksLikeCsv(files[0])) {
+        showError('Only .csv files are accepted.');
+        return;
+      }
+
+      if (!trySetFiles(files)) {
+        showError('Drop is not supported in this browser — please click to browse.');
+        return;
+      }
+
+      sync();
+    });
+
+    sync();
   })();
 </script>
 {% endblock %}

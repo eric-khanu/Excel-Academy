@@ -1,0 +1,356 @@
+{% load static %}
+
+<div class="sc-front-wrap">
+  <div class="sc-front" style="
+    --primary:   {{ school.primary_color|default:'#0B2545' }};
+    --secondary: {{ school.secondary_color|default:'#3B82C4' }};
+    --accent:    {{ school.accent_color|default:'#F5F7FA' }};
+    --text:      {{ school.text_color|default:'#0B2545' }};
+  ">
+
+    <!-- Circuit-board background texture -->
+    <div class="sc-bg-circuit" aria-hidden="true">
+      <svg viewBox="0 0 240 380" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern id="circuit-front" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path d="M0 30 H20 L30 20 H60" fill="none" stroke="rgba(90,150,210,0.35)" stroke-width="0.5"/>
+            <path d="M10 0 V15 L20 25 V60" fill="none" stroke="rgba(90,150,210,0.30)" stroke-width="0.5"/>
+            <path d="M60 10 H40 L30 20" fill="none" stroke="rgba(90,150,210,0.25)" stroke-width="0.5"/>
+            <circle cx="30" cy="20" r="1.5" fill="rgba(140,200,255,0.55)"/>
+            <circle cx="10" cy="15" r="1.2" fill="rgba(140,200,255,0.45)"/>
+            <circle cx="40" cy="10" r="1.1" fill="rgba(140,200,255,0.45)"/>
+          </pattern>
+          <radialGradient id="glowA" cx="20%" cy="15%" r="60%">
+            <stop offset="0%" stop-color="rgba(70,140,220,0.35)"/>
+            <stop offset="100%" stop-color="rgba(70,140,220,0)"/>
+          </radialGradient>
+          <radialGradient id="glowB" cx="80%" cy="95%" r="60%">
+            <stop offset="0%" stop-color="rgba(40,90,160,0.55)"/>
+            <stop offset="100%" stop-color="rgba(40,90,160,0)"/>
+          </radialGradient>
+        </defs>
+        <rect width="240" height="380" fill="url(#glowA)"/>
+        <rect width="240" height="380" fill="url(#circuit-front)"/>
+        <rect width="240" height="380" fill="url(#glowB)"/>
+        <path d="M-10 300 Q60 280 120 305 T250 290" fill="none" stroke="rgba(90,150,210,0.35)" stroke-width="0.6"/>
+        <path d="M-10 320 Q60 300 120 325 T250 310" fill="none" stroke="rgba(90,150,210,0.25)" stroke-width="0.6"/>
+      </svg>
+    </div>
+
+    <!-- ============ HEADER: logo (left) + school name (right of logo) ============ -->
+    <div class="sc-header">
+      <div class="sc-logo">
+        {% if school.logo %}
+          <img src="{{ school.logo.url }}" alt="{{ school.name }}">
+        {% else %}
+          <div class="sc-logo-fallback">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+        {% endif %}
+      </div>
+      <div class="sc-school-name">
+        {{ school.name|default:"School Name"|upper|truncatechars:38 }}
+      </div>
+    </div>
+
+    <!-- Header gold divider -->
+    <div class="sc-header-divider"></div>
+
+    <!-- ============ PHOTO (centered) ============ -->
+    <div class="sc-photo-section">
+      <div class="sc-photo-ring">
+        {% if student.photo %}
+          <img src="{{ student.photo.url }}" alt="{{ student.full_name }}">
+        {% else %}
+          <span class="sc-photo-initials">{{ student.initials|default:"?" }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ============ INFO ============ -->
+    <div class="sc-info">
+      <div class="sc-name">{{ student.full_name|upper }}</div>
+
+      <div class="sc-designation">
+        <span class="sc-desig-label">Level:</span>
+        {{ student.level_display|upper|default:"STUDENT" }}
+      </div>
+
+      <div class="sc-details-panel">
+        <div class="sc-details">
+          {% if student.department %}
+          <div>
+            <span class="sc-label">Department:</span>
+            <span class="sc-value">{{ student.department_display }}</span>
+          </div>
+          {% endif %}
+          {% if student.valid_thru %}
+          <div>
+            <span class="sc-label">Valid Till:</span>
+            <span class="sc-value">{{ student.valid_thru|date:"m/Y" }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ FOOTER ============ -->
+    <div class="sc-footer">
+      <div class="sc-footer-text">STUDENT IDENTIFICATION</div>
+    </div>
+
+    <!-- ============ METALLIC BAR ============ -->
+    <div class="sc-bar"></div>
+
+  </div>
+</div>
+
+<style>
+  /* ============================================================
+     STUDENT CARD — FRONT
+     Layout: logo + school name on top, photo below,
+             information below photo.
+     ============================================================ */
+
+  .sc-front-wrap {
+    display: inline-block;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35));
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 20px 45px -15px rgba(10, 30, 60, 0.45);
+  }
+
+  .sc-front {
+    width: 2.125in;
+    height: 3.375in;
+    background: linear-gradient(160deg, #0F2B54 0%, #0A1E3D 55%, #061428 100%);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 10px rgba(6, 20, 40, 0.4);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-family: 'Inter', sans-serif;
+    color: #FFFFFF;
+  }
+
+  /* ---------- Circuit background ---------- */
+  .sc-bg-circuit {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .sc-bg-circuit svg { width: 100%; height: 100%; display: block; }
+
+  /* ============================================================
+     HEADER: logo (left) + school name (right)
+     ============================================================ */
+  .sc-header {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 10px 0 10px;
+  }
+
+  .sc-logo {
+    width: 0.42in;
+    height: 0.42in;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 25%, #FFFFFF 0%, #DDE6F0 60%, #B8C7DA 100%);
+    border: 1.2px solid rgba(200, 215, 235, 0.85);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 2px rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+  .sc-logo img {
+    width: 100%; height: 100%; object-fit: contain;
+  }
+  .sc-logo-fallback {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(160deg, #2E5A94 0%, #1A3866 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #E8EEF6;
+    font-size: 0.75rem;
+  }
+
+  .sc-school-name {
+    flex: 1;
+    min-width: 0;
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.4px;
+    color: #F5C97A;
+    text-transform: uppercase;
+    line-height: 1.15;
+    text-align: left;
+    /* Allow up to 2 lines if the name is long */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+
+  /* Divider under header */
+  .sc-header-divider {
+    position: relative;
+    z-index: 3;
+    margin: 6px 10px 0 10px;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(245, 201, 122, 0.7) 50%,
+      transparent 100%);
+  }
+
+  /* ============================================================
+     PHOTO — centered below header
+     ============================================================ */
+  .sc-photo-section {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .sc-photo-ring {
+    width: 1.15in;
+    height: 1.15in;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #E6EDF7 0%, #C9D6E5 100%);
+    border: 2px solid #C4A24A;
+    box-shadow: 0 6px 16px -2px rgba(0, 0, 0, 0.55),
+                inset 0 1px 3px rgba(255,255,255,0.6);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sc-photo-ring img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .sc-photo-initials {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0F2B54;
+  }
+
+  /* ============================================================
+     INFO — name + designation + details panel
+     ============================================================ */
+  .sc-info {
+    position: relative;
+    z-index: 3;
+    text-align: center;
+    padding: 10px 10px 0 10px;
+  }
+
+  .sc-name {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #FFFFFF;
+    line-height: 1.15;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    word-break: break-word;
+  }
+
+  .sc-designation {
+    margin-top: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.7px;
+    color: #C7D5E8;
+    text-transform: uppercase;
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(245, 201, 122, 0.12);
+    border: 0.4px solid rgba(245, 201, 122, 0.4);
+    border-radius: 20px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sc-desig-label {
+    color: #8FA8C4;
+    font-weight: 500;
+    margin-right: 2px;
+  }
+
+  /* Details panel */
+  .sc-details-panel {
+    margin: 8px 10px 0 10px;
+    padding: 6px 8px;
+    background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      rgba(255, 255, 255, 0.04) 100%);
+    border: 0.6px solid rgba(245, 201, 122, 0.4);;
+    border-radius: 5px;
+  }
+  .sc-details {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    line-height: 1.65;
+    color: #F5C97A;
+    text-align: center;
+  }
+  .sc-details div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sc-details .sc-label { color: #8FA8C4; font-weight: 500; }
+  .sc-details .sc-value { color: #FFFFFF; font-weight: 700; }
+
+  /* ============================================================
+     FOOTER
+     ============================================================ */
+  .sc-footer {
+    position: relative;
+    z-index: 3;
+    margin-top: auto;
+    text-align: center;
+    padding: 3px 10px 8px 10px;
+  }
+  .sc-footer-text {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: #D7E3F2;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+
+  /* ============================================================
+     METALLIC BAR (bottom)
+     ============================================================ */
+  .sc-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 6px;
+    background: linear-gradient(90deg,
+      #8C9AAE 0%, #C4D0E0 20%, #E6EEF8 40%,
+      #F5F9FD 50%, #E6EEF8 60%, #C4D0E0 80%, #8C9AAE 100%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.9), inset 0 -1px 1px rgba(0,0,0,0.2);
+    z-index: 5;
+  }
+</style>

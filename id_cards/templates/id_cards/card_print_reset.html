@@ -80,12 +80,14 @@
     flex-shrink: 0;
   }
   .teacher-mini .tm-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .teacher-mini .tm-info { min-width: 0; }
   .teacher-mini .tm-info h3 {
     font-family: 'Cinzel', serif;
     font-size: 0.95rem;
     font-weight: 800;
     color: var(--primary);
     margin-bottom: 2px;
+    word-break: break-word;
   }
   .teacher-mini .tm-info .tm-id {
     font-family: 'Menlo', 'Consolas', monospace;
@@ -178,6 +180,8 @@
     align-items: center;
     gap: 6px;
   }
+  .reset-form .cz-hint.is-match i { color: #16a34a; }
+
   .reset-actions {
     display: flex;
     gap: 12px;
@@ -238,7 +242,9 @@
 <div class="reset-layout">
   <div class="reset-card">
 
-    <div class="reset-icon"><i class="fas fa-eraser"></i></div>
+    <div class="reset-icon">
+      <i class="fas fa-eraser" aria-hidden="true"></i>
+    </div>
 
     <h1>Reset print tracking?</h1>
     <p class="lead">
@@ -265,12 +271,26 @@
       <div class="cs-label">Current print history</div>
       <div class="cs-count">{{ teacher.print_count }} print{{ teacher.print_count|pluralize }}</div>
       <div class="cs-dates">
-        First printed: <strong>{{ teacher.first_printed_at|date:"M j, Y · H:i"|default:"—" }}</strong><br>
-        Last printed: <strong>{{ teacher.last_printed_at|date:"M j, Y · H:i"|default:"—" }}</strong>
+        First printed:
+        <strong>
+          {% if teacher.first_printed_at %}
+            {{ teacher.first_printed_at|date:"M j, Y · H:i" }}
+          {% else %}
+            —
+          {% endif %}
+        </strong><br>
+        Last printed:
+        <strong>
+          {% if teacher.last_printed_at %}
+            {{ teacher.last_printed_at|date:"M j, Y · H:i" }}
+          {% else %}
+            —
+          {% endif %}
+        </strong>
       </div>
     </div>
 
-    <form method="post" class="reset-form" id="resetForm" autocomplete="off">
+    <form method="post" action="" class="reset-form" id="resetForm" autocomplete="off">
       {% csrf_token %}
 
       <div class="confirm-zone">
@@ -287,18 +307,20 @@
                autocomplete="off"
                spellcheck="false"
                required>
-        <div class="cz-hint">
-          <i class="fas fa-circle-info"></i>
-          The confirm button unlocks only when the word matches.
+        <div class="cz-hint" id="czHint">
+          <i class="fas fa-circle-info" aria-hidden="true"></i>
+          <span id="czHintText">
+            The confirm button unlocks only when the word matches.
+          </span>
         </div>
       </div>
 
       <div class="reset-actions">
-        <a href="{% url 'card_detail' teacher.pk %}" class="btn-cancel">
-          <i class="fas fa-arrow-left"></i> Cancel
+        <a href="{% url 'id_cards:card_detail' teacher.pk %}" class="btn-cancel">
+          <i class="fas fa-arrow-left" aria-hidden="true"></i> Cancel
         </a>
         <button type="submit" class="btn-reset-confirm" id="resetBtn" disabled>
-          <i class="fas fa-eraser"></i> Reset Print Tracking
+          <i class="fas fa-eraser" aria-hidden="true"></i> Reset Print Tracking
         </button>
       </div>
     </form>
@@ -310,9 +332,11 @@
 {% block extra_js %}
 <script>
   (function () {
-    const input  = document.getElementById('resetConfirm');
-    const button = document.getElementById('resetBtn');
-    const form   = document.getElementById('resetForm');
+    const input     = document.getElementById('resetConfirm');
+    const button    = document.getElementById('resetBtn');
+    const form      = document.getElementById('resetForm');
+    const hintBox   = document.getElementById('czHint');
+    const hintText  = document.getElementById('czHintText');
     if (!input || !button || !form) return;
 
     const REQUIRED = 'RESET';
@@ -320,8 +344,23 @@
     function sync() {
       const value = (input.value || '').trim().toUpperCase();
       const match = value === REQUIRED;
+
       button.disabled = !match;
       input.classList.toggle('is-match', match);
+      if (hintBox) hintBox.classList.toggle('is-match', match);
+
+      if (hintText) {
+        if (!value) {
+          hintText.textContent =
+            'The confirm button unlocks only when the word matches.';
+        } else if (match) {
+          hintText.textContent =
+            'Match confirmed. You can now reset the print tracking.';
+        } else {
+          hintText.textContent =
+            'Not matching. Type RESET exactly to continue.';
+        }
+      }
     }
 
     input.addEventListener('input', function () {
@@ -331,16 +370,14 @@
     });
 
     form.addEventListener('submit', function (e) {
-      if (button.disabled) { e.preventDefault(); input.focus(); return false; }
+      if (button.disabled) {
+        e.preventDefault();
+        input.focus();
+        return false;
+      }
     });
 
     sync();
   })();
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      window.location.href = "{% url 'card_detail' teacher.pk %}";
-    }
-  });
 </script>
 {% endblock %}

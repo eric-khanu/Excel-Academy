@@ -1,0 +1,7 @@
+{% load static %}
+{% comment %}Dispatch to front or back partial.{% endcomment %}
+{% if side == "back" %}
+  {% include "student/partials/student_card_back.html" with student=student school=school %}
+{% else %}
+  {% include "student/partials/student_card_front.html" with student=student school=school %}
+{% endif %}

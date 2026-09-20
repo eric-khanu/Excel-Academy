@@ -1,3 +1,4 @@
+{% load static id_cards_extras %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,25 +8,35 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet">
+
+{# Font Awesome — pin the version and add SRI so a compromised CDN can't inject CSS/JS. #}
+{# Replace the hash below if you upgrade past 6.5.0 — get it from cdnjs.com #}
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      integrity="sha512-Avb2w+pjqdY2pPt8wPh3xnniExXvxTkP4C+F6ZTpAlTXKwBT5LtRGoE6ChCUhLxZvYq6cCmAJs2LY8PbAs4D0Q=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer">
 
 <style>
   /* ====================================================================
-     THEME VARIABLES — driven by School branding from context
+     THEME VARIABLES — driven by School branding from context.
+     All colors pass through |safe_hex which enforces a strict hex regex,
+     so a malicious value cannot break out of the CSS declaration.
      ==================================================================== */
   :root {
-    --primary:   {{ school.primary_color|default:"#8B2020" }};
-    --secondary: {{ school.secondary_color|default:"#C87A2C" }};
-    --accent:    {{ school.accent_color|default:"#FBF6EC" }};
-    --text:      {{ school.text_color|default:"#2A1810" }};
+    --primary:   {{ school.primary_color|safe_hex:"#8B2020" }};
+    --secondary: {{ school.secondary_color|safe_hex:"#C87A2C" }};
+    --accent:    {{ school.accent_color|safe_hex:"#FBF6EC" }};
+    --text:      {{ school.text_color|safe_hex:"#2A1810" }};
 
     --primary-dark: #5A1414;
     --secondary-dark: #8B4513;
     --muted: #7a6a5a;
     --border: #e0d8cc;
 
-    /* Print-status palette — used across list, detail, print, admin */
+    /* Print-status palette */
     --print-unprinted-bg: #fef3c7;
     --print-unprinted-fg: #92400e;
     --print-unprinted-br: #fde68a;
@@ -98,7 +109,6 @@
     word-break: break-word;
   }
 
-  /* ---- Nav toggle (mobile only) ---- */
   .nav-toggle {
     display: none;
     background: rgba(255, 255, 255, 0.12);
@@ -145,10 +155,7 @@
 
   .topbar nav a i { margin-right: 6px; }
 
-  /* Dropdown group */
-  .nav-group {
-    position: relative;
-  }
+  .nav-group { position: relative; }
   .nav-group > a::after {
     content: "\f107";
     font-family: "Font Awesome 6 Free";
@@ -314,6 +321,7 @@
   .badge-active   { background: #dcfce7; color: #166534; }
   .badge-inactive { background: #fef3c7; color: #92400e; }
   .badge-expired  { background: #fee2e2; color: #991b1b; }
+  .badge-graduated{ background: #e0e7ff; color: #3730a3; }
   .badge-role     { background: #e0e7ff; color: #3730a3; }
 
   .badge-print {
@@ -486,10 +494,8 @@
   .stat-card.stat-reprinted .num { color: #1d4ed8; }
 
   /* ====================================================================
-     UTILITY CLASSES
+     UTILITY
      ==================================================================== */
-
-  /* Print-status pill (screen only) */
   .pl-pill {
     display: inline-flex;
     align-items: center;
@@ -525,7 +531,6 @@
     letter-spacing: 0.2px;
   }
 
-  /* Empty state block */
   .empty-state {
     text-align: center;
     padding: 70px 24px;
@@ -582,43 +587,24 @@
     font-weight: 600;
   }
 
-  /* Anchor scroll offset — prevents the sticky topbar from covering
-     the target when navigating with #anchors (e.g. #print-tracking). */
   [id] { scroll-margin-top: 90px; }
 
   /* ====================================================================
      RESPONSIVE
      ==================================================================== */
-
-  /* Tablet — nav stays horizontal */
   @media (max-width: 900px) {
-    .topbar {
-      padding: 12px 16px;
-      flex-wrap: wrap;
-    }
-    .topbar nav {
-      width: 100%;
-      justify-content: flex-start;
-    }
+    .topbar { padding: 12px 16px; flex-wrap: wrap; }
+    .topbar nav { width: 100%; justify-content: flex-start; }
     .container { padding: 20px 16px; }
     .form-grid { grid-template-columns: 1fr; }
     .page-header { flex-direction: column; align-items: flex-start; }
     .topbar .brand .brand-name { max-width: 100%; }
   }
 
-  /* Mobile — collapse nav behind a hamburger toggle */
   @media (max-width: 700px) {
     .topbar { padding: 12px 16px; }
-
-    .topbar .brand {
-      flex: 1;
-      min-width: 0;
-      font-size: 0.95rem;
-    }
-    .topbar .brand .brand-name {
-      max-width: 100%;
-      font-size: 0.92rem;
-    }
+    .topbar .brand { flex: 1; min-width: 0; font-size: 0.95rem; }
+    .topbar .brand .brand-name { max-width: 100%; font-size: 0.92rem; }
 
     .nav-toggle {
       display: inline-flex;
@@ -626,7 +612,6 @@
       gap: 6px;
     }
 
-    /* Hide nav until toggled */
     .topbar nav {
       display: none;
       width: 100%;
@@ -643,20 +628,14 @@
       font-size: 0.88rem;
       width: 100%;
     }
-    .topbar nav a i {
-      margin-right: 8px;
-      width: 18px;
-    }
+    .topbar nav a i { margin-right: 8px; width: 18px; }
 
-    /* Dropdown becomes a collapsible section */
     .nav-group { width: 100%; }
     .nav-group > a::after {
       margin-left: auto;
       transition: transform 0.2s;
     }
-    .nav-group.is-open > a::after {
-      transform: rotate(180deg);
-    }
+    .nav-group.is-open > a::after { transform: rotate(180deg); }
     .nav-group .dropdown {
       position: static;
       opacity: 1;
@@ -709,11 +688,10 @@
 </head>
 <body>
 
-<!-- ==================================================================
-     TOP NAVIGATION
-     ================================================================== -->
+{% with ns=request.resolver_match.namespace|default:"" un=request.resolver_match.url_name|default:"" %}
+
 <div class="topbar no-print">
-  <a href="{% url 'card_list' %}" class="brand">
+  <a href="{% url 'id_cards:card_list' %}" class="brand">
     <i class="fas fa-id-card"></i>
     <span class="brand-name">{{ school.name|default:"Staff ID Manager" }}</span>
   </a>
@@ -728,75 +706,97 @@
   </button>
 
   <nav id="primaryNav">
-    <a href="{% url 'card_list' %}"
-       class="{% if request.resolver_match.url_name == 'card_list' %}active{% endif %}">
-      <i class="fas fa-users"></i> All Cards
+    <a href="{% url 'id_cards:card_list' %}"
+       class="{% if ns == 'id_cards' and un == 'card_list' %}active{% endif %}">
+      <i class="fas fa-users"></i> Staffs
     </a>
 
-    <a href="{% url 'card_create' %}"
-       class="{% if request.resolver_match.url_name == 'card_create' %}active{% endif %}">
+    {# Students link — only render if the student app is installed. #}
+    {% if 'student' in request.resolver_match.namespace|default:'' %}
+      <a href="{% url 'student:student_list' %}"
+         class="{% if ns == 'student' %}active{% endif %}">
+        <i class="fas fa-user-graduate"></i> Students
+      </a>
+    {% else %}
+      {% url 'student:student_list' as student_url %}
+      {% if student_url %}
+        <a href="{{ student_url }}"
+           class="{% if ns == 'student' %}active{% endif %}">
+          <i class="fas fa-user-graduate"></i> Students
+        </a>
+      {% endif %}
+    {% endif %}
+
+    <a href="{% url 'id_cards:card_create' %}"
+       class="{% if ns == 'id_cards' and un == 'card_create' %}active{% endif %}">
       <i class="fas fa-plus"></i> New
     </a>
 
-    <a href="{% url 'card_print_all' %}"
-       class="{% if request.resolver_match.url_name == 'card_print_all' %}active{% endif %}">
+    <a href="{% url 'id_cards:card_print_all' %}"
+       class="{% if ns == 'id_cards' and un == 'card_print_all' %}active{% endif %}">
       <i class="fas fa-print"></i> Print All
     </a>
 
     <div class="nav-group" id="manageGroup">
-      {% with url_name=request.resolver_match.url_name|default:"" %}
-        <a href="#"
-           id="manageToggle"
-           class="{% if url_name in 'school_settings,department_list,department_create,department_edit,department_delete,level_list,level_create,level_edit,level_delete,bulk_import,reset_all_print_counts' %}active{% endif %}">
-          <i class="fas fa-cog"></i> Manage
-        </a>
-      {% endwith %}
+      <a href="#"
+         id="manageToggle"
+         role="button"
+         class="{% if ns == 'id_cards' and un|in_csv:'school_settings,department_list,department_create,department_edit,department_delete,level_list,level_create,level_edit,level_delete,template_list,template_create,template_edit,template_delete,bulk_import,reset_all_print_counts' %}active{% endif %}">
+        <i class="fas fa-cog"></i> Manage
+      </a>
       <div class="dropdown">
-        <a href="{% url 'department_list' %}">
+        <a href="{% url 'id_cards:department_list' %}">
           <i class="fas fa-building"></i> Departments
         </a>
-        <a href="{% url 'level_list' %}">
+        <a href="{% url 'id_cards:level_list' %}">
           <i class="fas fa-layer-group"></i> Levels
         </a>
-        <a href="{% url 'bulk_import' %}">
+        <a href="{% url 'id_cards:template_list' %}">
+          <i class="fas fa-id-card-clip"></i> Card Templates
+        </a>
+
+        <div class="dropdown-divider"></div>
+
+        <a href="{% url 'id_cards:bulk_import' %}">
           <i class="fas fa-file-csv"></i> Bulk Import
         </a>
 
         <div class="dropdown-divider"></div>
 
-        <a href="{% url 'school_settings' %}">
+        <a href="{% url 'id_cards:school_settings' %}">
           <i class="fas fa-palette"></i> School Settings
         </a>
-        <a href="{% url 'school_settings' %}#print-tracking">
+        <a href="{% url 'id_cards:school_settings' %}#print-tracking">
           <i class="fas fa-print"></i> Print Tracking
         </a>
 
         <div class="dropdown-divider"></div>
 
-        <a href="/admin/" target="_blank" rel="noopener">
-          <i class="fas fa-shield-halved"></i> Django Admin
-        </a>
+        {% if user.is_staff %}
+          <a href="{% url 'admin:index' %}" target="_blank" rel="noopener">
+            <i class="fas fa-shield-halved"></i> Django Admin
+          </a>
+        {% endif %}
       </div>
     </div>
   </nav>
 </div>
 
-<!-- ==================================================================
-     MAIN CONTENT
-     ================================================================== -->
+{% endwith %}
+
 <div class="container">
   {% if messages %}
-    <div class="messages">
+    <div class="messages" role="status" aria-live="polite">
       {% for msg in messages %}
         <div class="message {{ msg.tags }}">
-          {% if msg.tags == 'success' %}
-            <i class="fas fa-circle-check"></i>
-          {% elif msg.tags == 'error' %}
-            <i class="fas fa-circle-exclamation"></i>
-          {% elif msg.tags == 'warning' %}
-            <i class="fas fa-triangle-exclamation"></i>
+          {% if 'success' in msg.tags %}
+            <i class="fas fa-circle-check" aria-hidden="true"></i>
+          {% elif 'error' in msg.tags %}
+            <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+          {% elif 'warning' in msg.tags %}
+            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
           {% else %}
-            <i class="fas fa-circle-info"></i>
+            <i class="fas fa-circle-info" aria-hidden="true"></i>
           {% endif %}
           <span>{{ msg }}</span>
         </div>
@@ -808,15 +808,6 @@
 </div>
 
 <script>
-  /* ==================================================================
-     MOBILE NAVIGATION TOGGLE
-     ------------------------------------------------------------------
-     - Small screens: hamburger toggles the whole nav.
-     - The "Manage" group gets its own sub-toggle.
-     - Clicking a nav link closes the menu.
-     - Escape closes the menu.
-     - Clicking outside the nav closes the menu.
-     ================================================================== */
   (function () {
     const toggle      = document.getElementById('navToggle');
     const toggleIcon  = document.getElementById('navToggleIcon');
@@ -849,7 +840,7 @@
 
     if (manageLink && manageGroup) {
       manageLink.addEventListener('click', function (e) {
-        if (!isMobile()) return; // desktop uses hover
+        if (!isMobile()) return;
         e.preventDefault();
         e.stopPropagation();
         manageGroup.classList.toggle('is-open');

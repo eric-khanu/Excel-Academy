@@ -4,253 +4,846 @@
 <head>
 <meta charset="UTF-8">
 <title>{{ school.name|default:"Staff ID" }} — ID Card</title>
+
 <style>
-  /* ... same CSS as above ... */
+  /* ====================================================================
+     PAGE SETUP
+
+     CR80 card = 2.125in × 3.375in (54mm × 85.6mm).
+     We lay out two cards (front + back) side by side on an A4/Letter
+     page, ready to cut. Set `@page size` for the target printer.
+     ==================================================================== */
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  /* Also support CR80 direct-to-card printers by uncommenting this
+     and using `class="cr80-page"` on <body>:
+  @page {
+    size: 54mm 85.6mm;
+    margin: 0;
+  }
+  */
+
+  /* ====================================================================
+     FONTS
+
+     xhtml2pdf only reliably renders fonts it can load from a local
+     filesystem path. We reference fonts from MEDIA_ROOT/fonts/ via the
+     special `file://` scheme. If you skip this, Cinzel and Inter will
+     fall back to Times / Helvetica.
+     ==================================================================== */
+  @font-face {
+    font-family: 'Cinzel';
+    src: url('{{ MEDIA_URL }}fonts/Cinzel-Bold.ttf') format('truetype');
+    font-weight: 700;
+  }
+  @font-face {
+    font-family: 'Cinzel';
+    src: url('{{ MEDIA_URL }}fonts/Cinzel-Black.ttf') format('truetype');
+    font-weight: 900;
+  }
+  @font-face {
+    font-family: 'Inter';
+    src: url('{{ MEDIA_URL }}fonts/Inter-Regular.ttf') format('truetype');
+    font-weight: 400;
+  }
+  @font-face {
+    font-family: 'Inter';
+    src: url('{{ MEDIA_URL }}fonts/Inter-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+  }
+  @font-face {
+    font-family: 'Inter';
+    src: url('{{ MEDIA_URL }}fonts/Inter-Bold.ttf') format('truetype');
+    font-weight: 700;
+  }
+
+  /* ====================================================================
+     GLOBAL
+     ==================================================================== */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    color: #2A1810;
+    background: #fff;
+  }
+
+  body {
+    padding: 6mm 8mm;
+  }
+
+  /* Two cards side by side, stacked in rows of one teacher each. */
+  .teacher-block {
+    display: block;
+    page-break-after: always;
+    page-break-inside: avoid;
+    margin-bottom: 6mm;
+    text-align: center;
+  }
+
+  .teacher-block:last-child {
+    page-break-after: auto;
+  }
+
+  .card-row {
+    display: block;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  /* ====================================================================
+     CARD BASE
+
+     Physical size locked to CR80. `position: relative` allows absolute
+     positioning of the hologram, gold bar, and cut marks.
+     ==================================================================== */
+  .card {
+    display: inline-block;
+    vertical-align: top;
+    width: 54mm;
+    height: 85.6mm;
+    background: {{ school.accent_color|safe_hex:'#FBF6EC' }};
+    border-radius: 3.18mm;
+    border: 0.4mm solid {{ school.primary_color|safe_hex:'#8B2020' }};
+    overflow: hidden;
+    position: relative;
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    color: {{ school.text_color|safe_hex:'#2A1810' }};
+    margin: 0 3mm;
+    page-break-inside: avoid;
+  }
+
+  /* ====================================================================
+     FRONT — HEADER
+     ==================================================================== */
+  .header {
+    background: {{ school.primary_color|safe_hex:'#8B2020' }};
+    padding: 3mm 3mm 2mm 3mm;
+    text-align: center;
+    border-bottom: 0.6mm solid {{ school.secondary_color|safe_hex:'#C87A2C' }};
+  }
+
+  .header-school-line1 {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 2.6mm;
+    font-weight: 900;
+    letter-spacing: 0.3mm;
+    color: #F5C87A;
+    text-transform: uppercase;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .header-school-line2 {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 1.8mm;
+    font-weight: 700;
+    color: #F5C87A;
+    letter-spacing: 0.4mm;
+    margin-top: 0.4mm;
+    text-transform: uppercase;
+  }
+
+  /* ====================================================================
+     ROLE STRIP
+     ==================================================================== */
+  .role-strip {
+    text-align: center;
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 1.8mm;
+    font-weight: 700;
+    letter-spacing: 0.6mm;
+    color: {{ school.primary_color|safe_hex:'#8B2020' }};
+    background: rgba(200, 122, 44, 0.14);
+    border-top: 0.15mm solid rgba(200, 122, 44, 0.35);
+    border-bottom: 0.15mm solid rgba(200, 122, 44, 0.35);
+    padding: 1mm 2mm;
+    text-transform: uppercase;
+  }
+
+  /* ====================================================================
+     PHOTO
+     ==================================================================== */
+  .photo-section {
+    text-align: center;
+    margin-top: 3mm;
+  }
+
+  .photo-section img,
+  .photo-placeholder {
+    width: 22mm;
+    height: 22mm;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 0.6mm solid {{ school.secondary_color|safe_hex:'#C87A2C' }};
+    background: #fff;
+    display: inline-block;
+  }
+
+  .photo-placeholder {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-weight: 900;
+    font-size: 6mm;
+    line-height: 22mm;
+    color: {{ school.primary_color|safe_hex:'#8B2020' }};
+    text-align: center;
+    background: {{ school.accent_color|safe_hex:'#FBF6EC' }};
+  }
+
+  /* ====================================================================
+     INFO BLOCK
+     ==================================================================== */
+  .info {
+    text-align: center;
+    padding: 2mm 3mm 0 3mm;
+  }
+
+  .teacher-name {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 2.8mm;
+    font-weight: 900;
+    letter-spacing: 0.2mm;
+    color: {{ school.primary_color|safe_hex:'#8B2020' }};
+    line-height: 1.15;
+    text-transform: uppercase;
+  }
+
+  .designation {
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    font-size: 1.7mm;
+    font-weight: 700;
+    color: {{ school.primary_color|safe_hex:'#8B2020' }};
+    letter-spacing: 0.3mm;
+    text-transform: uppercase;
+    margin-top: 1mm;
+    display: inline-block;
+    background: rgba(200, 122, 44, 0.15);
+    padding: 0.5mm 2mm;
+    border-radius: 2mm;
+    border: 0.15mm solid rgba(200, 122, 44, 0.4);
+    max-width: 46mm;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  /* ====================================================================
+     DETAILS PANEL
+     ==================================================================== */
+  .details {
+    margin: 2mm 3mm 0 3mm;
+    padding: 1.5mm 2mm;
+    background: #FFFFFF;
+    border: 0.2mm solid rgba(140, 60, 30, 0.18);
+    border-radius: 1.5mm;
+  }
+
+  .details .row {
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    font-size: 1.7mm;
+    line-height: 1.5;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .details .label {
+    color: #8A6A50;
+    font-weight: 400;
+  }
+
+  .details .value {
+    color: {{ school.primary_color|safe_hex:'#8B2020' }};
+    font-weight: 700;
+  }
+
+  /* ====================================================================
+     LEVELS LINE
+     ==================================================================== */
+  .levels-line {
+    text-align: center;
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    font-size: 1.6mm;
+    padding: 1mm 3mm 0 3mm;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .levels-line .label {
+    color: #8A6A50;
+    font-weight: 400;
+  }
+
+  .levels-line .value {
+    color: {{ school.primary_color|safe_hex:'#8B2020' }};
+    font-weight: 700;
+  }
+
+  /* ====================================================================
+     FOOTER + GOLD BAR
+     ==================================================================== */
+  .footer {
+    position: absolute;
+    bottom: 3mm;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 1.5mm;
+    font-weight: 700;
+    color: {{ school.primary_color|safe_hex:'#8B2020' }};
+    letter-spacing: 0.5mm;
+  }
+
+  .footer .sub {
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    font-size: 1.2mm;
+    font-weight: 400;
+    color: #8A6A50;
+    letter-spacing: 0.2mm;
+    margin-top: 0.4mm;
+  }
+
+  .gold-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1.6mm;
+    background: {{ school.secondary_color|safe_hex:'#C87A2C' }};
+  }
+
+  /* ====================================================================
+     BACK OF CARD
+     ==================================================================== */
+  .card-back {
+    background: #FFFFFF;
+  }
+
+  .back-top-strip {
+    height: 6mm;
+    background: {{ school.primary_color|safe_hex:'#8B2020' }};
+    border-bottom: 0.6mm solid {{ school.secondary_color|safe_hex:'#C87A2C' }};
+    text-align: center;
+    color: #F5C87A;
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 2mm;
+    font-weight: 700;
+    letter-spacing: 0.5mm;
+    line-height: 5.4mm;
+    text-transform: uppercase;
+    padding: 0 2mm;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .back-panel {
+    padding: 2mm 3mm 0 3mm;
+  }
+
+  .back-section {
+    margin-bottom: 1.6mm;
+  }
+
+  .back-section-title {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 1.5mm;
+    font-weight: 700;
+    color: {{ school.primary_color|safe_hex:'#8B2020' }};
+    text-transform: uppercase;
+    letter-spacing: 0.3mm;
+    margin-bottom: 0.4mm;
+  }
+
+  .back-section-body {
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    font-size: 1.6mm;
+    line-height: 1.4;
+    color: #2A1810;
+    word-wrap: break-word;
+  }
+
+  /* QR code container */
+  .qr-block {
+    text-align: center;
+    margin: 1.5mm 0;
+  }
+
+  .qr-block img {
+    width: 20mm;
+    height: 20mm;
+  }
+
+  .qr-caption {
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    font-size: 1.2mm;
+    color: #8A6A50;
+    text-align: center;
+    margin-top: 0.4mm;
+  }
+
+  /* Print audit */
+  .print-audit {
+    margin: 1.5mm 3mm 0 3mm;
+    padding: 1.2mm 2mm;
+    background: #F5F1E8;
+    border: 0.2mm solid #E0D8CC;
+    border-radius: 1mm;
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    text-align: center;
+  }
+
+  .audit-label {
+    font-size: 1.3mm;
+    font-weight: 700;
+    letter-spacing: 0.3mm;
+    color: #8A6A50;
+    text-transform: uppercase;
+  }
+
+  .audit-value {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 2.2mm;
+    font-weight: 900;
+    color: {{ school.primary_color|safe_hex:'#8B2020' }};
+    margin-top: 0.3mm;
+  }
+
+  .audit-sub {
+    font-size: 1.2mm;
+    color: #8A6A50;
+    margin-top: 0.5mm;
+  }
+
+  /* Back footer */
+  .back-footer {
+    position: absolute;
+    bottom: 3mm;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    font-size: 1.3mm;
+    color: #2A1810;
+    line-height: 1.35;
+    padding: 0 3mm;
+  }
+
+  .back-footer .school {
+    font-weight: 700;
+    color: {{ school.primary_color|safe_hex:'#8B2020' }};
+    font-size: 1.4mm;
+  }
+
+  .back-footer .contact {
+    color: #5A4A3A;
+  }
+
+  /* ====================================================================
+     CUT MARKS (optional — remove if using direct-to-card printer)
+     ==================================================================== */
+  .cut-mark {
+    display: inline-block;
+    width: 0.1mm;
+    height: 0.1mm;
+    border: 0.15mm dotted #aaa;
+    margin: 0 -0.1mm;
+  }
+
+  /* ====================================================================
+     BROWSER FALLBACK (only used if someone opens this in a browser)
+     ==================================================================== */
+  @media screen {
+    body {
+      background: #eee;
+    }
+    .teacher-block {
+      background: #fff;
+      padding: 8mm;
+      border-radius: 4mm;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin: 6mm auto;
+      max-width: 200mm;
+    }
+  }
 </style>
 </head>
 <body>
 
-{% comment %}ID card PDF — bulk mode or single mode. Each card is one page.{% endcomment %}
+{% comment %}
+================================================================================
+  ID card PDF — bulk mode (print_all=True) or single mode.
+
+  Each `.teacher-block` is one physical page: two cards side-by-side
+  (front + back). Designed for A4 landscape.
+
+  For direct-to-card CR80 printers, remove `.card-row` wrapping and
+  set `@page size: 54mm 85.6mm` at the top of this file.
+================================================================================
+{% endcomment %}
 
 {% if print_all %}
+
   {% for teacher in teachers %}
+    <div class="teacher-block">
+      <div class="card-row">
 
-    {% comment %}FRONT{% endcomment %}
-    <div class="card">
-      <div class="header">
-        <div class="header-school-line1">
-          {{ school.name|default:"School Name"|upper }}
-        </div>
-        <div class="header-school-line2">
-          {% if school.short_name %}— {{ school.short_name|upper }} —{% endif %}
-        </div>
-      </div>
-
-      <div class="role-strip">{{ teacher.get_role_display|upper|default:"FACULTY" }}</div>
-
-      <div class="photo-section">
-        {% if teacher.photo %}
-          <img src="{{ teacher.photo.url }}" alt="photo">
-        {% else %}
-          <div class="photo-placeholder">{{ teacher.initials }}</div>
-        {% endif %}
-      </div>
-
-      <div class="info">
-        <div class="teacher-name">{{ teacher.full_name|upper }}</div>
-        <div class="designation">{{ teacher.designation|upper }}</div>
-      </div>
-
-      <div class="details">
-        <div class="row">
-          <span class="label">Employee ID:</span>
-          <span class="value">{{ teacher.employee_id }}</span>
-        </div>
-        <div class="row">
-          <span class="label">Department:</span>
-          <span class="value">{{ teacher.department_display }}</span>
-        </div>
-        {% if teacher.valid_thru %}
-        <div class="row">
-          <span class="label">Valid Thru:</span>
-          <span class="value">{{ teacher.valid_thru|date:"m/Y" }}</span>
-        </div>
-        {% endif %}
-      </div>
-
-      {% if teacher.levels_display %}
-      <div class="levels-line">
-        <span class="label">Levels:</span>
-        <span class="value">{{ teacher.levels_display }}</span>
-      </div>
-      {% endif %}
-
-      <div class="footer">
-        STAFF IDENTIFICATION
-        <div class="sub">(SEE REVERSE FOR DETAILS)</div>
-      </div>
-
-      <div class="gold-bar"></div>
-    </div>
-
-    {% comment %}BACK{% endcomment %}
-    <div class="card card-back">
-      <div class="back-top-strip"></div>
-
-      <div class="back-panel">
-        <div class="back-section">
-          <div class="back-section-title">Emergency Contact</div>
-          <div class="back-section-body">
-            {% if teacher.emergency_contact_phone %}
-              {{ teacher.emergency_contact_phone }}
-            {% else %}
-              Contact HR Dept.
+        {# -------------------- FRONT -------------------- #}
+        <div class="card card-front">
+          <div class="header">
+            <div class="header-school-line1">
+              {{ school.name|default:"School Name"|upper }}
+            </div>
+            {% if school.short_name %}
+              <div class="header-school-line2">— {{ school.short_name|upper }} —</div>
             {% endif %}
           </div>
-        </div>
-      </div>
 
-      {% if teacher.blood_group %}
-      <div class="back-meta">
-        <span class="label">BLOOD GROUP:</span>
-        <span class="value">{{ teacher.blood_group }}</span>
-      </div>
-      {% endif %}
+          <div class="role-strip">{{ teacher.get_role_display|upper }}</div>
 
-      <div class="print-audit">
-        <div class="audit-label">Print Record</div>
-        <div class="audit-value">
-          {% if teacher.print_count %}
-            Copy #{{ teacher.print_count }}
-          {% else %}
-            Original
+          <div class="photo-section">
+            {% if teacher.photo_relative_url %}
+              <img src="{{ teacher.photo_relative_url }}" alt="">
+            {% elif teacher.photo %}
+              <img src="{{ teacher.photo.url }}" alt="">
+            {% else %}
+              <div class="photo-placeholder">{{ teacher.initials|default:"—" }}</div>
+            {% endif %}
+          </div>
+
+          <div class="info">
+            <div class="teacher-name">{{ teacher.full_name|upper }}</div>
+            <div class="designation">{{ teacher.designation|upper }}</div>
+          </div>
+
+          <div class="details">
+            <div class="row">
+              <span class="label">Employee ID:</span>
+              <span class="value">{{ teacher.employee_id }}</span>
+            </div>
+            <div class="row">
+              <span class="label">Department:</span>
+              <span class="value">{{ teacher.department_display }}</span>
+            </div>
+            {% if teacher.resolved_expiry_date %}
+              <div class="row">
+                <span class="label">Valid Thru:</span>
+                <span class="value">{{ teacher.resolved_expiry_date|date:"m/Y" }}</span>
+              </div>
+            {% endif %}
+          </div>
+
+          {% if teacher.levels_display %}
+            <div class="levels-line">
+              <span class="label">Levels:</span>
+              <span class="value">{{ teacher.levels_display }}</span>
+            </div>
           {% endif %}
-        </div>
-        {% if teacher.first_printed_at %}
-        <div class="audit-sub">
-          First: {{ teacher.first_printed_at|date:"m/d/Y" }}
-          {% if teacher.print_count > 1 %}
-            · Last: {{ teacher.last_printed_at|date:"m/d/Y" }}
-          {% endif %}
-        </div>
-        {% else %}
-        <div class="audit-sub">Not previously printed</div>
-        {% endif %}
-      </div>
 
-      <div class="back-footer">
-        <div class="school">{{ school.name }}</div>
-        {% if school.contact_phone_1 %}
-          <div class="contact">Contact: {{ school.contact_phone_1 }}</div>
-        {% endif %}
-        {% if school.contact_phone_2 %}
-          <div class="contact">{{ school.contact_phone_2 }}</div>
-        {% endif %}
-      </div>
+          <div class="footer">
+            {% if teacher.template and teacher.template.card_footer_text %}
+              {{ teacher.template.card_footer_text }}
+            {% else %}
+              STAFF IDENTIFICATION
+            {% endif %}
+            <div class="sub">
+              {% if teacher.template and teacher.template.card_footer_subtext %}
+                {{ teacher.template.card_footer_subtext }}
+              {% else %}
+                (SEE REVERSE FOR DETAILS)
+              {% endif %}
+            </div>
+          </div>
 
-      <div class="gold-bar"></div>
+          <div class="gold-bar"></div>
+        </div>
+
+        {# -------------------- BACK -------------------- #}
+        <div class="card card-back">
+          <div class="back-top-strip">
+            {{ school.name|default:"School Name"|upper|truncatechars:34 }}
+          </div>
+
+          <div class="back-panel">
+
+            {% if teacher.qr_data_uri %}
+              <div class="qr-block">
+                <img src="{{ teacher.qr_data_uri }}" alt="QR">
+                <div class="qr-caption">Scan for staff details</div>
+              </div>
+            {% endif %}
+
+            {% if teacher.template.show_authorized and teacher.resolved_authorized_use %}
+              <div class="back-section">
+                <div class="back-section-title">Authorized Use</div>
+                <div class="back-section-body">{{ teacher.resolved_authorized_use }}</div>
+              </div>
+            {% endif %}
+
+            <div class="back-section">
+              <div class="back-section-title">Emergency Contact</div>
+              <div class="back-section-body">
+                {% if teacher.emergency_contact_phone %}
+                  {{ teacher.emergency_contact_phone }}
+                {% else %}
+                  Contact HR Dept.
+                {% endif %}
+              </div>
+            </div>
+
+            {% if teacher.template.show_terms and teacher.resolved_terms %}
+              <div class="back-section">
+                <div class="back-section-title">Terms of Use</div>
+                <div class="back-section-body">{{ teacher.resolved_terms|truncatechars:220 }}</div>
+              </div>
+            {% endif %}
+
+            {% if teacher.template.show_security and teacher.resolved_security %}
+              <div class="back-section">
+                <div class="back-section-title">Security Notice</div>
+                <div class="back-section-body">{{ teacher.resolved_security }}</div>
+              </div>
+            {% endif %}
+
+            {% if teacher.template.show_issue_date or teacher.template.show_expiry_date %}
+              <div class="back-section">
+                <div class="back-section-body" style="text-align:center;">
+                  {% if teacher.template.show_issue_date and teacher.resolved_issue_date %}
+                    <strong>Issued:</strong> {{ teacher.resolved_issue_date|date:"m/Y" }}
+                  {% endif %}
+                  {% if teacher.template.show_issue_date and teacher.template.show_expiry_date and teacher.resolved_issue_date and teacher.resolved_expiry_date %}
+                    &nbsp;·&nbsp;
+                  {% endif %}
+                  {% if teacher.template.show_expiry_date and teacher.resolved_expiry_date %}
+                    <strong>Expires:</strong> {{ teacher.resolved_expiry_date|date:"m/Y" }}
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+
+          </div>
+
+          <div class="print-audit">
+            <div class="audit-label">Print Record</div>
+            <div class="audit-value">
+              {% if teacher.print_count %}
+                Copy #{{ teacher.print_count }}
+              {% else %}
+                Original
+              {% endif %}
+            </div>
+            {% if teacher.first_printed_at %}
+              <div class="audit-sub">
+                First: {{ teacher.first_printed_at|date:"m/d/Y" }}
+                {% if teacher.print_count > 1 %}
+                  · Last: {{ teacher.last_printed_at|date:"m/d/Y" }}
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="audit-sub">Not previously printed</div>
+            {% endif %}
+          </div>
+
+          <div class="back-footer">
+            <div class="school">{{ school.name }}</div>
+            {% if school.address %}
+              <div class="contact">{{ school.address }}</div>
+            {% endif %}
+            {% if school.contact_phone_1 %}
+              <div class="contact">Tel: {{ school.contact_phone_1 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="gold-bar"></div>
+        </div>
+
+      </div>
     </div>
-
   {% endfor %}
 
 {% else %}
 
-  {% comment %}Single mode — one teacher, front + back.{% endcomment %}
+  {# -------------------- SINGLE MODE -------------------- #}
+  <div class="teacher-block">
+    <div class="card-row">
 
-  {% comment %}FRONT{% endcomment %}
-  <div class="card">
-    <div class="header">
-      <div class="header-school-line1">
-        {{ school.name|default:"School Name"|upper }}
-      </div>
-      <div class="header-school-line2">
-        {% if school.short_name %}— {{ school.short_name|upper }} —{% endif %}
-      </div>
-    </div>
-
-    <div class="role-strip">{{ teacher.get_role_display|upper|default:"FACULTY" }}</div>
-
-    <div class="photo-section">
-      {% if teacher.photo %}
-        <img src="{{ teacher.photo.url }}" alt="photo">
-      {% else %}
-        <div class="photo-placeholder">{{ teacher.initials }}</div>
-      {% endif %}
-    </div>
-
-    <div class="info">
-      <div class="teacher-name">{{ teacher.full_name|upper }}</div>
-      <div class="designation">{{ teacher.designation|upper }}</div>
-    </div>
-
-    <div class="details">
-      <div class="row">
-        <span class="label">Employee ID:</span>
-        <span class="value">{{ teacher.employee_id }}</span>
-      </div>
-      <div class="row">
-        <span class="label">Department:</span>
-        <span class="value">{{ teacher.department_display }}</span>
-      </div>
-      {% if teacher.valid_thru %}
-      <div class="row">
-        <span class="label">Valid Thru:</span>
-        <span class="value">{{ teacher.valid_thru|date:"m/Y" }}</span>
-      </div>
-      {% endif %}
-    </div>
-
-    {% if teacher.levels_display %}
-    <div class="levels-line">
-      <span class="label">Levels:</span>
-      <span class="value">{{ teacher.levels_display }}</span>
-    </div>
-    {% endif %}
-
-    <div class="footer">
-      STAFF IDENTIFICATION
-      <div class="sub">(SEE REVERSE FOR DETAILS)</div>
-    </div>
-
-    <div class="gold-bar"></div>
-  </div>
-
-  {% comment %}BACK{% endcomment %}
-  <div class="card card-back">
-    <div class="back-top-strip"></div>
-
-    <div class="back-panel">
-      <div class="back-section">
-        <div class="back-section-title">Emergency Contact</div>
-        <div class="back-section-body">
-          {% if teacher.emergency_contact_phone %}
-            {{ teacher.emergency_contact_phone }}
-          {% else %}
-            Contact HR Dept.
+      {# FRONT #}
+      <div class="card card-front">
+        <div class="header">
+          <div class="header-school-line1">
+            {{ school.name|default:"School Name"|upper }}
+          </div>
+          {% if school.short_name %}
+            <div class="header-school-line2">— {{ school.short_name|upper }} —</div>
           {% endif %}
         </div>
-      </div>
-    </div>
 
-    {% if teacher.blood_group %}
-    <div class="back-meta">
-      <span class="label">BLOOD GROUP:</span>
-      <span class="value">{{ teacher.blood_group }}</span>
-    </div>
-    {% endif %}
+        <div class="role-strip">{{ teacher.get_role_display|upper }}</div>
 
-    <div class="print-audit">
-      <div class="audit-label">Print Record</div>
-      <div class="audit-value">
-        {% if teacher.print_count %}
-          Copy #{{ teacher.print_count }}
-        {% else %}
-          Original
+        <div class="photo-section">
+          {% if teacher.photo_relative_url %}
+            <img src="{{ teacher.photo_relative_url }}" alt="">
+          {% elif teacher.photo %}
+            <img src="{{ teacher.photo.url }}" alt="">
+          {% else %}
+            <div class="photo-placeholder">{{ teacher.initials|default:"—" }}</div>
+          {% endif %}
+        </div>
+
+        <div class="info">
+          <div class="teacher-name">{{ teacher.full_name|upper }}</div>
+          <div class="designation">{{ teacher.designation|upper }}</div>
+        </div>
+
+        <div class="details">
+          <div class="row">
+            <span class="label">Employee ID:</span>
+            <span class="value">{{ teacher.employee_id }}</span>
+          </div>
+          <div class="row">
+            <span class="label">Department:</span>
+            <span class="value">{{ teacher.department_display }}</span>
+          </div>
+          {% if teacher.resolved_expiry_date %}
+            <div class="row">
+              <span class="label">Valid Thru:</span>
+              <span class="value">{{ teacher.resolved_expiry_date|date:"m/Y" }}</span>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if teacher.levels_display %}
+          <div class="levels-line">
+            <span class="label">Levels:</span>
+            <span class="value">{{ teacher.levels_display }}</span>
+          </div>
         {% endif %}
-      </div>
-      {% if teacher.first_printed_at %}
-      <div class="audit-sub">
-        First: {{ teacher.first_printed_at|date:"m/d/Y" }}
-        {% if teacher.print_count > 1 %}
-          · Last: {{ teacher.last_printed_at|date:"m/d/Y" }}
-        {% endif %}
-      </div>
-      {% else %}
-      <div class="audit-sub">Not previously printed</div>
-      {% endif %}
-    </div>
 
-    <div class="back-footer">
-      <div class="school">{{ school.name }}</div>
-      {% if school.contact_phone_1 %}
-        <div class="contact">Contact: {{ school.contact_phone_1 }}</div>
-      {% endif %}
-      {% if school.contact_phone_2 %}
-        <div class="contact">{{ school.contact_phone_2 }}</div>
-      {% endif %}
-    </div>
+        <div class="footer">
+          {% if teacher.template and teacher.template.card_footer_text %}
+            {{ teacher.template.card_footer_text }}
+          {% else %}
+            STAFF IDENTIFICATION
+          {% endif %}
+          <div class="sub">
+            {% if teacher.template and teacher.template.card_footer_subtext %}
+              {{ teacher.template.card_footer_subtext }}
+            {% else %}
+              (SEE REVERSE FOR DETAILS)
+            {% endif %}
+          </div>
+        </div>
 
-    <div class="gold-bar"></div>
+        <div class="gold-bar"></div>
+      </div>
+
+      {# BACK #}
+      <div class="card card-back">
+        <div class="back-top-strip">
+          {{ school.name|default:"School Name"|upper|truncatechars:34 }}
+        </div>
+
+        <div class="back-panel">
+
+          {% if teacher.qr_data_uri %}
+            <div class="qr-block">
+              <img src="{{ teacher.qr_data_uri }}" alt="QR">
+              <div class="qr-caption">Scan for staff details</div>
+            </div>
+          {% endif %}
+
+          {% if teacher.template.show_authorized and teacher.resolved_authorized_use %}
+            <div class="back-section">
+              <div class="back-section-title">Authorized Use</div>
+              <div class="back-section-body">{{ teacher.resolved_authorized_use }}</div>
+            </div>
+          {% endif %}
+
+          <div class="back-section">
+            <div class="back-section-title">Emergency Contact</div>
+            <div class="back-section-body">
+              {% if teacher.emergency_contact_phone %}
+                {{ teacher.emergency_contact_phone }}
+              {% else %}
+                Contact HR Dept.
+              {% endif %}
+            </div>
+          </div>
+
+          {% if teacher.template.show_terms and teacher.resolved_terms %}
+            <div class="back-section">
+              <div class="back-section-title">Terms of Use</div>
+              <div class="back-section-body">{{ teacher.resolved_terms|truncatechars:220 }}</div>
+            </div>
+          {% endif %}
+
+          {% if teacher.template.show_security and teacher.resolved_security %}
+            <div class="back-section">
+              <div class="back-section-title">Security Notice</div>
+              <div class="back-section-body">{{ teacher.resolved_security }}</div>
+            </div>
+          {% endif %}
+
+          {% if teacher.template.show_issue_date or teacher.template.show_expiry_date %}
+            <div class="back-section">
+              <div class="back-section-body" style="text-align:center;">
+                {% if teacher.template.show_issue_date and teacher.resolved_issue_date %}
+                  <strong>Issued:</strong> {{ teacher.resolved_issue_date|date:"m/Y" }}
+                {% endif %}
+                {% if teacher.template.show_issue_date and teacher.template.show_expiry_date and teacher.resolved_issue_date and teacher.resolved_expiry_date %}
+                  &nbsp;·&nbsp;
+                {% endif %}
+                {% if teacher.template.show_expiry_date and teacher.resolved_expiry_date %}
+                  <strong>Expires:</strong> {{ teacher.resolved_expiry_date|date:"m/Y" }}
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+
+        </div>
+
+        <div class="print-audit">
+          <div class="audit-label">Print Record</div>
+          <div class="audit-value">
+            {% if teacher.print_count %}
+              Copy #{{ teacher.print_count }}
+            {% else %}
+              Original
+            {% endif %}
+          </div>
+          {% if teacher.first_printed_at %}
+            <div class="audit-sub">
+              First: {{ teacher.first_printed_at|date:"m/d/Y" }}
+              {% if teacher.print_count > 1 %}
+                · Last: {{ teacher.last_printed_at|date:"m/d/Y" }}
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="audit-sub">Not previously printed</div>
+          {% endif %}
+        </div>
+
+        <div class="back-footer">
+          <div class="school">{{ school.name }}</div>
+          {% if school.address %}
+            <div class="contact">{{ school.address }}</div>
+          {% endif %}
+          {% if school.contact_phone_1 %}
+            <div class="contact">Tel: {{ school.contact_phone_1 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="gold-bar"></div>
+      </div>
+
+    </div>
   </div>
 
 {% endif %}

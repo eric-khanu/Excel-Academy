@@ -65,6 +65,19 @@
     color: var(--muted);
     line-height: 1.4;
   }
+  /* Read-only (code on edit) */
+  .form-group .readonly-value {
+    padding: 11px 14px;
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--primary);
+    background: #fbfaf6;
+  }
+
   .checkbox-row {
     display: flex;
     align-items: center;
@@ -137,7 +150,7 @@
 
     {% if form.non_field_errors %}
       <div class="form-errors">
-        <strong><i class="fas fa-triangle-exclamation"></i> Please fix:</strong>
+        <strong><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Please fix:</strong>
         <ul style="margin: 6px 0 0; padding-left: 20px;">
           {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
         </ul>
@@ -147,22 +160,47 @@
     <form method="post" novalidate>
       {% csrf_token %}
 
+      {# ---------- NAME ---------- #}
       <div class="form-group {% if form.name.errors %}has-error{% endif %}">
         <label for="{{ form.name.id_for_label }}">
           Department Name <span class="required">*</span>
         </label>
         {{ form.name }}
-        {% if form.name.help_text %}<span class="helptext">{{ form.name.help_text }}</span>{% endif %}
-        {% if form.name.errors %}<div class="field-error">{{ form.name.errors.0 }}</div>{% endif %}
+        {% if form.name.help_text %}
+          <span class="helptext">{{ form.name.help_text }}</span>
+        {% endif %}
+        {% if form.name.errors %}
+          <div class="field-error">{{ form.name.errors.0 }}</div>
+        {% endif %}
       </div>
 
+      {# ---------- CODE ---------- #}
       <div class="form-group {% if form.code.errors %}has-error{% endif %}">
         <label for="{{ form.code.id_for_label }}">Department Code</label>
-        {{ form.code }}
-        {% if form.code.help_text %}<span class="helptext">{{ form.code.help_text }}</span>{% endif %}
-        {% if form.code.errors %}<div class="field-error">{{ form.code.errors.0 }}</div>{% endif %}
+
+        {% if department %}
+          {#
+            Code is immutable once created. Render a read-only display
+            instead of the input, and submit the current value as a
+            hidden field so the form's uniqueness check still runs.
+          #}
+          <div class="readonly-value">{{ department.code }}</div>
+          <input type="hidden" name="code" value="{{ department.code }}">
+          <span class="helptext">
+            Codes are assigned on creation and cannot be changed.
+          </span>
+        {% else %}
+          {{ form.code }}
+          {% if form.code.help_text %}
+            <span class="helptext">{{ form.code.help_text }}</span>
+          {% endif %}
+          {% if form.code.errors %}
+            <div class="field-error">{{ form.code.errors.0 }}</div>
+          {% endif %}
+        {% endif %}
       </div>
 
+      {# ---------- IS ACTIVE ---------- #}
       <div class="form-group {% if form.is_active.errors %}has-error{% endif %}">
         <div class="checkbox-row">
           {{ form.is_active }}
@@ -170,16 +208,20 @@
             Active — show this department in staff forms
           </label>
         </div>
-        {% if form.is_active.help_text %}<span class="helptext">{{ form.is_active.help_text }}</span>{% endif %}
-        {% if form.is_active.errors %}<div class="field-error">{{ form.is_active.errors.0 }}</div>{% endif %}
+        {% if form.is_active.errors %}
+          <div class="field-error">{{ form.is_active.errors.0 }}</div>
+        {% endif %}
       </div>
 
+      {# ---------- ACTIONS ---------- #}
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">
-          <i class="fas fa-save"></i>
+          <i class="fas fa-save" aria-hidden="true"></i>
           {% if department %}Save Changes{% else %}Create Department{% endif %}
         </button>
-        <a href="{% url 'department_list' %}" class="btn btn-outline">Cancel</a>
+        <a href="{% url 'id_cards:department_list' %}" class="btn btn-outline">
+          Cancel
+        </a>
       </div>
     </form>
   </div>

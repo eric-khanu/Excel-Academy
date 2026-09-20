@@ -1,5 +1,5 @@
 {% extends "id_cards/base.html" %}
-{% block title %}All Staff ID Cards{% endblock %}
+{% block title %}Student ID Cards{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -18,7 +18,6 @@
     align-items: flex-end;
     flex-wrap: wrap;
   }
-
   .filter-bar .filter-group {
     display: flex;
     flex-direction: column;
@@ -26,7 +25,6 @@
     min-width: 140px;
     flex: 1 1 140px;
   }
-
   .filter-bar label {
     font-size: 0.7rem;
     font-weight: 700;
@@ -34,7 +32,6 @@
     letter-spacing: 0.6px;
     color: var(--muted);
   }
-
   .filter-bar select,
   .filter-bar input {
     padding: 9px 12px;
@@ -46,7 +43,6 @@
     color: var(--text);
     width: 100%;
   }
-
   .filter-bar select:focus,
   .filter-bar input:focus {
     outline: none;
@@ -54,7 +50,6 @@
     box-shadow: 0 0 0 3px rgba(200, 122, 44, 0.15);
     background: #fff;
   }
-
   .filter-bar .filter-actions {
     display: flex;
     gap: 8px;
@@ -102,13 +97,11 @@
     flex-wrap: wrap;
   }
   .section-header:first-of-type { margin-top: 0; }
-
   .section-header .section-title-wrap {
     display: flex;
     align-items: center;
     gap: 10px;
   }
-
   .section-header .section-icon {
     width: 34px;
     height: 34px;
@@ -131,7 +124,6 @@
     margin: 0;
     letter-spacing: 0.3px;
   }
-
   .section-header .count-badge {
     font-size: 0.72rem;
     font-weight: 800;
@@ -148,7 +140,6 @@
   .section-header.reprinted .count-badge {
     background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe;
   }
-
   .section-header .section-actions {
     display: flex;
     gap: 8px;
@@ -156,9 +147,9 @@
   }
 
   /* ============================================================
-     STAFF ROW GRID (used by partials/staff_row.html)
+     ROW LIST
      ============================================================ */
-  .staff-list {
+  .student-list {
     background: #fff;
     border-radius: 14px;
     box-shadow: 0 4px 16px rgba(60, 30, 20, 0.06);
@@ -166,16 +157,15 @@
     overflow: hidden;
     margin-bottom: 8px;
   }
-
-  .staff-row {
+  .student-row {
     display: grid;
     grid-template-columns:
       44px
       minmax(150px, 2fr)
+      minmax(110px, 1.1fr)
       minmax(90px, 1fr)
-      minmax(110px, 1.2fr)
+      minmax(80px, 0.8fr)
       minmax(90px, 0.9fr)
-      minmax(80px, 0.7fr)
       minmax(140px, auto);
     gap: 14px;
     align-items: center;
@@ -183,10 +173,10 @@
     border-bottom: 1px solid rgba(139, 32, 32, 0.06);
     transition: background 0.12s;
   }
-  .staff-row:last-child { border-bottom: none; }
-  .staff-row:hover { background: #fdfaf4; }
+  .student-row:last-child { border-bottom: none; }
+  .student-row:hover { background: #fdfaf4; }
 
-  .staff-row .avatar-sm {
+  .student-row .avatar-sm {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -202,12 +192,12 @@
     color: var(--primary);
     flex-shrink: 0;
   }
-  .staff-row .avatar-sm img {
+  .student-row .avatar-sm img {
     width: 100%; height: 100%; object-fit: cover;
   }
 
-  .staff-row .name-cell { min-width: 0; }
-  .staff-row .name-cell .name {
+  .student-row .name-cell { min-width: 0; }
+  .student-row .name-cell .name {
     font-weight: 700;
     font-size: 0.9rem;
     color: var(--text);
@@ -217,11 +207,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .staff-row .name-cell .name:hover {
+  .student-row .name-cell .name:hover {
     color: var(--primary);
     text-decoration: underline;
   }
-  .staff-row .name-cell .role-sub {
+  .student-row .name-cell .role-sub {
     font-size: 0.74rem;
     color: var(--muted);
     white-space: nowrap;
@@ -229,7 +219,7 @@
     text-overflow: ellipsis;
   }
 
-  .staff-row .cell {
+  .student-row .cell {
     font-size: 0.82rem;
     color: var(--text);
     min-width: 0;
@@ -237,19 +227,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .staff-row .cell .cell-label { display: none; }
-  .staff-row .cell .mono {
+  .student-row .cell .cell-label { display: none; }
+  .student-row .cell .mono {
     font-family: 'Menlo', 'Consolas', monospace;
     font-size: 0.78rem;
     font-weight: 600;
     color: var(--primary);
   }
 
-  .chip-row {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
+  .chip-row { display: flex; gap: 4px; flex-wrap: wrap; }
   .meta-level-tag {
     font-size: 0.64rem;
     font-weight: 700;
@@ -261,6 +247,35 @@
     letter-spacing: 0.3px;
     white-space: nowrap;
   }
+  .meta-blood {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+  .meta-blood i { color: #dc2626; font-size: 0.58rem; }
+
+  .badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  .badge-active    { background: #d1fae5; color: #065f46; }
+  .badge-inactive  { background: #e5e7eb; color: #374151; }
+  .badge-graduated { background: #e0e7ff; color: #3730a3; }
+  .badge-expired   { background: #fee2e2; color: #991b1b; }
 
   .badge-print {
     display: inline-flex;
@@ -291,7 +306,6 @@
     color: var(--print-reprinted-fg, #1e40af);
     border-color: var(--print-reprinted-br, #bfdbfe);
   }
-
   .print-date {
     font-size: 0.66rem;
     color: var(--muted);
@@ -301,22 +315,17 @@
     text-overflow: ellipsis;
   }
 
-  .staff-row .row-actions {
+  .student-row .row-actions {
     display: flex;
     gap: 5px;
     justify-content: flex-end;
     align-items: center;
   }
-  .staff-row .row-actions form {
-    display: inline-flex;
-    margin: 0;
-    padding: 0;
-  }
-  .staff-row .row-actions .btn {
+  .student-row .row-actions .btn {
     padding: 5px 9px;
     font-size: 0.74rem;
   }
-  .staff-row .row-actions .icon-btn {
+  .student-row .row-actions .icon-btn {
     width: 30px;
     height: 30px;
     padding: 0;
@@ -325,9 +334,6 @@
     font-size: 0.72rem;
   }
 
-  /* ============================================================
-     EMPTY STATES
-     ============================================================ */
   .empty-row {
     text-align: center;
     padding: 34px 20px;
@@ -343,9 +349,6 @@
   }
   .empty-row.compact { padding: 26px 20px; }
 
-  /* ============================================================
-     RESULTS COUNT STRIP
-     ============================================================ */
   .results-count {
     display: flex;
     justify-content: space-between;
@@ -356,34 +359,24 @@
     flex-wrap: wrap;
     gap: 10px;
   }
-  .results-count .count-num {
-    font-weight: 700;
-    color: var(--primary);
-  }
-  .results-count .sort-hint {
-    font-size: 0.78rem;
-    color: var(--muted);
-    font-style: italic;
-  }
+  .results-count .count-num { font-weight: 700; color: var(--primary); }
+  .results-count .sort-hint { font-size: 0.78rem; color: var(--muted); font-style: italic; }
 
-  /* ============================================================
-     RESPONSIVE
-     ============================================================ */
   @media (max-width: 900px) {
-    .staff-row {
+    .student-row {
       grid-template-columns: 44px 1fr auto;
       grid-template-areas:
         "avatar name    actions"
         ".      meta    meta";
       gap: 6px 12px;
       padding: 12px 16px;
-      align-items: center;
     }
-    .staff-row .avatar-sm   { grid-area: avatar; }
-    .staff-row .name-cell   { grid-area: name; }
-    .staff-row .row-actions { grid-area: actions; }
-    .staff-row .cell,
-    .staff-row .chip-row {
+    .student-row .avatar-sm  { grid-area: avatar; }
+    .student-row .name-cell  { grid-area: name; }
+    .student-row .row-actions { grid-area: actions; }
+
+    .student-row .cell,
+    .student-row .chip-row {
       grid-area: meta;
       display: inline-flex;
       align-items: center;
@@ -391,7 +384,7 @@
       margin-right: 12px;
       font-size: 0.76rem;
     }
-    .staff-row .cell .cell-label {
+    .student-row .cell .cell-label {
       display: inline;
       font-size: 0.66rem;
       font-weight: 700;
@@ -400,6 +393,7 @@
       color: var(--muted);
       margin-right: 3px;
     }
+    .student-row .cell.admission-cell::before { content: "Adm:"; }
   }
 
   @media (max-width: 700px) {
@@ -407,17 +401,9 @@
       min-width: 100%;
       flex: 1 1 100%;
     }
-    .filter-bar .filter-actions {
-      width: 100%;
-    }
-    .filter-bar .filter-actions .btn {
-      flex: 1;
-      justify-content: center;
-    }
-    .section-header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
+    .filter-bar .filter-actions { width: 100%; }
+    .filter-bar .filter-actions .btn { flex: 1; justify-content: center; }
+    .section-header { flex-direction: column; align-items: flex-start; }
   }
 </style>
 {% endblock %}
@@ -426,53 +412,44 @@
 
 <div class="page-header">
   <div>
-    <h1>Staff ID Cards</h1>
+    <h1>Student ID Cards</h1>
     <p>
-      {% if teachers %}
-        {{ teachers|length }} staff record{{ teachers|length|pluralize }} on file
+      {% if students %}
+        {{ students|length }} student record{{ students|length|pluralize }} on file
       {% else %}
         No records yet
       {% endif %}
     </p>
   </div>
   <div class="actions">
-    <a href="{% url 'id_cards:bulk_import' %}" class="btn btn-outline">
-      <i class="fas fa-file-csv" aria-hidden="true"></i> Bulk Import
+    <a href="{% url 'student:student_print_all' %}" class="btn btn-secondary">
+      <i class="fas fa-print"></i> Print All
     </a>
-
-    <form method="post" action="{% url 'id_cards:card_print_all' %}" style="display:inline;">
-      {% csrf_token %}
-      <input type="hidden" name="track" value="1">
-      <button type="submit" class="btn btn-secondary">
-        <i class="fas fa-print" aria-hidden="true"></i> Print All
-      </button>
-    </form>
-
-    <a href="{% url 'id_cards:card_create' %}" class="btn btn-primary">
-      <i class="fas fa-plus" aria-hidden="true"></i> New Staff
+    <a href="{% url 'student:student_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> New Student
     </a>
   </div>
 </div>
 
 <div class="stats-grid">
   <div class="stat-card">
-    <div class="num">{{ stats.total }}</div>
-    <div class="lbl">Total Staff</div>
+    <div class="num">{{ stats.total|default:0 }}</div>
+    <div class="lbl">Total Students</div>
   </div>
   <div class="stat-card">
-    <div class="num">{{ stats.active }}</div>
+    <div class="num">{{ stats.active|default:0 }}</div>
     <div class="lbl">Active</div>
   </div>
   <div class="stat-card stat-unprinted">
-    <div class="num">{{ stats.unprinted }}</div>
+    <div class="num">{{ stats.unprinted|default:0 }}</div>
     <div class="lbl">Not Printed</div>
   </div>
   <div class="stat-card stat-printed">
-    <div class="num">{{ stats.printed }}</div>
+    <div class="num">{{ stats.printed|default:0 }}</div>
     <div class="lbl">Printed</div>
   </div>
   <div class="stat-card stat-reprinted">
-    <div class="num">{{ stats.reprinted }}</div>
+    <div class="num">{{ stats.reprinted|default:0 }}</div>
     <div class="lbl">Reprinted</div>
   </div>
 </div>
@@ -482,29 +459,17 @@
   <div class="filter-group" style="flex: 2 1 240px;">
     <label for="q">Search</label>
     <input type="text" name="q" id="q"
-           placeholder="Name, employee ID, email, or phone…"
+           placeholder="Name, admission number, email, or phone…"
            value="{{ current_filters.q }}">
   </div>
 
   <div class="filter-group">
-    <label for="role">Role</label>
-    <select name="role" id="role">
-      <option value="">All roles</option>
-      {% for key, label in roles %}
-        <option value="{{ key }}" {% if current_filters.role == key %}selected{% endif %}>
-          {{ label }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="filter-group">
-    <label for="dept">Department</label>
-    <select name="dept" id="dept">
-      <option value="">All departments</option>
-      {% for d in departments %}
-        <option value="{{ d.id }}" {% if current_filters.dept == d.id|stringformat:"s" %}selected{% endif %}>
-          {{ d.name }}
+    <label for="level">Level</label>
+    <select name="level" id="level">
+      <option value="">All levels</option>
+      {% for lv in levels %}
+        <option value="{{ lv.id }}" {% if current_filters.level == lv.id|stringformat:"s" %}selected{% endif %}>
+          {{ lv.name }}
         </option>
       {% endfor %}
     </select>
@@ -514,9 +479,10 @@
     <label for="status">Status</label>
     <select name="status" id="status">
       <option value="">All statuses</option>
-      <option value="active"   {% if current_filters.status == 'active' %}selected{% endif %}>Active</option>
-      <option value="inactive" {% if current_filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
-      <option value="expired"  {% if current_filters.status == 'expired' %}selected{% endif %}>Expired</option>
+      <option value="active"    {% if current_filters.status == 'active' %}selected{% endif %}>Active</option>
+      <option value="inactive"  {% if current_filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+      <option value="graduated" {% if current_filters.status == 'graduated' %}selected{% endif %}>Graduated</option>
+      <option value="expired"   {% if current_filters.status == 'expired' %}selected{% endif %}>Expired</option>
     </select>
   </div>
 
@@ -533,105 +499,83 @@
 
   <div class="filter-actions">
     <button type="submit" class="btn btn-primary btn-sm">
-      <i class="fas fa-filter" aria-hidden="true"></i> Filter
+      <i class="fas fa-filter"></i> Filter
     </button>
-    <a href="{% url 'id_cards:card_list' %}" class="btn btn-outline btn-sm" title="Clear all filters">
-      <i class="fas fa-xmark" aria-hidden="true"></i> Clear
+    <a href="{% url 'student:student_list' %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-xmark"></i> Clear
     </a>
   </div>
 </form>
 
-{% if current_filters.q or current_filters.role or current_filters.dept or current_filters.status or current_filters.printed %}
+{% if current_filters.q or current_filters.status or current_filters.level or current_filters.printed %}
   <div class="active-filters no-print">
     <span class="label">Active filters:</span>
-
     {% if current_filters.q %}
-      <a href="?{% if current_filters.role %}role={{ current_filters.role|urlencode }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept|urlencode }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status|urlencode }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed|urlencode }}{% endif %}"
-         class="filter-chip">
-        <i class="fas fa-magnifying-glass" aria-hidden="true"></i> "{{ current_filters.q }}" <i class="fas fa-xmark" aria-hidden="true"></i>
+      <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.level %}level={{ current_filters.level }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed }}{% endif %}" class="filter-chip">
+        <i class="fas fa-magnifying-glass"></i> "{{ current_filters.q }}" <i class="fas fa-xmark"></i>
       </a>
     {% endif %}
-
-    {% if current_filters.role %}
-      <a href="?{% if current_filters.q %}q={{ current_filters.q|urlencode }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept|urlencode }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status|urlencode }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed|urlencode }}{% endif %}"
-         class="filter-chip">
-        <i class="fas fa-briefcase" aria-hidden="true"></i> {{ current_filters.role }} <i class="fas fa-xmark" aria-hidden="true"></i>
-      </a>
-    {% endif %}
-
-    {% if current_filters.dept %}
-      <a href="?{% if current_filters.q %}q={{ current_filters.q|urlencode }}&{% endif %}{% if current_filters.role %}role={{ current_filters.role|urlencode }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status|urlencode }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed|urlencode }}{% endif %}"
-         class="filter-chip">
-        <i class="fas fa-building" aria-hidden="true"></i> Dept #{{ current_filters.dept }} <i class="fas fa-xmark" aria-hidden="true"></i>
-      </a>
-    {% endif %}
-
     {% if current_filters.status %}
-      <a href="?{% if current_filters.q %}q={{ current_filters.q|urlencode }}&{% endif %}{% if current_filters.role %}role={{ current_filters.role|urlencode }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept|urlencode }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed|urlencode }}{% endif %}"
-         class="filter-chip">
-        <i class="fas fa-circle" aria-hidden="true"></i> {{ current_filters.status|title }} <i class="fas fa-xmark" aria-hidden="true"></i>
+      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.level %}level={{ current_filters.level }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed }}{% endif %}" class="filter-chip">
+        <i class="fas fa-circle"></i> {{ current_filters.status|title }} <i class="fas fa-xmark"></i>
       </a>
     {% endif %}
-
+    {% if current_filters.level %}
+      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.printed %}printed={{ current_filters.printed }}{% endif %}" class="filter-chip">
+        <i class="fas fa-layer-group"></i> Level #{{ current_filters.level }} <i class="fas fa-xmark"></i>
+      </a>
+    {% endif %}
     {% if current_filters.printed %}
-      <a href="?{% if current_filters.q %}q={{ current_filters.q|urlencode }}&{% endif %}{% if current_filters.role %}role={{ current_filters.role|urlencode }}&{% endif %}{% if current_filters.dept %}dept={{ current_filters.dept|urlencode }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status|urlencode }}{% endif %}"
-         class="filter-chip">
-        <i class="fas fa-print" aria-hidden="true"></i>
+      <a href="?{% if current_filters.q %}q={{ current_filters.q }}&{% endif %}{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.level %}level={{ current_filters.level }}{% endif %}" class="filter-chip">
+        <i class="fas fa-print"></i>
         {% if current_filters.printed == 'no' %}Not printed
         {% elif current_filters.printed == 'once' %}Printed once
         {% elif current_filters.printed == 'reprinted' %}Reprinted
         {% else %}Printed (any){% endif %}
-        <i class="fas fa-xmark" aria-hidden="true"></i>
+        <i class="fas fa-xmark"></i>
       </a>
     {% endif %}
-
-    <a href="{% url 'id_cards:card_list' %}" class="filter-chip" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">
-      <i class="fas fa-xmark" aria-hidden="true"></i> Clear all
+    <a href="{% url 'student:student_list' %}" class="filter-chip" style="background:#fee2e2; color:#991b1b; border-color:#fecaca;">
+      <i class="fas fa-xmark"></i> Clear all
     </a>
   </div>
 {% endif %}
 
-{% if teachers %}
+{% if students %}
   <div class="results-count">
     <div>
-      Showing <span class="count-num">{{ teachers|length }}</span>
-      result{{ teachers|length|pluralize }}
+      Showing <span class="count-num">{{ students|length }}</span>
+      result{{ students|length|pluralize }}
     </div>
     <div class="sort-hint">
-      <i class="fas fa-sort-alpha-down" aria-hidden="true"></i> Sorted alphabetically by name
+      <i class="fas fa-sort-alpha-down"></i> Sorted alphabetically by name
     </div>
   </div>
 {% endif %}
 
-{% if teachers %}
+{% if students %}
 
   <div class="section-header unprinted">
     <div class="section-title-wrap">
-      <div class="section-icon"><i class="fas fa-circle-exclamation" aria-hidden="true"></i></div>
+      <div class="section-icon"><i class="fas fa-circle-exclamation"></i></div>
       <h2>Not Printed</h2>
       <span class="count-badge">{{ unprinted_count }} card{{ unprinted_count|pluralize }}</span>
     </div>
     <div class="section-actions">
       {% if unprinted_count %}
-        <form method="post"
-              action="{% url 'id_cards:card_print_all' %}?printed=no"
-              style="display:inline;">
-          {% csrf_token %}
-          <input type="hidden" name="track" value="1">
-          <button type="submit" class="btn btn-secondary btn-sm">
-            <i class="fas fa-print" aria-hidden="true"></i> Print All Unprinted
-          </button>
-        </form>
+        <a href="{% url 'student:student_print_all' %}?printed=no" class="btn btn-secondary btn-sm">
+          <i class="fas fa-print"></i> Print All Unprinted
+        </a>
       {% endif %}
     </div>
   </div>
 
-  <div class="staff-list">
-    {% for teacher in unprinted_teachers %}
-      {% include "id_cards/partials/staff_row.html" with teacher=teacher print_state="unprinted" %}
+  <div class="student-list">
+    {% for student in unprinted_students %}
+      {% include "student/partials/student_row.html" with student=student print_state="unprinted" %}
     {% empty %}
       <div class="empty-row compact">
-        <i class="fas fa-circle-check" style="color:#047857; opacity:0.6;" aria-hidden="true"></i>
+        <i class="fas fa-circle-check" style="color:#047857; opacity:0.6;"></i>
         All cards have been printed at least once.
       </div>
     {% endfor %}
@@ -639,31 +583,25 @@
 
   <div class="section-header printed">
     <div class="section-title-wrap">
-      <div class="section-icon"><i class="fas fa-circle-check" aria-hidden="true"></i></div>
+      <div class="section-icon"><i class="fas fa-circle-check"></i></div>
       <h2>Printed</h2>
       <span class="count-badge">{{ printed_count }} card{{ printed_count|pluralize }}</span>
     </div>
     <div class="section-actions">
       {% if printed_count %}
-        <form method="post"
-              action="{% url 'id_cards:card_print_all' %}?printed=once"
-              style="display:inline;">
-          {% csrf_token %}
-          <input type="hidden" name="track" value="1">
-          <button type="submit" class="btn btn-outline btn-sm">
-            <i class="fas fa-print" aria-hidden="true"></i> Print All (Once)
-          </button>
-        </form>
+        <a href="{% url 'student:student_print_all' %}?printed=once" class="btn btn-outline btn-sm">
+          <i class="fas fa-print"></i> Print All (Once)
+        </a>
       {% endif %}
     </div>
   </div>
 
-  <div class="staff-list">
-    {% for teacher in printed_teachers %}
-      {% include "id_cards/partials/staff_row.html" with teacher=teacher print_state="printed" %}
+  <div class="student-list">
+    {% for student in printed_students %}
+      {% include "student/partials/student_row.html" with student=student print_state="printed" %}
     {% empty %}
       <div class="empty-row compact">
-        <i class="fas fa-print" style="opacity:0.3;" aria-hidden="true"></i>
+        <i class="fas fa-print" style="opacity:0.3;"></i>
         No cards have been printed exactly once yet.
       </div>
     {% endfor %}
@@ -671,31 +609,25 @@
 
   <div class="section-header reprinted">
     <div class="section-title-wrap">
-      <div class="section-icon"><i class="fas fa-rotate-right" aria-hidden="true"></i></div>
+      <div class="section-icon"><i class="fas fa-rotate-right"></i></div>
       <h2>Reprinted</h2>
       <span class="count-badge">{{ reprinted_count }} card{{ reprinted_count|pluralize }}</span>
     </div>
     <div class="section-actions">
       {% if reprinted_count %}
-        <form method="post"
-              action="{% url 'id_cards:card_print_all' %}?printed=reprinted"
-              style="display:inline;">
-          {% csrf_token %}
-          <input type="hidden" name="track" value="1">
-          <button type="submit" class="btn btn-outline btn-sm">
-            <i class="fas fa-print" aria-hidden="true"></i> Reprint All
-          </button>
-        </form>
+        <a href="{% url 'student:student_print_all' %}?printed=reprinted" class="btn btn-outline btn-sm">
+          <i class="fas fa-print"></i> Reprint All
+        </a>
       {% endif %}
     </div>
   </div>
 
-  <div class="staff-list">
-    {% for teacher in reprinted_teachers %}
-      {% include "id_cards/partials/staff_row.html" with teacher=teacher print_state="reprinted" %}
+  <div class="student-list">
+    {% for student in reprinted_students %}
+      {% include "student/partials/student_row.html" with student=student print_state="reprinted" %}
     {% empty %}
       <div class="empty-row compact">
-        <i class="fas fa-rotate-right" style="opacity:0.3;" aria-hidden="true"></i>
+        <i class="fas fa-rotate-right" style="opacity:0.3;"></i>
         No cards have been reprinted yet.
       </div>
     {% endfor %}
@@ -704,27 +636,21 @@
 {% else %}
 
   <div class="empty-state">
-    <i class="fas fa-id-card" aria-hidden="true"></i>
-    {% if current_filters.q or current_filters.role or current_filters.dept or current_filters.status or current_filters.printed %}
+    <i class="fas fa-user-graduate"></i>
+    {% if current_filters.q or current_filters.status or current_filters.level or current_filters.printed %}
       <h2>No results match your filters</h2>
-      <p>Try widening your search or clearing some filters to see more staff.</p>
+      <p>Try widening your search or clearing some filters to see more students.</p>
       <div class="empty-actions">
-        <a href="{% url 'id_cards:card_list' %}" class="btn btn-outline">
-          <i class="fas fa-xmark" aria-hidden="true"></i> Clear Filters
+        <a href="{% url 'student:student_list' %}" class="btn btn-outline">
+          <i class="fas fa-xmark"></i> Clear Filters
         </a>
       </div>
     {% else %}
-      <h2>No staff records yet</h2>
-      <p>
-        Get started by adding your first staff member or importing a list of
-        staff from a CSV file.
-      </p>
+      <h2>No student records yet</h2>
+      <p>Get started by adding your first student.</p>
       <div class="empty-actions">
-        <a href="{% url 'id_cards:card_create' %}" class="btn btn-primary">
-          <i class="fas fa-plus" aria-hidden="true"></i> Add First Staff
-        </a>
-        <a href="{% url 'id_cards:bulk_import' %}" class="btn btn-outline">
-          <i class="fas fa-file-csv" aria-hidden="true"></i> Bulk Import
+        <a href="{% url 'student:student_create' %}" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Add First Student
         </a>
       </div>
     {% endif %}

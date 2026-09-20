@@ -1,8 +1,5 @@
 {% load static %}
 
-<!-- ============================================================
-     FRONT OF CARD
-     ============================================================ -->
 <div class="id-card-front-wrapper">
   <div class="id-card-front" style="
     --primary:   {{ school.primary_color|default:'#8B2020' }};
@@ -11,22 +8,44 @@
     --text:      {{ school.text_color|default:'#2A1810' }};
   ">
 
-    <!-- HEADER -->
+    {% if not teacher.template or teacher.template.show_gold_bar %}
+      <div class="front-gold-bar front-gold-bar-top"></div>
+    {% endif %}
+
     <div class="front-card-header">
+      <div class="front-header-guilloche" aria-hidden="true">
+        <svg viewBox="0 0 240 100" preserveAspectRatio="none">
+          <defs>
+            <pattern id="front-guilloche" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+              <path d="M15 0 Q30 15 15 30 Q0 15 15 0 Z"
+                    fill="none" stroke="rgba(228,169,81,0.20)" stroke-width="0.4"/>
+              <path d="M15 4 Q26 15 15 26 Q4 15 15 4 Z"
+                    fill="none" stroke="rgba(228,169,81,0.15)" stroke-width="0.3"/>
+              <circle cx="15" cy="15" r="1.2" fill="rgba(244,210,142,0.30)"/>
+              <circle cx="0"  cy="0"  r="0.9" fill="rgba(244,210,142,0.22)"/>
+              <circle cx="30" cy="30" r="0.9" fill="rgba(244,210,142,0.22)"/>
+            </pattern>
+            <radialGradient id="front-hdr-glow" cx="25%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="rgba(60,120,190,0.35)"/>
+              <stop offset="100%" stop-color="rgba(60,120,190,0)"/>
+            </radialGradient>
+          </defs>
+          <rect width="240" height="100" fill="url(#front-hdr-glow)"/>
+          <rect width="240" height="100" fill="url(#front-guilloche)"/>
+        </svg>
+      </div>
+
       <div class="front-header-top">
         <div class="front-header-logo">
           {% if school.logo %}
-            <img src="{{ school.logo.url }}" alt="{{ school.name }}"
-                 style="width:100%; height:100%; object-fit:contain;">
+            <img src="{{ school.logo.url }}" alt="{{ school.name }}">
           {% else %}
-            <i class="fas fa-graduation-cap"
-               style="font-size: 0.85rem; color: var(--primary);"></i>
+            <i class="fas fa-graduation-cap" aria-hidden="true"></i>
           {% endif %}
         </div>
-
         <div class="front-header-text">
           <div class="front-header-school-line1">
-            {{ school.name|default:"School Name"|upper|truncatechars:44 }}
+            {{ school.name|default:"School Name"|upper|truncatechars:32 }}
           </div>
         </div>
       </div>
@@ -34,83 +53,126 @@
       <div class="front-gold-divider"></div>
     </div>
 
-    <!-- ROLE — just above the profile picture -->
     <div class="front-role-above-photo">
-      {{ teacher.get_role_display|default:"Faculty"|upper }}
+      {{ teacher.get_role_display|upper }}
     </div>
 
-    <!-- PHOTO -->
+    {% if not teacher.template or teacher.template.show_uv_watermark %}
+      <div class="front-uv-watermark" aria-hidden="true">
+        <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <pattern id="uv-wm" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+              <circle cx="20" cy="20" r="8" fill="none" stroke="rgba(228,169,81,0.14)" stroke-width="0.5"/>
+              <circle cx="20" cy="20" r="12" fill="none" stroke="rgba(228,169,81,0.09)" stroke-width="0.3"/>
+              <text x="20" y="23" text-anchor="middle" font-size="5"
+                    font-family="serif" fill="rgba(228,169,81,0.16)"
+                    font-weight="700">VALID</text>
+            </pattern>
+          </defs>
+          <rect width="200" height="200" fill="url(#uv-wm)"/>
+        </svg>
+      </div>
+    {% endif %}
+
     <div class="front-photo-section">
+      {% if not teacher.template or teacher.template.show_microtext %}
+        <div class="front-microtext-ring" aria-hidden="true"></div>
+      {% endif %}
+
       <div class="front-photo-ring">
         {% if teacher.photo %}
           <img src="{{ teacher.photo.url }}" alt="{{ teacher.full_name }}">
         {% else %}
-          <div class="front-photo-placeholder">
-            {{ teacher.initials|default:"?" }}
-          </div>
+          <div class="front-photo-placeholder">{{ teacher.initials|default:"?" }}</div>
         {% endif %}
       </div>
     </div>
 
-    <!-- INFO -->
     <div class="front-info">
       <div class="front-teacher-name">{{ teacher.full_name|upper }}</div>
       <div class="front-designation">{{ teacher.designation|upper|truncatechars:40 }}</div>
 
       <div class="front-details-panel">
         <div class="front-details">
-          <div>
-            <span class="front-label">Department :</span>
-            <span class="front-value">{{ teacher.department_display }}</span>
-          </div>
-
-          {% if teacher.phone %}
-          <div>
-            <span class="front-label">Phone :</span>
-            <span class="front-value">{{ teacher.phone }}</span>
-          </div>
-          {% endif %}
-
-          {% if teacher.valid_thru %}
-          <div>
-            <span class="front-label">Valid Till :</span>
-            <span class="front-value">{{ teacher.valid_thru|date:"m/Y" }}</span>
-          </div>
+          
+          {% if teacher.resolved_expiry_date %}
+            <div>
+              <span class="front-label">Expires :</span>
+              <span class="front-value">{{ teacher.resolved_expiry_date|date:"m/Y" }}</span>
+            </div>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- FOOTER -->
     <div class="front-footer">
       <div class="front-staff-info">
-        {{ teacher.template.card_footer_text|default:"STAFF IDENTIFICATION" }}
+        {% if teacher.template %}
+          {{ teacher.template.card_footer_text|default:"STAFF IDENTIFICATION" }}
+        {% else %}
+          STAFF IDENTIFICATION
+        {% endif %}
       </div>
     </div>
 
+    {% if not teacher.template or teacher.template.show_rfid %}
+      <div class="front-rfid" aria-hidden="true">
+        <div class="front-rfid-chip">
+          <svg viewBox="0 0 40 40" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="rfid-bg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#E8C86A"/>
+                <stop offset="45%" stop-color="#F4D28E"/>
+                <stop offset="55%" stop-color="#C89840"/>
+                <stop offset="100%" stop-color="#E8C86A"/>
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="36" height="36" rx="3"
+                  fill="url(#rfid-bg)" stroke="#B88940" stroke-width="0.8"/>
+            <line x1="10" y1="4"  x2="10" y2="36" stroke="#8B5A1E" stroke-width="0.6"/>
+            <line x1="15" y1="4"  x2="15" y2="36" stroke="#8B5A1E" stroke-width="0.6"/>
+            <line x1="20" y1="4"  x2="20" y2="36" stroke="#8B5A1E" stroke-width="0.6"/>
+            <line x1="25" y1="4"  x2="25" y2="36" stroke="#8B5A1E" stroke-width="0.6"/>
+            <line x1="30" y1="4"  x2="30" y2="36" stroke="#8B5A1E" stroke-width="0.6"/>
+            <rect x="6" y="10" width="4" height="6" fill="#8B5A1E" rx="0.5"/>
+            <rect x="6" y="24" width="4" height="6" fill="#8B5A1E" rx="0.5"/>
+            <rect x="30" y="10" width="4" height="6" fill="#8B5A1E" rx="0.5"/>
+            <rect x="30" y="24" width="4" height="6" fill="#8B5A1E" rx="0.5"/>
+          </svg>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if not teacher.template or teacher.template.show_hologram %}
+      <div class="front-holo-sticker" aria-hidden="true">
+        <div class="front-holo-short-name">
+          {{ school.short_name|default:"ID"|upper|slice:":5" }}
+        </div>
+        <div class="front-holo-authentic">AUTHENTIC</div>
+      </div>
+    {% endif %}
+
+    {% if not teacher.template or teacher.template.show_microtext %}
+      <div class="front-microtext-strip" aria-hidden="true"></div>
+    {% endif %}
+
     {% if not teacher.template or teacher.template.show_gold_bar %}
-    <div class="front-gold-bar"></div>
+      <div class="front-gold-bar front-gold-bar-bottom"></div>
     {% endif %}
 
   </div>
 </div>
 
 <style>
-  /* ============================================================
-     FRONT OF CARD — self-contained styles
-     ============================================================ */
-
   .id-card-front-wrapper {
     display: inline-block;
     padding: 12px;
-    background: linear-gradient(
-      135deg,
+    background: linear-gradient(135deg,
       rgba(255, 255, 255, 0.7),
-      rgba(255, 255, 255, 0.35)
-    );
+      rgba(255, 255, 255, 0.35));
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.75);
-    box-shadow: 0 20px 45px -15px rgba(60, 30, 20, 0.35);
+    box-shadow: 0 20px 45px -15px rgba(20, 30, 60, 0.35);
   }
 
   .id-card-front {
@@ -122,22 +184,54 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 4px 10px rgba(60, 30, 20, 0.25);
+    box-shadow: 0 4px 10px rgba(20, 30, 60, 0.25);
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     font-family: 'Inter', sans-serif;
     color: var(--text);
   }
 
-  /* --- Header --- */
+  .front-card-header,
+  .front-details-panel {
+    background: linear-gradient(160deg, #0F2A4A 0%, #1E4270 100%);
+  }
+
+  .front-gold-bar {
+    height: 5px;
+    width: 100%;
+    flex-shrink: 0;
+    background: linear-gradient(90deg,
+      #A87830 0%, #E4A951 25%, #F4D28E 50%, #E4A951 75%, #A87830 100%);
+  }
+  .front-gold-bar-top {
+    box-shadow: inset 0 -1px 1px rgba(255, 255, 255, 0.5);
+  }
+  .front-gold-bar-bottom {
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  }
+
   .front-card-header {
-    background: linear-gradient(160deg, var(--primary) 0%, #5A1414 100%);
-    padding: 10px 8px 6px 8px;
     position: relative;
-    border-bottom: 2px solid var(--secondary);
+    padding: 10px 8px 6px 8px;
+    border-bottom: 2px solid #E4A951;
+    overflow: hidden;
+  }
+
+  .front-header-guilloche {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .front-header-guilloche svg {
+    width: 100%;
+    height: 100%;
+    display: block;
   }
 
   .front-header-top {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -148,15 +242,24 @@
     width: 0.45in;
     height: 0.45in;
     border-radius: 50%;
-    background: #FBF6EC;
-    border: 1.5px solid var(--secondary);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    background: #FFFFFF;
+    border: 1.5px solid #E4A951;
+    box-shadow: 0 2px 6px rgba(15, 42, 74, 0.35);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     padding: 2px;
     flex-shrink: 0;
+  }
+  .front-header-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .front-header-logo i {
+    font-size: 0.85rem;
+    color: #0F2A4A;
   }
 
   .front-header-text {
@@ -165,89 +268,125 @@
     text-align: left;
   }
 
-  /* Single school-name line — sized to fit the header area */
   .front-header-school-line1 {
     font-family: 'Cinzel', serif;
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.5px;
-    color: #F5C87A;
+    color: #F4D28E;
     text-transform: uppercase;
     line-height: 1.2;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     text-align: center;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   }
 
   .front-gold-divider {
+    position: relative;
+    z-index: 2;
     width: 100%;
     height: 2px;
-    background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+    background: linear-gradient(90deg, transparent, #E4A951, transparent);
     margin: 2px auto 0 auto;
-    opacity: 0.85;
+    opacity: 0.9;
   }
 
-  /* --- Role strip above the photo --- */
   .front-role-above-photo {
     text-align: center;
     font-family: 'Cinzel', serif;
-    font-size: 9px;
-    font-weight: 900;
+    font-size: 11px;
+    font-weight: 1000;
     letter-spacing: 1.2px;
-    color: var(--primary);
-    background: linear-gradient(
-      180deg,
-      rgba(200, 122, 44, 0.14) 0%,
-      rgba(200, 122, 44, 0.04) 100%
-    );
-    border-top: 0.5px solid rgba(200, 122, 44, 0.35);
-    border-bottom: 0.5px solid rgba(200, 122, 44, 0.35);
+    color: #0F2A4A;
+    background: linear-gradient(180deg,
+      rgba(228, 169, 81, 0.18) 0%,
+      rgba(228, 169, 81, 0.06) 100%);
+    border-top: 0.5px solid rgba(228, 169, 81, 0.5);
+    border-bottom: 0.5px solid rgba(228, 169, 81, 0.5);
     padding: 3px 8px;
     text-transform: uppercase;
   }
 
-  /* --- Photo --- */
+  .front-uv-watermark {
+    position: absolute;
+    top: 30%;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 1;
+  }
+  .front-uv-watermark svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
   .front-photo-section {
     display: flex;
     justify-content: center;
+    align-items: center;
     margin-top: 8px;
     position: relative;
     z-index: 5;
   }
 
+  .front-microtext-ring {
+    position: absolute;
+    width: 1.15in;
+    height: 1.15in;
+    border-radius: 50%;
+    background:
+      repeating-conic-gradient(
+        #E4A951 0deg 2deg,
+        #0F2A4A 2deg 4deg
+      );
+    mask: radial-gradient(circle,
+      transparent 0 62%,
+      #000 62% 68%,
+      transparent 68%);
+    -webkit-mask: radial-gradient(circle,
+      transparent 0 62%,
+      #000 62% 68%,
+      transparent 68%);
+    opacity: 0.55;
+  }
+
   .front-photo-ring {
+    position: relative;
     width: 1.05in;
     height: 1.05in;
     border-radius: 50%;
-    background: var(--accent);
-    padding: 0px;
-    border: 2px solid var(--secondary);
-    box-shadow: 0 6px 16px -2px rgba(60, 30, 20, 0.45);
+    background: #FFFFFF;
+    border: 2px solid #E4A951;
+    box-shadow: 0 6px 16px -2px rgba(15, 42, 74, 0.5);
     overflow: hidden;
   }
-
   .front-photo-ring img {
-    width: 100%; height: 100%;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     border-radius: 50%;
     display: block;
   }
 
   .front-photo-placeholder {
-    width: 100%; height: 100%;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
-    background: var(--accent);
+    background: #F4F7FB;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Cinzel', serif;
     font-weight: 800;
     font-size: 1.5rem;
-    color: var(--primary);
+    color: #0F2A4A;
   }
 
-  /* --- Info block --- */
   .front-info {
     text-align: center;
     padding: 8px 8px 0 8px;
@@ -257,27 +396,27 @@
 
   .front-teacher-name {
     font-family: 'Cinzel', serif;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 800;
     letter-spacing: 0.4px;
-    color: var(--primary);
+    color: #0F2A4A;
     line-height: 1.2;
     word-break: break-word;
   }
 
   .front-designation {
     font-family: 'Inter', sans-serif;
-    font-size: 6px;
+    font-size: 8px;
     font-weight: 700;
-    color: var(--primary);
+    color: #0F2A4A;
     letter-spacing: 0.5px;
     margin-top: 3px;
     text-transform: uppercase;
     display: inline-block;
-    background: rgba(200, 122, 44, 0.15);
+    background: rgba(228, 169, 81, 0.2);
     padding: 1.5px 8px;
     border-radius: 20px;
-    border: 0.4px solid rgba(200, 122, 44, 0.4);
+    border: 0.4px solid rgba(228, 169, 81, 0.5);
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -287,33 +426,38 @@
   .front-details-panel {
     margin: 6px 8px 0 8px;
     padding: 5px 6px;
-    background: linear-gradient(180deg, #FFFFFF 0%, #FAF4E8 100%);
-    border: 0.6px solid rgba(140, 60, 30, 0.18);
+    border: 0.6px solid rgba(228, 169, 81, 0.45);
     border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(15, 42, 74, 0.25);
+    position: relative;
+    z-index: 3;
   }
 
   .front-details {
     font-family: 'Inter', sans-serif;
     font-size: 8px;
-    line-height: 1.65;
-    color: var(--text);
+    line-height: 1.5;
+    color: #E8EEF6;
     text-align: center;
   }
-
   .front-details div {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .front-details .front-label {
+    color: #A8B8D0;
+    font-weight: 500;
+  }
+  .front-details .front-value {
+    color: #FFFFFF;
+    font-weight: 700;
+  }
 
-  .front-details .front-label { color: #8A6A50; font-weight: 500; }
-  .front-details .front-value { color: var(--primary); font-weight: 700; }
-
-  /* --- Footer --- */
   .front-footer {
     margin-top: auto;
     text-align: center;
-    padding: 3px 8px 4px 8px;
+    padding: 3px 8px 6px 8px;
     position: relative;
     z-index: 4;
   }
@@ -322,47 +466,82 @@
     font-family: 'Cinzel', serif;
     font-size: 8px;
     font-weight: 700;
-    color: var(--primary);
+    color: #0F2A4A;
     letter-spacing: 1.1px;
   }
 
-  /* --- Hologram --- */
+  .front-rfid {
+    position: absolute;
+    bottom: 12px;
+    left: 7px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    z-index: 5;
+  }
+  .front-rfid-chip {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    box-shadow:
+      0 1px 2px rgba(15, 42, 74, 0.45),
+      inset 0 0 2px rgba(255, 255, 255, 0.6);
+    overflow: hidden;
+  }
+  .front-rfid-chip svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
   .front-holo-sticker {
     position: absolute;
-    bottom: 7px; right: 7px;
-    width: 30px; height: 22px;
+    bottom: 12px;
+    right: 7px;
+    width: 30px;
+    height: 22px;
     border-radius: 3px;
-    background: conic-gradient(
-      from 210deg at 50% 50%,
+    background: conic-gradient(from 210deg at 50% 50%,
       #F5EDE0 0deg, #D8B890 60deg, #FFF8EC 120deg,
-      #B89878 180deg, #F0E0C8 240deg, #D0B090 300deg, #F5EDE0 360deg
-    );
+      #B89878 180deg, #F0E0C8 240deg, #D0B090 300deg, #F5EDE0 360deg);
     border: 0.7px solid rgba(255, 255, 255, 0.95);
-    box-shadow: 0 2px 5px rgba(60, 30, 20, 0.35);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    color: var(--primary);
+    box-shadow: 0 2px 5px rgba(15, 42, 74, 0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #0F2A4A;
     text-align: center;
     line-height: 1.05;
     z-index: 5;
   }
+  .front-holo-short-name {
+    font-size: 4.4px;
+    font-weight: 800;
+  }
+  .front-holo-authentic {
+    font-size: 3.2px;
+    font-weight: 700;
+    margin-top: 0.4px;
+  }
 
-  .front-holo-short-name { font-size: 4.4px; font-weight: 800; }
-  .front-holo-authentic { font-size: 3.2px; font-weight: 700; margin-top: 0.4px; }
-
-  /* --- Gold bar --- */
-  .front-gold-bar {
-    height: 5px;
-    width: 100%;
-    margin-top: auto;
-    background: linear-gradient(
-      90deg,
-      #8B5A1E 0%,
-      var(--secondary) 25%,
-      #E8B860 50%,
-      var(--secondary) 75%,
-      #8B5A1E 100%
-    );
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  .front-microtext-strip {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 5px;
+    height: 3px;
+    z-index: 4;
+    background:
+      repeating-linear-gradient(
+        to right,
+        rgba(15, 42, 74, 0.75) 0px,
+        rgba(15, 42, 74, 0.75) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+    opacity: 0.5;
+    pointer-events: none;
   }
 </style>

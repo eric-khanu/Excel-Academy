@@ -34,6 +34,9 @@
     grid-template-columns: 1fr 1fr;
     gap: 18px;
   }
+  /* Inside the grid, spacing comes from `gap`, not margin */
+  .form-row-2 .form-group { margin-bottom: 0; }
+
   .form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
   .form-group label {
     font-weight: 600;
@@ -100,6 +103,9 @@
   @media (max-width: 600px) {
     .form-card { padding: 24px 20px; }
     .form-row-2 { grid-template-columns: 1fr; gap: 0; }
+    /* When stacked, re-apply per-group margin */
+    .form-row-2 .form-group { margin-bottom: 20px; }
+    .form-row-2 .form-group:last-child { margin-bottom: 0; }
   }
 </style>
 {% endblock %}
@@ -112,20 +118,24 @@
       {% if level %}
         Update this level's name, type, or display order.
       {% else %}
-        Add a new class level. The order number controls how it appears in lists.
+        Add a new class level. The order number controls how it appears in
+        dropdowns and lists across the app.
       {% endif %}
     </p>
 
     {% if form.non_field_errors %}
       <div class="form-errors">
-        <strong><i class="fas fa-triangle-exclamation"></i> Please fix:</strong>
+        <strong>
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+          Please fix:
+        </strong>
         <ul style="margin: 6px 0 0; padding-left: 20px;">
           {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
         </ul>
       </div>
     {% endif %}
 
-    <form method="post" novalidate>
+    <form method="post" id="levelForm" novalidate>
       {% csrf_token %}
 
       <div class="form-row-2">
@@ -147,23 +157,29 @@
       <div class="form-group {% if form.order.errors %}has-error{% endif %}">
         <label for="{{ form.order.id_for_label }}">Display Order</label>
         {{ form.order }}
-        {% if form.order.help_text %}<span class="helptext">{{ form.order.help_text }}</span>{% endif %}
+        {% if form.order.help_text %}
+          <span class="helptext">{{ form.order.help_text }}</span>
+        {% endif %}
         {% if form.order.errors %}<div class="field-error">{{ form.order.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-group {% if form.description.errors %}has-error{% endif %}">
         <label for="{{ form.description.id_for_label }}">Description</label>
         {{ form.description }}
-        {% if form.description.help_text %}<span class="helptext">{{ form.description.help_text }}</span>{% endif %}
+        {% if form.description.help_text %}
+          <span class="helptext">{{ form.description.help_text }}</span>
+        {% endif %}
         {% if form.description.errors %}<div class="field-error">{{ form.description.errors.0 }}</div>{% endif %}
       </div>
 
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">
-          <i class="fas fa-save"></i>
+          <i class="fas fa-save" aria-hidden="true"></i>
           {% if level %}Save Changes{% else %}Create Level{% endif %}
         </button>
-        <a href="{% url 'level_list' %}" class="btn btn-outline">Cancel</a>
+        <a href="{% url 'id_cards:level_list' %}" class="btn btn-outline">
+          Cancel
+        </a>
       </div>
     </form>
   </div>
