@@ -4,9 +4,6 @@
 
 {% block extra_head %}
 <style>
-  /* ============================================================
-     LAYOUT — single column form (no preview)
-     ============================================================ */
   .settings-layout {
     max-width: 900px;
     margin: 0 auto;
@@ -37,7 +34,6 @@
     line-height: 1.5;
   }
 
-  /* ---------- Live preview hint (dismissible) ---------- */
   .preview-hint {
     display: flex;
     align-items: center;
@@ -65,7 +61,6 @@
   }
   .preview-hint button:hover { opacity: 1; background: rgba(37, 99, 235, 0.1); }
 
-  /* ---------- Sections ---------- */
   .form-section {
     margin-bottom: 28px;
     padding-bottom: 24px;
@@ -101,7 +96,6 @@
     margin-left: 8px;
   }
 
-  /* ---------- Grid ---------- */
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -157,7 +151,6 @@
     line-height: 1.4;
   }
 
-  /* ---------- Color pickers ---------- */
   .color-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -220,7 +213,6 @@
     font-weight: 600;
   }
 
-  /* ---------- Logo upload ---------- */
   .logo-field {
     display: flex;
     align-items: center;
@@ -256,9 +248,6 @@
     min-width: 220px;
   }
 
-  /* ============================================================
-     PRINT TRACKING DASHBOARD
-     ============================================================ */
   #print-tracking {
     scroll-margin-top: 90px;
   }
@@ -331,7 +320,6 @@
     align-items: center;
   }
 
-  /* ---------- Danger zone: reset all counters ---------- */
   .print-reset-zone {
     margin-top: 14px;
     padding: 14px 16px;
@@ -412,7 +400,6 @@
     opacity: 0.7;
   }
 
-  /* ---------- Actions ---------- */
   .form-actions {
     display: flex;
     gap: 12px;
@@ -421,7 +408,6 @@
     border-top: 1px dashed rgba(139, 32, 32, 0.12);
   }
 
-  /* ---------- Errors ---------- */
   .field-error {
     color: #dc2626;
     font-size: 0.78rem;
@@ -429,7 +415,8 @@
     font-weight: 500;
   }
   .form-group.has-error input,
-  .form-group.has-error select {
+  .form-group.has-error select,
+  .form-group.has-error textarea {
     border-color: #f87171;
     background: #fef2f2;
   }
@@ -484,7 +471,6 @@
       ID cards, the dashboard, and print layouts.
     </p>
 
-    {# Live-preview notice: color changes below affect this whole page #}
     <div class="preview-hint" id="previewHint">
       <i class="fas fa-eye" aria-hidden="true"></i>
       <div class="ph-text">
@@ -552,13 +538,6 @@
             </span>
             {% if form.scripture_ref.errors %}<div class="field-error">{{ form.scripture_ref.errors.0 }}</div>{% endif %}
           </div>
-
-          <div class="form-group full {% if form.address.errors %}has-error{% endif %}">
-            <label for="{{ form.address.id_for_label }}">School Address</label>
-            {{ form.address }}
-            <span class="helptext">Shown on the back of the ID card.</span>
-            {% if form.address.errors %}<div class="field-error">{{ form.address.errors.0 }}</div>{% endif %}
-          </div>
         </div>
       </div>
 
@@ -569,6 +548,13 @@
         </div>
 
         <div class="form-grid">
+          <div class="form-group full {% if form.address.errors %}has-error{% endif %}">
+            <label for="{{ form.address.id_for_label }}">School Address</label>
+            {{ form.address }}
+            <span class="helptext">Shown on the back of the ID card.</span>
+            {% if form.address.errors %}<div class="field-error">{{ form.address.errors.0 }}</div>{% endif %}
+          </div>
+
           <div class="form-group {% if form.contact_phone_1.errors %}has-error{% endif %}">
             <label for="{{ form.contact_phone_1.id_for_label }}">Primary Phone</label>
             {{ form.contact_phone_1 }}
@@ -631,7 +617,7 @@
             <label for="{{ form.primary_color.id_for_label }}">Primary Color</label>
             <div class="color-input-row">
               {{ form.primary_color }}
-              <span class="color-hex" id="primaryHex">{{ form.primary_color.value|default:"#8B2020" }}</span>
+              <span class="color-hex" id="primaryHex">{{ form.primary_color.value|default:"#F58220" }}</span>
             </div>
             <span class="helptext">Header background &amp; headline text.</span>
           </div>
@@ -640,7 +626,7 @@
             <label for="{{ form.secondary_color.id_for_label }}">Secondary Color</label>
             <div class="color-input-row">
               {{ form.secondary_color }}
-              <span class="color-hex" id="secondaryHex">{{ form.secondary_color.value|default:"#C87A2C" }}</span>
+              <span class="color-hex" id="secondaryHex">{{ form.secondary_color.value|default:"#6B3410" }}</span>
             </div>
             <span class="helptext">Accents, borders, and gold bars.</span>
           </div>
@@ -649,7 +635,7 @@
             <label for="{{ form.accent_color.id_for_label }}">Accent / Cream</label>
             <div class="color-input-row">
               {{ form.accent_color }}
-              <span class="color-hex" id="accentHex">{{ form.accent_color.value|default:"#FBF6EC" }}</span>
+              <span class="color-hex" id="accentHex">{{ form.accent_color.value|default:"#FDF6EC" }}</span>
             </div>
             <span class="helptext">Card background &amp; soft fills.</span>
           </div>
@@ -658,11 +644,58 @@
             <label for="{{ form.text_color.id_for_label }}">Text Color</label>
             <div class="color-input-row">
               {{ form.text_color }}
-              <span class="color-hex" id="textHex">{{ form.text_color.value|default:"#2A1810" }}</span>
+              <span class="color-hex" id="textHex">{{ form.text_color.value|default:"#3A1F0A" }}</span>
             </div>
             <span class="helptext">Body copy on light surfaces.</span>
           </div>
 
+        </div>
+      </div>
+
+      <!-- ========== SECTION 5: Back-of-Card Content ========== -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-file-lines" aria-hidden="true"></i> Back-of-Card Content
+        </div>
+
+        <p class="helptext" style="margin: -8px 0 16px;">
+          These texts appear on the back of <strong>every</strong> ID card.
+          They're set once here and don't need to be entered per teacher.
+        </p>
+
+        <div class="form-grid">
+          <div class="form-group full {% if form.default_authorized_use.errors %}has-error{% endif %}">
+            <label for="{{ form.default_authorized_use.id_for_label }}">Authorized Use</label>
+            {{ form.default_authorized_use }}
+            {% if form.default_authorized_use.help_text %}
+              <span class="helptext">{{ form.default_authorized_use.help_text }}</span>
+            {% endif %}
+            {% if form.default_authorized_use.errors %}
+              <div class="field-error">{{ form.default_authorized_use.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group full {% if form.default_terms.errors %}has-error{% endif %}">
+            <label for="{{ form.default_terms.id_for_label }}">Terms of Use</label>
+            {{ form.default_terms }}
+            {% if form.default_terms.help_text %}
+              <span class="helptext">{{ form.default_terms.help_text }}</span>
+            {% endif %}
+            {% if form.default_terms.errors %}
+              <div class="field-error">{{ form.default_terms.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group full {% if form.default_security.errors %}has-error{% endif %}">
+            <label for="{{ form.default_security.id_for_label }}">Security Notice</label>
+            {{ form.default_security }}
+            {% if form.default_security.help_text %}
+              <span class="helptext">{{ form.default_security.help_text }}</span>
+            {% endif %}
+            {% if form.default_security.errors %}
+              <div class="field-error">{{ form.default_security.errors.0 }}</div>
+            {% endif %}
+          </div>
         </div>
       </div>
 
@@ -676,7 +709,6 @@
           Cancel
         </a>
 
-        {# Django admin edit link — resolved via URL reverse, not hardcoded #}
         {% if request.user.is_staff %}
           <a href="{% url 'admin:id_cards_school_change' school.pk %}"
              target="_blank" rel="noopener"
@@ -735,7 +767,6 @@
         </div>
       </div>
 
-      {# ---------- DANGER ZONE — reset all print counters ---------- #}
       {% if print_stats.total_prints %}
         <div class="print-reset-zone">
           <div class="prz-text">
@@ -745,12 +776,6 @@
             This cannot be undone.
           </div>
 
-          {#
-            The submit button starts enabled so the form works without
-            JavaScript. The script below disables it until the user types
-            the confirmation phrase — a progressive enhancement, not a
-            hard requirement.
-          #}
           <form method="post"
                 action="{% url 'id_cards:reset_all_print_counts' %}"
                 class="prz-form"
@@ -781,9 +806,6 @@
 
 {% block extra_js %}
 <script>
-  /* ============================================================
-     LIVE COLOR PREVIEW — updates page-wide CSS variables
-     ============================================================ */
   (function () {
     const root = document.documentElement;
 
@@ -810,7 +832,6 @@
 
       function update() {
         const val = input.value;
-        // <input type="color"> always emits a valid 7-char hex string
         root.style.setProperty(colorMap[name], val);
         if (hexLabel) hexLabel.textContent = val.toUpperCase();
       }
@@ -820,9 +841,6 @@
     });
   })();
 
-  /* ============================================================
-     LIVE LOGO PREVIEW
-     ============================================================ */
   (function () {
     const fileInput = document.querySelector('input[type="file"][name="logo"]');
     const previewBox = document.getElementById('logoPreview');
@@ -834,7 +852,6 @@
 
       const reader = new FileReader();
       reader.onload = function (ev) {
-        // Use DOM APIs, not innerHTML — safer against file-name injection
         previewBox.innerHTML = '';
         const img = document.createElement('img');
         img.src = ev.target.result;
@@ -845,9 +862,6 @@
     });
   })();
 
-  /* ============================================================
-     Ctrl/Cmd + Enter submits the branding form
-     ============================================================ */
   (function () {
     const form = document.getElementById('settingsForm');
     if (!form) return;
@@ -863,13 +877,6 @@
     });
   })();
 
-  /* ============================================================
-     Reset-all confirmation — require typing "RESET"
-
-     The button starts enabled (see the template) so the flow works
-     without JS. This script progressively disables it until the
-     phrase matches, then re-enables it.
-     ============================================================ */
   (function () {
     const form    = document.getElementById('resetAllForm');
     const input   = document.getElementById('resetAllConfirm');
@@ -883,8 +890,6 @@
       button.disabled = value !== REQUIRED;
     }
 
-    // Disable immediately — before this runs, the button is enabled
-    // but the user hasn't typed anything yet. From now on, JS controls it.
     button.disabled = true;
 
     input.addEventListener('input', function () {

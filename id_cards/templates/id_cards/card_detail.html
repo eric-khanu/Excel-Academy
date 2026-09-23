@@ -251,6 +251,21 @@
     word-break: break-word;
   }
 
+  .shared-badge {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
   .print-panel {
     margin-top: 20px;
     padding: 16px 18px;
@@ -684,14 +699,6 @@
         </div>
       </div>
 
-    </div>
-
-    <div class="section-label">
-      <i class="fas fa-credit-card" style="color:var(--secondary);" aria-hidden="true"></i> Back of Card
-    </div>
-
-    <div class="info-grid">
-
       <div class="info-item">
         <div class="info-icon"><i class="fas fa-phone-volume" aria-hidden="true"></i></div>
         <div class="info-text">
@@ -705,6 +712,14 @@
           </span>
         </div>
       </div>
+
+    </div>
+
+    <div class="section-label">
+      <i class="fas fa-credit-card" style="color:var(--secondary);" aria-hidden="true"></i> Card Validity
+    </div>
+
+    <div class="info-grid">
 
       <div class="info-item">
         <div class="info-icon"><i class="fas fa-calendar-plus" aria-hidden="true"></i></div>
@@ -736,42 +751,51 @@
         </div>
       </div>
 
-      <div class="info-item">
+    </div>
+
+    <div class="section-label">
+      <i class="fas fa-file-lines" style="color:var(--secondary);" aria-hidden="true"></i> Back of Card Content
+      <span class="shared-badge">shared for all staff</span>
+    </div>
+
+    <div class="info-grid">
+
+      <div class="info-item" style="grid-column: 1 / -1;">
         <div class="info-icon"><i class="fas fa-shield-halved" aria-hidden="true"></i></div>
-        <div class="info-text">
+        <div class="info-text" style="flex: 1;">
           <span class="info-label">Authorized Use</span>
-          <span class="info-value {% if not teacher.resolved_authorized_use %}empty{% endif %}">
-            {% if teacher.resolved_authorized_use %}
-              {{ teacher.resolved_authorized_use }}
+          <span class="info-value {% if not school.default_authorized_use %}empty{% endif %}">
+            {% if school.default_authorized_use %}
+              {{ school.default_authorized_use }}
             {% else %}
-              Not provided
+              Not configured — set in School Settings
             {% endif %}
           </span>
         </div>
       </div>
 
-      <div class="info-item full" style="grid-column: 1 / -1;">
+      <div class="info-item" style="grid-column: 1 / -1;">
         <div class="info-icon"><i class="fas fa-circle-info" aria-hidden="true"></i></div>
         <div class="info-text" style="flex: 1;">
           <span class="info-label">Security Notice</span>
-          <span class="info-value {% if not teacher.resolved_security %}empty{% endif %}">
-            {% if teacher.resolved_security %}
-              {{ teacher.resolved_security }}
+          <span class="info-value {% if not school.default_security %}empty{% endif %}">
+            {% if school.default_security %}
+              {{ school.default_security }}
             {% else %}
-              Not provided
+              Not configured — set in School Settings
             {% endif %}
           </span>
         </div>
       </div>
 
-      <div class="info-item full" style="grid-column: 1 / -1;">
+      <div class="info-item" style="grid-column: 1 / -1;">
         <div class="info-icon"><i class="fas fa-file-contract" aria-hidden="true"></i></div>
         <div class="info-text" style="flex: 1;">
           <span class="info-label">Terms of Use</span>
-          {% if teacher.resolved_terms %}
-            <div class="terms-block">{{ teacher.resolved_terms }}</div>
+          {% if school.default_terms %}
+            <div class="terms-block">{{ school.default_terms }}</div>
           {% else %}
-            <span class="info-value empty">Not provided</span>
+            <span class="info-value empty">Not configured — set in School Settings</span>
           {% endif %}
         </div>
       </div>
@@ -838,7 +862,7 @@
     document.querySelectorAll('form[data-confirm]').forEach(function (form) {
       form.addEventListener('submit', function (e) {
         if (!window.confirm(form.dataset.confirm)) {
-          e.preventDefault();
+          return e.preventDefault();
         }
       });
     });

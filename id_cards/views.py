@@ -981,10 +981,6 @@ def qr_employee_svg(request, employee_id):
     add("EMAIL", teacher.email)
     add("PHONE", teacher.phone)
     add("EMERGENCY", teacher.emergency_contact_phone)
-    if teacher.valid_thru:
-        add("VALID THRU", teacher.valid_thru.strftime("%m/%Y"))
-    if teacher.issue_date:
-        add("ISSUED", teacher.issue_date.strftime("%m/%Y"))
 
     if lines:
         lines.append("--")
@@ -1047,12 +1043,6 @@ def _prepare_qr_for_pdf(teacher):
     add("EMAIL", teacher.email)
     add("PHONE", teacher.phone)
     add("EMERGENCY", teacher.emergency_contact_phone)
-
-    if teacher.resolved_issue_date:
-        add("ISSUED", teacher.resolved_issue_date.strftime("%m/%Y"))
-
-    if teacher.resolved_expiry_date:
-        add("EXPIRES", teacher.resolved_expiry_date.strftime("%m/%Y"))
 
     if lines:
         lines.append("--")

@@ -11,8 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet">
 
-{# Font Awesome — pin the version and add SRI so a compromised CDN can't inject CSS/JS. #}
-{# Replace the hash below if you upgrade past 6.5.0 — get it from cdnjs.com #}
+{# Font Awesome — pinned version with SRI #}
 <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
       integrity="sha512-Avb2w+pjqdY2pPt8wPh3xnniExXvxTkP4C+F6ZTpAlTXKwBT5LtRGoE6ChCUhLxZvYq6cCmAJs2LY8PbAs4D0Q=="
@@ -20,23 +19,17 @@
       referrerpolicy="no-referrer">
 
 <style>
-  /* ====================================================================
-     THEME VARIABLES — driven by School branding from context.
-     All colors pass through |safe_hex which enforces a strict hex regex,
-     so a malicious value cannot break out of the CSS declaration.
-     ==================================================================== */
   :root {
-    --primary:   {{ school.primary_color|safe_hex:"#8B2020" }};
-    --secondary: {{ school.secondary_color|safe_hex:"#C87A2C" }};
-    --accent:    {{ school.accent_color|safe_hex:"#FBF6EC" }};
-    --text:      {{ school.text_color|safe_hex:"#2A1810" }};
+    --primary:   {{ school.primary_color|safe_hex:"#F58220" }};
+    --secondary: {{ school.secondary_color|safe_hex:"#6B3410" }};
+    --accent:    {{ school.accent_color|safe_hex:"#FDF6EC" }};
+    --text:      {{ school.text_color|safe_hex:"#3A1F0A" }};
 
-    --primary-dark: #5A1414;
-    --secondary-dark: #8B4513;
+    --primary-dark:   #C8621A;
+    --secondary-dark: #4A2208;
     --muted: #7a6a5a;
     --border: #e0d8cc;
 
-    /* Print-status palette */
     --print-unprinted-bg: #fef3c7;
     --print-unprinted-fg: #92400e;
     --print-unprinted-br: #fde68a;
@@ -48,25 +41,19 @@
     --print-reprinted-br: #bfdbfe;
   }
 
-  /* ====================================================================
-     RESET
-     ==================================================================== */
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   html { scroll-behavior: smooth; }
 
   body {
     font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, #f5f2ed 0%, #ebe5dc 100%);
+    background: linear-gradient(135deg, #fdf6ec 0%, #f5e6d0 100%);
     color: var(--text);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* ====================================================================
-     TOP NAVIGATION
-     ==================================================================== */
   .topbar {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: #fff;
@@ -75,7 +62,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 20px;
-    box-shadow: 0 4px 20px rgba(90, 20, 20, 0.25);
+    box-shadow: 0 4px 20px rgba(107, 52, 16, 0.25);
     position: sticky;
     top: 0;
     z-index: 50;
@@ -97,7 +84,7 @@
 
   .topbar .brand i {
     font-size: 1.4rem;
-    color: var(--secondary);
+    color: #fff;
     flex-shrink: 0;
   }
 
@@ -207,13 +194,10 @@
   }
   .nav-group .dropdown .dropdown-divider {
     height: 1px;
-    background: rgba(139, 32, 32, 0.1);
+    background: rgba(107, 52, 16, 0.1);
     margin: 6px 4px;
   }
 
-  /* ====================================================================
-     LAYOUT
-     ==================================================================== */
   .container {
     max-width: 1400px;
     margin: 0 auto;
@@ -249,9 +233,6 @@
     flex-wrap: wrap;
   }
 
-  /* ====================================================================
-     BUTTONS
-     ==================================================================== */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -272,17 +253,17 @@
   .btn-primary {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: #fff;
-    box-shadow: 0 4px 12px rgba(139, 32, 32, 0.35);
+    box-shadow: 0 4px 12px rgba(245, 130, 32, 0.35);
   }
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(139, 32, 32, 0.45);
+    box-shadow: 0 8px 20px rgba(245, 130, 32, 0.45);
   }
 
   .btn-secondary {
     background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
     color: #fff;
-    box-shadow: 0 4px 12px rgba(200, 122, 44, 0.3);
+    box-shadow: 0 4px 12px rgba(107, 52, 16, 0.3);
   }
   .btn-secondary:hover { transform: translateY(-2px); }
 
@@ -305,9 +286,6 @@
     border-radius: 8px;
   }
 
-  /* ====================================================================
-     BADGES
-     ==================================================================== */
   .badge {
     display: inline-block;
     padding: 3px 10px;
@@ -355,9 +333,6 @@
     border: 1px solid var(--print-reprinted-br);
   }
 
-  /* ====================================================================
-     FORMS
-     ==================================================================== */
   .form-container {
     max-width: 800px;
     margin: 0 auto;
@@ -412,7 +387,7 @@
   .form-group textarea:focus {
     outline: none;
     border-color: var(--secondary);
-    box-shadow: 0 0 0 3px rgba(200, 122, 44, 0.15);
+    box-shadow: 0 0 0 3px rgba(107, 52, 16, 0.15);
   }
 
   .form-group small,
@@ -432,9 +407,6 @@
     cursor: pointer;
   }
 
-  /* ====================================================================
-     MESSAGES
-     ==================================================================== */
   .messages { margin-bottom: 20px; }
 
   .message {
@@ -453,9 +425,6 @@
   .message.warning { background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; }
   .message.info    { background: #dbeafe; color: #1e40af; border-left: 4px solid #3b82f6; }
 
-  /* ====================================================================
-     STATS
-     ==================================================================== */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -493,9 +462,6 @@
   .stat-card.stat-reprinted { border-left-color: #2563eb; }
   .stat-card.stat-reprinted .num { color: #1d4ed8; }
 
-  /* ====================================================================
-     UTILITY
-     ==================================================================== */
   .pl-pill {
     display: inline-flex;
     align-items: center;
@@ -537,7 +503,7 @@
     background: #fff;
     border-radius: 20px;
     box-shadow: 0 4px 20px rgba(60, 30, 20, 0.06);
-    border: 1px dashed rgba(139, 32, 32, 0.18);
+    border: 1px dashed rgba(107, 52, 16, 0.18);
     margin-bottom: 24px;
   }
   .empty-state i {
@@ -589,9 +555,6 @@
 
   [id] { scroll-margin-top: 90px; }
 
-  /* ====================================================================
-     RESPONSIVE
-     ==================================================================== */
   @media (max-width: 900px) {
     .topbar { padding: 12px 16px; flex-wrap: wrap; }
     .topbar nav { width: 100%; justify-content: flex-start; }
@@ -658,7 +621,7 @@
       background: rgba(255, 255, 255, 0.14);
       color: #fff;
     }
-    .nav-group .dropdown a i { color: var(--secondary); }
+    .nav-group .dropdown a i { color: #fff; }
     .nav-group .dropdown .dropdown-divider {
       background: rgba(255, 255, 255, 0.15);
     }
@@ -671,9 +634,6 @@
     .topbar .brand .brand-name { font-size: 0.85rem; }
   }
 
-  /* ====================================================================
-     PRINT
-     ==================================================================== */
   @media print {
     body { background: #fff; }
     .topbar,
@@ -711,7 +671,6 @@
       <i class="fas fa-users"></i> Staffs
     </a>
 
-    {# Students link — only render if the student app is installed. #}
     {% if 'student' in request.resolver_match.namespace|default:'' %}
       <a href="{% url 'student:student_list' %}"
          class="{% if ns == 'student' %}active{% endif %}">

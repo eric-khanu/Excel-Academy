@@ -5,7 +5,7 @@ from .models import Teacher, School, IDCardTemplate, Department, Level
 
 
 # ============================================================================
-# SHARED VALIDATORS (avoid duplicating the same logic across forms)
+# SHARED VALIDATORS
 # ============================================================================
 PHONE_ALLOWED_CHARS = set('+0123456789 -()')
 HEX_DIGITS = set('0123456789ABCDEFabcdef')
@@ -15,10 +15,7 @@ MAX_CSV_MB = 5
 
 
 def validate_phone(value, field_label="Phone"):
-    """
-    Strip a phone field and confirm it only contains characters a phone number
-    is allowed to contain. Returns the stripped value.
-    """
+    """Strip and validate a phone field's characters."""
     value = (value or '').strip()
     if value and not all(c in PHONE_ALLOWED_CHARS for c in value):
         raise forms.ValidationError(
@@ -31,10 +28,7 @@ def validate_phone(value, field_label="Phone"):
 def validate_hex_color(value, field_label="Color"):
     """
     Normalize a hex color to uppercase, 7-character form (#RRGGBB).
-
-    Accepts:
-      - 6-digit hex with optional leading '#'
-      - 3-digit shorthand hex (expanded to 6-digit)
+    Accepts 6-digit hex with optional '#' and 3-digit shorthand (#ABC).
     """
     value = (value or '').strip()
     if not value:
@@ -44,7 +38,6 @@ def validate_hex_color(value, field_label="Color"):
 
     body = value[1:]
 
-    # Accept 3-digit shorthand (#ABC → #AABBCC)
     if len(body) == 3 and all(c in HEX_DIGITS for c in body):
         body = ''.join(c * 2 for c in body)
     elif len(body) == 6 and all(c in HEX_DIGITS for c in body):
@@ -59,7 +52,7 @@ def validate_hex_color(value, field_label="Color"):
 
 
 # ============================================================================
-# MIXIN: shared date sanity checks for TeacherForm
+# MIXIN: shared date sanity checks
 # ============================================================================
 class IssuedExpiryMixin:
     """Adds issue/expiry cross-field validation. Reused in TeacherForm."""
@@ -92,18 +85,10 @@ class TeacherForm(IssuedExpiryMixin, forms.ModelForm):
     class Meta:
         model = Teacher
         fields = [
-            # Identity
             'full_name', 'designation', 'photo', 'role',
-            # Employment
             'department', 'levels', 'valid_thru',
-            # Contact
-            'email', 'phone',
-            # Back-of-card — contact
-            'emergency_contact_phone',
-            # Back-of-card — official / legal
+            'email', 'phone', 'emergency_contact_phone',
             'issue_date', 'expiry_date',
-            'id_card_terms', 'authorized_use', 'security',
-            # Card settings
             'status', 'template',
         ]
         widgets = {
@@ -158,24 +143,6 @@ class TeacherForm(IssuedExpiryMixin, forms.ModelForm):
                 'class': 'form-input',
                 'type': 'date',
             }),
-            'id_card_terms': forms.Textarea(attrs={
-                'class': 'form-input',
-                'rows': 4,
-                'placeholder': 'Leave blank to use the template default.',
-                'maxlength': 2000,
-            }),
-            'authorized_use': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': 'Leave blank to use the template default.',
-                'autocomplete': 'off',
-                'maxlength': 200,
-            }),
-            'security': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': 'Leave blank to use the template default.',
-                'autocomplete': 'off',
-                'maxlength': 200,
-            }),
             'status': forms.Select(attrs={'class': 'form-input'}),
             'template': forms.Select(attrs={'class': 'form-input'}),
         }
@@ -188,9 +155,6 @@ class TeacherForm(IssuedExpiryMixin, forms.ModelForm):
             'emergency_contact_phone': 'Optional — shown on the back of the card.',
             'issue_date': 'Date this card was issued. Shown on the back.',
             'expiry_date': 'Date this card expires. Shown on the back.',
-            'id_card_terms': 'Terms of use for this card. Leave blank to use the template default.',
-            'authorized_use': 'Authorization statement. Leave blank to use the template default.',
-            'security': 'Lost-card / security notice. Leave blank to use the template default.',
         }
         labels = {
             'full_name': 'Full Name',
@@ -198,44 +162,31 @@ class TeacherForm(IssuedExpiryMixin, forms.ModelForm):
             'emergency_contact_phone': 'Emergency Contact Phone',
             'issue_date': 'Issue Date',
             'expiry_date': 'Expiry Date',
-            'id_card_terms': 'Terms of Use',
-            'authorized_use': 'Authorized Use',
-            'security': 'Security Notice',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Only show active departments in the dropdown
         self.fields['department'].queryset = (
             Department.objects.filter(is_active=True).order_by('name')
         )
         self.fields['department'].empty_label = '— Select Department —'
 
-        # Order levels by their sort order
         self.fields['levels'].queryset = (
             Level.objects.all().order_by('order', 'name')
         )
 
-        # Optional fields
-        self.fields['template'].required = False
-        self.fields['template'].empty_label = '— Default Template —'
-        self.fields['photo'].required = False
-        self.fields['levels'].required = False
-        self.fields['department'].required = False
-        self.fields['emergency_contact_phone'].required = False
-        self.fields['issue_date'].required = False
-        self.fields['expiry_date'].required = False
-        self.fields['id_card_terms'].required = False
-        self.fields['authorized_use'].required = False
-        self.fields['security'].required = False
-        self.fields['valid_thru'].required = False
+        optional_fields = [
+            'template', 'photo', 'levels', 'department',
+            'emergency_contact_phone', 'issue_date', 'expiry_date',
+            'valid_thru',
+        ]
+        for name in optional_fields:
+            self.fields[name].required = False
 
-    # ------------------------------------------------------------------ #
-    #  Field-level validation
-    # ------------------------------------------------------------------ #
+        self.fields['template'].empty_label = '— Default Template —'
+
     def clean_full_name(self):
-        """Trim + collapse extra whitespace, enforce minimum length."""
         name = self.cleaned_data.get('full_name', '').strip()
         name = ' '.join(name.split())
         if len(name) < 2:
@@ -262,25 +213,11 @@ class TeacherForm(IssuedExpiryMixin, forms.ModelForm):
         return self.cleaned_data.get('email', '').strip().lower()
 
     def clean_photo(self):
-        """Enforce a maximum image size (5 MB) to avoid huge uploads."""
         photo = self.cleaned_data.get('photo')
         if photo and hasattr(photo, 'size') and photo.size > MAX_PHOTO_MB * 1024 * 1024:
             raise forms.ValidationError(f"Photo must be smaller than {MAX_PHOTO_MB} MB.")
         return photo
 
-    def clean_id_card_terms(self):
-        """Trim whitespace but preserve line breaks for multi-line terms."""
-        return (self.cleaned_data.get('id_card_terms') or '').strip()
-
-    def clean_authorized_use(self):
-        return (self.cleaned_data.get('authorized_use') or '').strip()
-
-    def clean_security(self):
-        return (self.cleaned_data.get('security') or '').strip()
-
-    # ------------------------------------------------------------------ #
-    #  Cross-field validation
-    # ------------------------------------------------------------------ #
     def clean(self):
         cleaned = super().clean()
 
@@ -288,22 +225,18 @@ class TeacherForm(IssuedExpiryMixin, forms.ModelForm):
         department = cleaned.get('department')
         levels = cleaned.get('levels')
 
-        # Teachers should have a department (soft requirement, surfaced as
-        # a field error rather than a hard block, so admins can override).
         if role == 'TEACHER' and not department:
             self.add_error(
                 'department',
                 "Teachers should be assigned to a department."
             )
 
-        # Warn if levels are assigned to staff whose role isn't TEACHER.
         if role and role not in ('TEACHER', 'COUNSELOR') and levels:
             self.add_error(
                 'levels',
                 "Levels are usually only assigned to Teachers or Counselors."
             )
 
-        # Date sanity (issue vs expiry and issue vs valid_thru).
         self.clean_issue_expiry()
 
         return cleaned
@@ -323,6 +256,9 @@ class SchoolForm(forms.ModelForm):
             'contact_phone_1', 'contact_phone_2',
             'logo',
             'primary_color', 'secondary_color', 'accent_color', 'text_color',
+            'default_authorized_use',
+            'default_terms',
+            'default_security',
         ]
         widgets = {
             'name': forms.TextInput(attrs={
@@ -382,6 +318,22 @@ class SchoolForm(forms.ModelForm):
             'secondary_color': forms.TextInput(attrs={'type': 'color', 'class': 'color-input'}),
             'accent_color':    forms.TextInput(attrs={'type': 'color', 'class': 'color-input'}),
             'text_color':      forms.TextInput(attrs={'type': 'color', 'class': 'color-input'}),
+            'default_authorized_use': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Authorized for official school use only.',
+                'maxlength': 200,
+            }),
+            'default_terms': forms.Textarea(attrs={
+                'class': 'form-input',
+                'rows': 4,
+                'placeholder': 'Terms of use printed on the back of every card.',
+                'maxlength': 2000,
+            }),
+            'default_security': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'If found, please return to the school office.',
+                'maxlength': 200,
+            }),
         }
         help_texts = {
             'short_name': 'Used as the prefix for auto-generated Employee IDs '
@@ -394,11 +346,11 @@ class SchoolForm(forms.ModelForm):
             'secondary_color': 'Accents, borders, and gold bars.',
             'accent_color': 'Card background & soft fills.',
             'text_color': 'Body copy on light surfaces.',
+            'default_authorized_use': 'Shown on the back of every ID card.',
+            'default_terms': 'Shown on the back of every ID card.',
+            'default_security': 'Optional security notice on every card.',
         }
 
-    # ------------------------------------------------------------------ #
-    #  Validation
-    # ------------------------------------------------------------------ #
     def clean_name(self):
         name = self.cleaned_data.get('name', '').strip()
         name = ' '.join(name.split())
@@ -407,7 +359,6 @@ class SchoolForm(forms.ModelForm):
         return name
 
     def clean_short_name(self):
-        """Uppercase, strip spaces, enforce a safe format."""
         value = self.cleaned_data.get('short_name', '').strip().upper()
         cleaned = ''.join(c for c in value if c.isalnum() or c == '-')
         if len(cleaned) < 2:
@@ -417,7 +368,6 @@ class SchoolForm(forms.ModelForm):
         return cleaned
 
     def clean_established(self):
-        """Reject years that are obviously wrong."""
         year = self.cleaned_data.get('established')
         if year is None:
             return year
@@ -429,7 +379,6 @@ class SchoolForm(forms.ModelForm):
         return year
 
     def clean_logo(self):
-        """Enforce a maximum file size (2 MB) and reject SVG."""
         logo = self.cleaned_data.get('logo')
         if not logo:
             return logo
@@ -437,8 +386,6 @@ class SchoolForm(forms.ModelForm):
         if hasattr(logo, 'size') and logo.size > MAX_LOGO_MB * 1024 * 1024:
             raise forms.ValidationError(f"Logo must be smaller than {MAX_LOGO_MB} MB.")
 
-        # Explicit SVG rejection (matches model validator, defends against
-        # admin/custom forms that bypass it).
         name = getattr(logo, 'name', '') or ''
         if name.lower().endswith('.svg'):
             raise forms.ValidationError(
@@ -480,6 +427,15 @@ class SchoolForm(forms.ModelForm):
             self.cleaned_data.get('text_color'), "Text color"
         )
 
+    def clean_default_authorized_use(self):
+        return (self.cleaned_data.get('default_authorized_use') or '').strip()
+
+    def clean_default_terms(self):
+        return (self.cleaned_data.get('default_terms') or '').strip()
+
+    def clean_default_security(self):
+        return (self.cleaned_data.get('default_security') or '').strip()
+
 
 # ============================================================================
 # DEPARTMENT FORM
@@ -519,7 +475,6 @@ class DepartmentForm(forms.ModelForm):
         return name
 
     def clean_code(self):
-        """Optional manual override — uppercased and sanitised."""
         code = self.cleaned_data.get('code', '').strip().upper()
         if code:
             code = ''.join(c for c in code if c.isalnum())
@@ -530,6 +485,10 @@ class DepartmentForm(forms.ModelForm):
             if len(code) > 10:
                 raise forms.ValidationError(
                     "Department code must be 10 characters or fewer."
+                )
+            if self.instance and self.instance.pk and self.instance.code != code:
+                raise forms.ValidationError(
+                    "Department code cannot be changed after creation."
                 )
         return code
 
@@ -608,13 +567,11 @@ class BulkImportForm(forms.Form):
         if not f:
             return f
 
-        # Size cap
         if hasattr(f, 'size') and f.size > MAX_CSV_MB * 1024 * 1024:
             raise forms.ValidationError(
                 f"CSV file must be smaller than {MAX_CSV_MB} MB."
             )
 
-        # Light content sniff — reject renamed binary files.
         try:
             head = f.read(512)
             f.seek(0)
@@ -632,7 +589,6 @@ class BulkImportForm(forms.Form):
             except Exception:
                 head = ''
 
-        # First non-empty line should contain a comma or tab
         first_line = next(
             (line for line in head.splitlines() if line.strip()), ''
         )
@@ -644,7 +600,6 @@ class BulkImportForm(forms.Form):
                 "in the first line. Make sure you exported it as CSV."
             )
 
-        # The required column must be present.
         header = first_line.split(',') if ',' in first_line else first_line.split('\t')
         header = [h.strip().lower().lstrip('\ufeff') for h in header]
         if 'full_name' not in header:
@@ -668,26 +623,12 @@ class IDCardTemplateForm(forms.ModelForm):
             'show_hologram', 'show_gold_bar', 'show_barcode',
             'show_terms', 'show_issue_date', 'show_expiry_date',
             'show_authorized', 'show_security',
-            'default_terms', 'default_authorized_use', 'default_security',
             'card_footer_text', 'card_footer_subtext',
         ]
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-input',
                 'maxlength': 100,
-            }),
-            'default_terms': forms.Textarea(attrs={
-                'class': 'form-input',
-                'rows': 4,
-                'maxlength': 2000,
-            }),
-            'default_authorized_use': forms.TextInput(attrs={
-                'class': 'form-input',
-                'maxlength': 200,
-            }),
-            'default_security': forms.TextInput(attrs={
-                'class': 'form-input',
-                'maxlength': 200,
             }),
             'card_footer_text': forms.TextInput(attrs={
                 'class': 'form-input',
@@ -709,9 +650,6 @@ class IDCardTemplateForm(forms.ModelForm):
         help_texts = {
             'card_footer_text': 'Primary footer line on the card.',
             'card_footer_subtext': 'Secondary line shown in smaller text.',
-            'default_terms': 'Fallback terms text when a teacher has none.',
-            'default_authorized_use': 'Fallback authorization statement.',
-            'default_security': 'Fallback security / lost-card notice.',
         }
 
     def clean_name(self):
@@ -726,13 +664,7 @@ class IDCardTemplateForm(forms.ModelForm):
 # PRINT TRACKING FORMS
 # ============================================================================
 class PrintResetForm(forms.Form):
-    """
-    Confirmation form for resetting print tracking.
-
-    Used by both the single-card reset and the bulk "reset all" action.
-    Requires the admin to type a confirmation phrase so a misclick can't
-    wipe a card's print history.
-    """
+    """Confirmation form for resetting print tracking."""
 
     CONFIRM_PHRASE = "RESET"
 
@@ -766,10 +698,7 @@ class PrintResetForm(forms.Form):
 
 
 class BulkPrintFilterForm(forms.Form):
-    """
-    Filter form used on the print-all page to narrow down which cards
-    are included in the batch, and to control print tracking behaviour.
-    """
+    """Filter form for the print-all page."""
 
     PRINT_SCOPE_CHOICES = [
         ('all',       'All active staff'),

@@ -79,16 +79,37 @@ class School(models.Model):
 
     # --- Brand colors ---
     primary_color = models.CharField(
-        max_length=7, default="#8B2020", validators=[HEX_COLOR_VALIDATOR]
+        max_length=7, default="#F58220", validators=[HEX_COLOR_VALIDATOR]
     )
     secondary_color = models.CharField(
-        max_length=7, default="#C87A2C", validators=[HEX_COLOR_VALIDATOR]
+        max_length=7, default="#6B3410", validators=[HEX_COLOR_VALIDATOR]
     )
     accent_color = models.CharField(
-        max_length=7, default="#FBF6EC", validators=[HEX_COLOR_VALIDATOR]
+        max_length=7, default="#FDF6EC", validators=[HEX_COLOR_VALIDATOR]
     )
     text_color = models.CharField(
-        max_length=7, default="#2A1810", validators=[HEX_COLOR_VALIDATOR]
+        max_length=7, default="#3A1F0A", validators=[HEX_COLOR_VALIDATOR]
+    )
+
+    # --- Back-of-card shared content (same for every teacher) ---
+    default_authorized_use = models.CharField(
+        max_length=200, blank=True,
+        default="Authorized for official school use only.",
+        help_text="Shown on the back of every ID card.",
+    )
+    default_terms = models.TextField(
+        blank=True,
+        default=(
+            "This card is the property of the school and is not transferable. "
+            "It must be carried at all times while on school premises and "
+            "produced on demand by any authorized staff member."
+        ),
+        help_text="Shown on the back of every ID card.",
+    )
+    default_security = models.CharField(
+        max_length=200, blank=True,
+        default="If found, please return to the school office. Reward available.",
+        help_text="Optional security notice shown on the back of every card.",
     )
 
     class Meta:
@@ -123,6 +144,8 @@ class Level(models.Model):
         ('JSS', 'Junior Secondary School'),
         ('SSS', 'Senior Secondary School'),
         ('PRIMARY', 'Primary'),
+        ('NURSERY', 'Nursery'),
+        ('DAY CARE', 'Day Care'),
         ('OTHER', 'Other'),
     ]
 
@@ -166,18 +189,12 @@ class Department(models.Model):
     def __str__(self):
         return f"{self.name} ({self.code})" if self.code else self.name
 
-    # ------------------------------------------------------------------
-    # Code generation
-    # ------------------------------------------------------------------
     def _generate_code(self):
         """
         Rules (in order):
             1. Multi-word → first letter of each word, up to 4 letters
-               ("Basic Science" → BS, "Computer Science Dept" → CSD)
             2. Single word ≥ 3 chars → first 3 letters
-               ("Science" → SCI, "Mathematics" → MAT)
             3. Single word < 3 chars → as-is uppercase
-               ("Art" → ART, "PE" → PE)
         Collisions get a numeric suffix: SCI, SCI2, SCI3, …
         """
         clean = re.sub(r'[^A-Za-z\s]', '', self.name).strip()
@@ -208,10 +225,7 @@ class Department(models.Model):
         return code
 
     def save(self, *args, **kwargs):
-        """
-        Normalise + generate code, retrying on race-condition
-        IntegrityErrors.
-        """
+        """Normalise + generate code, retrying on race-condition IntegrityErrors."""
         if self.code:
             self.code = self.code.upper().strip()
         else:
@@ -222,7 +236,6 @@ class Department(models.Model):
                 with transaction.atomic():
                     return super().save(*args, **kwargs)
             except IntegrityError:
-                # Code collided with a concurrent insert — regenerate.
                 self.code = self._resolve_collision(self.code)
 
         raise IntegrityError(
@@ -259,27 +272,6 @@ class IDCardTemplate(models.Model):
     show_security = models.BooleanField(
         default=True,
         help_text="Show the security notice on the back of the card.",
-    )
-
-    # --- Default template content (per-template override) ---
-    default_terms = models.TextField(
-        blank=True,
-        default=(
-            "This card is the property of the school and is not transferable. "
-            "It must be carried at all times while on school premises and "
-            "produced on demand by any authorized staff member."
-        ),
-        help_text="Default terms of use text. Can be overridden per teacher.",
-    )
-    default_authorized_use = models.CharField(
-        max_length=200, blank=True,
-        default="Authorized for official school use only.",
-        help_text="Default authorized-use statement.",
-    )
-    default_security = models.CharField(
-        max_length=200, blank=True,
-        default="If found, please return to the school office. Reward available.",
-        help_text="Default security / lost-card notice.",
     )
 
     card_footer_text = models.CharField(
@@ -369,13 +361,13 @@ class Teacher(models.Model):
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=30, blank=True)
 
-    # --- Back-of-card info --------------------------------------------------
+    # --- Back-of-card contact -----------------------------------------------
     emergency_contact_phone = models.CharField(
         max_length=30, blank=True,
         help_text="Phone number for emergency contact.",
     )
 
-    # --- Back-of-card official / legal info ---------------------------------
+    # --- Card validity dates ------------------------------------------------
     issue_date = models.DateField(
         null=True, blank=True,
         help_text="Date the card was issued. Shown on the back.",
@@ -383,27 +375,6 @@ class Teacher(models.Model):
     expiry_date = models.DateField(
         null=True, blank=True,
         help_text="Date the card expires. Shown on the back.",
-    )
-    id_card_terms = models.TextField(
-        blank=True,
-        help_text=(
-            "Terms of use for this specific card. "
-            "If left blank, the template default is used."
-        ),
-    )
-    authorized_use = models.CharField(
-        max_length=200, blank=True,
-        help_text=(
-            "Authorization statement. "
-            "If left blank, the template default is used."
-        ),
-    )
-    security = models.CharField(
-        max_length=200, blank=True,
-        help_text=(
-            "Security / lost-card notice. "
-            "If left blank, the template default is used."
-        ),
     )
 
     # --- Print tracking -----------------------------------------------------
@@ -451,10 +422,7 @@ class Teacher(models.Model):
     def _generate_employee_id(self):
         """
         Format:  <SCHOOL_SHORT>-<YEAR>-<NNN>
-        Example: EJSS-2026-001, EJSS-2026-002
-
-        Uses a numeric cast so the counter survives past 999 without
-        lexicographic sort bugs.
+        Uses a numeric cast so the counter survives past 999.
         """
         school = School.objects.first()
         short = (school.short_name if school and school.short_name else 'SCH')
@@ -515,7 +483,6 @@ class Teacher(models.Model):
         """
         Comma-separated level names. Cached per-instance to avoid N+1
         queries when the same instance is rendered repeatedly.
-        Prefetch with .prefetch_related('levels') for list views.
         """
         if not hasattr(self, '_levels_display_cache'):
             self._levels_display_cache = list(
@@ -525,24 +492,24 @@ class Teacher(models.Model):
 
     @property
     def is_expired(self):
-        """
-        True if the card is explicitly marked expired OR the valid_thru
-        date is in the past.
-        """
         if self.status == 'expired':
             return True
         if not self.valid_thru:
             return False
         return self.valid_thru < timezone.now().date()
 
-    # --- Resolved back-of-card values (fall back to template defaults) ---
+    # ------------------------------------------------------------------
+    # Resolved values (fall back through School → template → empty)
+    # ------------------------------------------------------------------
     @property
     def resolved_terms(self):
+        """Teacher override → template override → school default → empty."""
         if self.id_card_terms:
             return self.id_card_terms
         if self.template and self.template.default_terms:
             return self.template.default_terms
-        return ""
+        school = School.get_solo()
+        return school.default_terms or ""
 
     @property
     def resolved_authorized_use(self):
@@ -550,7 +517,8 @@ class Teacher(models.Model):
             return self.authorized_use
         if self.template and self.template.default_authorized_use:
             return self.template.default_authorized_use
-        return ""
+        school = School.get_solo()
+        return school.default_authorized_use or ""
 
     @property
     def resolved_security(self):
@@ -558,7 +526,8 @@ class Teacher(models.Model):
             return self.security
         if self.template and self.template.default_security:
             return self.template.default_security
-        return ""
+        school = School.get_solo()
+        return school.default_security or ""
 
     @property
     def resolved_issue_date(self):
@@ -596,10 +565,7 @@ class Teacher(models.Model):
         return f'Reprinted ×{self.print_count}'
 
     def mark_printed(self, save=True):
-        """
-        Record a print event. When `save=True`, uses an atomic DB update
-        so concurrent prints don't lose counts.
-        """
+        """Record a print event. Uses atomic DB update when save=True."""
         now = timezone.now()
 
         if save:
@@ -615,7 +581,6 @@ class Teacher(models.Model):
             )
             return True
 
-        # In-memory path (no DB write)
         self.print_count = (self.print_count or 0) + 1
         if self.first_printed_at is None:
             self.first_printed_at = now
@@ -624,10 +589,7 @@ class Teacher(models.Model):
 
     @classmethod
     def mark_many_printed(cls, teachers):
-        """
-        Atomically increment print tracking for many teachers in one
-        query. Returns the number of rows updated.
-        """
+        """Atomic increment for many teachers in one query."""
         ids = [t.pk for t in teachers if t.pk]
         if not ids:
             return 0
@@ -641,10 +603,7 @@ class Teacher(models.Model):
 
     @classmethod
     def reset_all_print_tracking(cls, *, confirm=False):
-        """
-        Wipe print tracking for every teacher. Requires confirm=True to
-        guard against accidental invocation.
-        """
+        """Wipe print tracking for every teacher. Requires confirm=True."""
         if not confirm:
             raise ValueError(
                 "Pass confirm=True to reset ALL print tracking records."

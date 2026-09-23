@@ -25,18 +25,12 @@
       referrerpolicy="no-referrer">
 
 <style>
-  /* ============================================================
-     THEME — colors pass through |safe_hex to prevent CSS injection.
-     Without it, a malicious School.primary_color like
-       "#fff; } body { display: none } .x {"
-     could break out of the :root block.
-     ============================================================ */
   :root {
-    --primary:   {{ school.primary_color|safe_hex:'#8B2020' }};
-    --secondary: {{ school.secondary_color|safe_hex:'#C87A2C' }};
-    --accent:    {{ school.accent_color|safe_hex:'#FBF6EC' }};
-    --text:      {{ school.text_color|safe_hex:'#2A1810' }};
-    --primary-dark: #5A1414;
+    --primary:   {{ school.primary_color|safe_hex:'#F58220' }};
+    --secondary: {{ school.secondary_color|safe_hex:'#6B3410' }};
+    --accent:    {{ school.accent_color|safe_hex:'#FDF6EC' }};
+    --text:      {{ school.text_color|safe_hex:'#3A1F0A' }};
+    --primary-dark: #C8621A;
 
     --print-unprinted-bg: #fef3c7;
     --print-unprinted-fg: #92400e;
@@ -59,19 +53,16 @@
 
   body {
     font-family: 'Inter', sans-serif;
-    background: #eef1f5;
+    background: #fdf6ec;
     background-image:
       radial-gradient(circle at 20% 30%, rgba(255,255,255,0.6) 0%, transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(200,210,220,0.35) 0%, transparent 50%);
+      radial-gradient(circle at 80% 70%, rgba(255,220,160,0.25) 0%, transparent 50%);
     padding: 32px 20px 100px;
     margin: 0;
     color: var(--text);
     min-height: 100vh;
   }
 
-  /* ============================================================
-     PRINT HEADER (screen only)
-     ============================================================ */
   .print-header {
     max-width: 1100px;
     margin: 0 auto 28px;
@@ -106,7 +97,7 @@
     font-weight: 700;
     letter-spacing: 0.4px;
     margin-left: 8px;
-    border: 1px solid rgba(200, 122, 44, 0.3);
+    border: 1px solid rgba(245, 130, 32, 0.35);
   }
 
   .print-header .back-link {
@@ -122,12 +113,9 @@
     transition: background 0.15s;
   }
   .print-header .back-link:hover {
-    background: rgba(139, 32, 32, 0.08);
+    background: rgba(245, 130, 32, 0.08);
   }
 
-  /* ============================================================
-     PRINT-MODE BANNER (screen only)
-     ============================================================ */
   .print-mode-banner {
     max-width: 1100px;
     margin: 0 auto 22px;
@@ -202,39 +190,41 @@
     color: #64748b;
   }
 
-  /* ============================================================
-     PRINT GRID
-     ============================================================ */
   .print-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 24px;
+    gap: 16px;
     justify-content: center;
     align-items: flex-start;
     max-width: 1100px;
     margin: 0 auto;
-    padding: 8px;
+    padding: 0;
   }
 
   .card-pair {
     display: flex;
-    gap: 10px;
+    gap: 6px;
     align-items: flex-start;
-    padding: 12px;
-    padding-top: 28px;
+    padding: 4px;
+    padding-top: 22px;
     background: rgba(255, 255, 255, 0.55);
-    border: 1px dashed rgba(139, 32, 32, 0.25);
-    border-radius: 14px;
+    border: 1px dashed rgba(245, 130, 32, 0.3);
+    border-radius: 12px;
     page-break-inside: avoid;
     break-inside: avoid;
     position: relative;
+    flex-wrap: nowrap;
+  }
+
+  .card-pair > * {
+    flex-shrink: 0;
   }
 
   .card-pair .pair-label {
     position: absolute;
-    top: 8px;
-    left: 14px;
-    right: 14px;
+    top: 3px;
+    left: 12px;
+    right: 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -243,7 +233,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--muted, #7a6a5a);
+    color: #7a6a5a;
     flex-wrap: wrap;
   }
   .card-pair .pair-label .pl-left {
@@ -306,17 +296,14 @@
     align-self: stretch;
     background: repeating-linear-gradient(
       to bottom,
-      rgba(139, 32, 32, 0.35) 0px,
-      rgba(139, 32, 32, 0.35) 6px,
+      rgba(245, 130, 32, 0.45) 0px,
+      rgba(245, 130, 32, 0.45) 6px,
       transparent 6px,
       transparent 12px
     );
-    margin: 0 4px;
+    margin: 0 2px;
   }
 
-  /* ============================================================
-     FLOATING TOOLBAR (screen only)
-     ============================================================ */
   .no-print-bar {
     position: fixed;
     bottom: 24px;
@@ -326,7 +313,7 @@
     padding: 14px 16px 14px 22px;
     border-radius: 60px;
     box-shadow:
-      0 20px 40px -10px rgba(90, 20, 20, 0.45),
+      0 20px 40px -10px rgba(107, 52, 16, 0.45),
       0 8px 20px -6px rgba(0, 0, 0, 0.2);
     display: flex;
     gap: 16px;
@@ -347,7 +334,7 @@
     letter-spacing: 0.3px;
   }
   .no-print-bar .bar-text i {
-    color: var(--secondary);
+    color: #FFC96E;
     font-size: 1rem;
   }
 
@@ -376,20 +363,17 @@
   }
   .no-print-bar button:hover,
   .no-print-bar a:hover {
-    background: #a8621f;
+    background: #4a2208;
     transform: translateY(-1px);
   }
 
   .no-print-bar .btn-ghost {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.15);
   }
   .no-print-bar .btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.25);
   }
 
-  /* ============================================================
-     CUTTING GUIDE (screen only)
-     ============================================================ */
   .cut-guide {
     max-width: 1100px;
     margin: 32px auto 0;
@@ -399,8 +383,8 @@
     font-size: 0.82rem;
     color: #5a4a3a;
     line-height: 1.6;
-    box-shadow: 0 4px 16px rgba(60, 30, 20, 0.06);
-    border-left: 4px solid var(--secondary);
+    box-shadow: 0 4px 16px rgba(107, 52, 16, 0.08);
+    border-left: 4px solid var(--primary);
   }
   .cut-guide strong {
     color: var(--primary);
@@ -413,14 +397,14 @@
     margin-top: 6px;
   }
   .cut-guide .guide-row i {
-    color: var(--secondary);
+    color: var(--primary);
     margin-top: 3px;
   }
 
   .cut-guide .tracking-summary {
     margin-top: 14px;
     padding-top: 14px;
-    border-top: 1px dashed rgba(139, 32, 32, 0.15);
+    border-top: 1px dashed rgba(245, 130, 32, 0.2);
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
@@ -458,64 +442,96 @@
     border-color: #cbd5e1;
   }
 
-  /* ============================================================
-     PRINT RULES
-     ============================================================ */
-  @media print {
-    body {
-      background: #fff;
-      background-image: none;
-      padding: 0;
-      margin: 0;
-    }
+ @media print {
+  html, body {
+    background: #fff !important;
+    background-image: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+  }
 
-    /* Hide everything except the cards */
-    .print-header,
-    .print-mode-banner,
-    .no-print-bar,
-    .cut-guide,
-    .card-pair .pair-label {
-      display: none !important;
-    }
+  /* Hide screen-only elements */
+  .print-header,
+  .print-mode-banner,
+  .no-print-bar,
+  .cut-guide,
+  .card-pair .pair-label {
+    display: none !important;
+  }
 
-    .print-grid {
-      gap: 0;
-      max-width: none;
-      padding: 0;
-      justify-content: flex-start;
-      display: block;
-    }
-
-    .card-pair {
-      display: flex;
-      gap: 4px;
-      padding: 0;
-      background: none;
-      border: none;
-      border-radius: 0;
-      margin: 0 0 4mm 0;
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-
-    .card-pair .pair-divider {
-      display: none;
-    }
-
-    .card-pair > * {
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-
-    @page {
-      size: auto;
-      margin: 8mm;
-    }
+  /* Reset grid */
+  .print-grid {
+    display: block;
+    gap: 0;
+    max-width: none;
+    padding: 0;
+    margin: 0;
   }
 
   /* ============================================================
-     RESPONSIVE (screen)
+     Each card pair produces exactly TWO pages:
+       Page 1 → front
+       Page 2 → back
+     Then a new pair starts on Page 3 (and its back on Page 4), etc.
      ============================================================ */
+  .card-pair {
+    display: block;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    /* No page-break-inside: avoid here — we WANT to break between front and back */
+  }
+
+  /* Front card: on its own page */
+  .card-pair > .id-card-front-wrapper {
+    display: block;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Back card: on its own page */
+  .card-pair > .id-card-back-wrapper {
+    display: block;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Last back card doesn't need a page break after it */
+  .card-pair:last-child > .id-card-back-wrapper {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  /* Hide divider on print */
+  .card-pair .pair-divider {
+    display: none;
+  }
+
+  /* Center the cards on the physical page */
+  .id-card-front-wrapper,
+  .id-card-back-wrapper {
+    margin: 0 auto !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+}
+
   @media (max-width: 700px) {
     body { padding: 20px 12px 120px; }
     .no-print-bar {
@@ -543,20 +559,18 @@
       align-self: center;
       background: repeating-linear-gradient(
         to right,
-        rgba(139, 32, 32, 0.35) 0px,
-        rgba(139, 32, 32, 0.35) 6px,
+        rgba(245, 130, 32, 0.45) 0px,
+        rgba(245, 130, 32, 0.45) 6px,
         transparent 6px,
         transparent 12px
       );
     }
   }
 </style>
+
 </head>
 <body>
 
-<!-- ============================================================
-     SCREEN HEADER (hidden on print)
-     ============================================================ -->
 <div class="print-header no-print">
   <div class="info">
     <h1>
@@ -585,12 +599,8 @@
   </a>
 </div>
 
-<!-- ============================================================
-     PRINT-MODE BANNER (hidden on print)
-     ============================================================ -->
 {% if print_all %}
   {% if not tracked %}
-    {# Preview mode — tracking is disabled for this batch. #}
     <div class="print-mode-banner no-print banner-preview">
       <div class="pmb-icon"><i class="fas fa-eye" aria-hidden="true"></i></div>
       <div class="pmb-text">
@@ -622,8 +632,7 @@
       <div class="pmb-text">
         <div class="pmb-title">First Print — Original Copy</div>
         <div class="pmb-sub">
-          This is the first time this card is being printed. The audit strip will
-          read <strong>"Copy #1"</strong>.
+          This is the first time this card is being printed.
         </div>
       </div>
     </div>
@@ -647,19 +656,12 @@
         <div class="pmb-sub">
           First printed <strong>{{ teacher.first_printed_at|date:"M j, Y" }}</strong>
           · Last printed <strong>{{ teacher.last_printed_at|date:"M j, Y" }}</strong>.
-          This will be copy number {{ teacher.print_count|add:1 }}.
         </div>
       </div>
     </div>
   {% endif %}
 {% endif %}
 
-<!-- ============================================================
-     CARD GRID — front + back per teacher
-
-     Uses the two existing partials (id_card_front.html, id_card_back.html)
-     rather than a combined id_card.html that doesn't exist.
-     ============================================================ -->
 <div class="print-grid">
   {% if print_all %}
     {% for teacher in teachers %}
@@ -730,12 +732,6 @@
   {% endif %}
 </div>
 
-<!-- ============================================================
-     FLOATING TOOLBAR (screen only)
-
-     The PDF link forwards only the meaningful filter params
-     (?printed=, ?track=), not transient ones like ?autoprint=1.
-     ============================================================ -->
 <div class="no-print-bar no-print">
   <div class="bar-text">
     {% if not tracked %}
@@ -757,7 +753,6 @@
       <i class="fas fa-print" aria-hidden="true"></i> Print Now
     </button>
 
-    {# Build a clean PDF URL, forwarding only whitelisted params. #}
     <a href="{% if print_all %}{% url 'id_cards:card_pdf_all' %}{% else %}{% url 'id_cards:card_pdf' teacher.pk %}{% endif %}{% if request.GET.printed or request.GET.track %}?{% if request.GET.printed %}printed={{ request.GET.printed|urlencode }}{% endif %}{% if request.GET.printed and request.GET.track %}&{% endif %}{% if request.GET.track %}track={{ request.GET.track|urlencode }}{% endif %}{% endif %}"
        class="btn-ghost">
       <i class="fas fa-file-pdf" aria-hidden="true"></i> PDF
@@ -765,9 +760,6 @@
   </div>
 </div>
 
-<!-- ============================================================
-     CUTTING GUIDE (screen only)
-     ============================================================ -->
 <div class="cut-guide no-print">
   <strong><i class="fas fa-scissors" aria-hidden="true"></i> Printing tips</strong>
 
@@ -827,14 +819,6 @@
     </div>
   {% endif %}
 </div>
-
-<script>
-  /* ------------------------------------------------------------------
-     Keyboard shortcut: Escape → back is intentionally omitted.
-     Browsers deliver Escape during print dialogs, which caused
-     accidental navigation away from the print view.
-     ------------------------------------------------------------------ */
-</script>
 
 </body>
 </html>
